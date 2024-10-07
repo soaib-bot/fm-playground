@@ -2,9 +2,11 @@ name: CI for GHCR
 
 on:
   workflow_dispatch:
-    branches:
-      - 'main'
-
+    inputs:
+      tags:
+        description: 'Docker Tag'
+        required: true
+        default: 'latest'
 jobs:
   build_and_publish:
     runs-on: ubuntu-latest
