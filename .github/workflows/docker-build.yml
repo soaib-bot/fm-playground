@@ -1,65 +1,65 @@
-name: Build and Push Docker Image
+# name: Build and Push Docker Image
 
-on:
-  workflow_dispatch: # Manually trigger the workflow
-    inputs:
-      tags:
-        description: "VITE_FMP_VERSION (Tag)"
-        required: true
-  push:
-    tags:
-      - "v*.*.*"
+# on:
+#   workflow_dispatch: # Manually trigger the workflow
+#     inputs:
+#       tags:
+#         description: "VITE_FMP_VERSION (Tag)"
+#         required: true
+#   push:
+#     tags:
+#       - "v*.*.*"
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}-z3-api
-          tags: |
-            type=edge,branch=main
-            type=semver,pattern={{version}}
+#       - name: Docker meta
+#         id: meta
+#         uses: docker/metadata-action@v5
+#         with:
+#           images: ghcr.io/${{ github.repository }}-z3-api
+#           tags: |
+#             type=edge,branch=main
+#             type=semver,pattern={{version}}
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
+#       - name: Setup QEMU
+#         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
 
-      - name: Login to ghcr
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GHCR_TOKEN }}
+#       - name: Login to ghcr
+#         uses: docker/login-action@v3
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.repository_owner }}
+#           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Determine Tags
-        id: determine-tags
-        run: |
-          if [ -n "${{ github.event.inputs.tags }}" ]; then
-            echo "TAGS=ghcr.io/${{ github.repository }}-z3-api:${{ github.event.inputs.tags }}" >> $GITHUB_ENV
-          else
-            echo "TAGS=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ',')" >> $GITHUB_ENV
-          fi
+#       - name: Determine Tags
+#         id: determine-tags
+#         run: |
+#           if [ -n "${{ github.event.inputs.tags }}" ]; then
+#             echo "TAGS=ghcr.io/${{ github.repository }}-z3-api:${{ github.event.inputs.tags }}" >> $GITHUB_ENV
+#           else
+#             echo "TAGS=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ',')" >> $GITHUB_ENV
+#           fi
         
 
-      - name: Debug Tags
-        run: |
-          echo "Resolved tags: ${{ env.TAGS }}"
+#       - name: Debug Tags
+#         run: |
+#           echo "Resolved tags: ${{ env.TAGS }}"
 
-      - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          tags: ${{ env.TAGS }}
-          labels: ${{ steps.meta.outputs.labels }}
-          context: ./z3-api
-          file: ./z3-api/Dockerfile
-          platforms: linux/amd64
-          push: true
+#       - name: Build image
+#         uses: docker/build-push-action@v6
+#         with:
+#           tags: ${{ env.TAGS }}
+#           labels: ${{ steps.meta.outputs.labels }}
+#           context: ./z3-api
+#           file: ./z3-api/Dockerfile
+#           platforms: linux/amd64
+#           push: true
