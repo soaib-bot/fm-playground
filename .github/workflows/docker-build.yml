@@ -24,7 +24,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/audiobookshelf
+          images: ghcr.io/${{ github.repository }}-z3-api
           tags: |
              type=edge,branch=main
              type=semver,pattern={{version}}
@@ -42,12 +42,16 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_TOKEN  }}
       
+      - name: Debug Tags
+        run: |
+          echo "Resolved tags: ${{ github.event.inputs.tags || steps.meta.outputs.tags }}"
+        
       - name: Build image
         uses: docker/build-push-action@v6
         with:
           tags: ${{ github.event.inputs.tags || steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          context: ./frontend 
-          file: ./frontend/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          context: ./z3-api 
+          file: ./z3-api/Dockerfile
+          platforms: linux/amd64 #,linux/arm64
           push: true
