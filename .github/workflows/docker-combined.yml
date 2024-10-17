@@ -15,12 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        folder: [limboole-api, nuxmv-api] 
+        folder: [alloy-api, backend, frontend, limboole-api, nuxmv-api, spectra-api, z3-api] 
         include:
+          - folder: alloy-api
+            image_name: ghcr.io/${{ github.repository }}-alloy-api
+          - folder: backend
+            image_name: ghcr.io/${{ github.repository }}-backend
+          - folder: frontend
+            image_name: ghcr.io/${{ github.repository }}-frontend
           - folder: limboole-api
             image_name: ghcr.io/${{ github.repository }}-limboole-api
           - folder: nuxmv-api
             image_name: ghcr.io/${{ github.repository }}-nuxmv-api
+          - folder: spectra-api
+            image_name: ghcr.io/${{ github.repository }}-spectra-api
+          - folder: z3-api
+            image_name: ghcr.io/${{ github.repository }}-z3-api
+            
 
     steps:
       - name: Checkout repository
@@ -70,3 +81,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
           push: true
+          build-args: |
+            VITE_FMP_API_URL=https://play.formal-methods.net/api
+            VITE_FMP_VERSION=${{ env.TAGS }}
