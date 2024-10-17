@@ -46,8 +46,9 @@ jobs:
           if [ -n "${{ github.event.inputs.tags }}" ]; then
             echo "TAGS=ghcr.io/${{ github.repository }}-z3-api:${{ github.event.inputs.tags }}" >> $GITHUB_ENV
           else
-            echo "TAGS=${{ steps.meta.outputs.tags }}" >> $GITHUB_ENV
+            echo "TAGS=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ',')" >> $GITHUB_ENV
           fi
+        
 
       - name: Debug Tags
         run: |
