@@ -1,4 +1,3 @@
----
 name: Build and Push Docker Image
 
 on:
@@ -10,48 +9,47 @@ on:
   push:
     tags:
       - "v*.*.*"
-  
+
 jobs:
   build:
-    # if: "!contains(github.event.head_commit.message, "skip ci")
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}-z3-api
           tags: |
-             type=edge,branch=main
-             type=semver,pattern={{version}}
-      
+            type=edge,branch=main
+            type=semver,pattern={{version}}
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
-          
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Login to ghcr
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GHCR_TOKEN  }}
-      
+          password: ${{ secrets.GHCR_TOKEN }}
+
       - name: Debug Tags
         run: |
-          echo "Resolved tags: ${{ github.event.inputs.tags || steps.meta.outputs.tags }}"
-        
+          echo "Resolved tags: ghcr.io/${{ github.repository }}-z3-api:${{ github.event.inputs.tags || steps.meta.outputs.tags }}"
+
       - name: Build image
         uses: docker/build-push-action@v6
         with:
-          tags: ${{ github.event.inputs.tags || steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository }}-z3-api:${{ github.event.inputs.tags || steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          context: ./z3-api 
+          context: ./z3-api
           file: ./z3-api/Dockerfile
-          platforms: linux/amd64 #,linux/arm64
+          platforms: linux/amd64
           push: true
