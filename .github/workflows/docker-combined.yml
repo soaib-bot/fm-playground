@@ -73,6 +73,7 @@ jobs:
             echo "VITE_FMP_VERSION=${{ github.event.inputs.tags }}" >> $GITHUB_ENV
           else
             echo "VITE_FMP_VERSION=$(echo $DOCKER_METADATA_OUTPUT_VERSION)" >> $GITHUB_ENV
+          fi
       
       - name: Print version
         run: echo "VITE_FMP_VERSION is ${{ env.VITE_FMP_VERSION }}"
