@@ -67,7 +67,13 @@ jobs:
           else
             echo "TAGS=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ',')" >> $GITHUB_ENV
           fi
-
+      - name: Extract VITE_FMP_VERSION
+        id: extract_version
+        run: echo "VITE_FMP_VERSION=$(echo $DOCKER_METADATA_OUTPUT_VERSION)" >> $GITHUB_ENV
+      
+      - name: Print version
+        run: echo "VITE_FMP_VERSION is ${{ env.VITE_FMP_VERSION }}"
+      
       - name: Debug Tags
         run: |
           echo "Resolved tags: ${{ env.TAGS }}"
