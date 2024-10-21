@@ -43,7 +43,6 @@ jobs:
         with:
           images: ${{ matrix.image_name }}
           tags: |
-            type=edge,branch=main
             type=semver,pattern={{version}}
 
       - name: Setup QEMU
