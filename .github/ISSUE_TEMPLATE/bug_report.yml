@@ -35,12 +35,12 @@ body:
     attributes:
       label: Which tool is this issue related to?
       options:
+        - Not sure
         - Limboole
         - SMT/Z3
         - Alloy
         - nuXmv
         - Spectra
-        - Not sure
     validations:
       required: true
   - type: dropdown
@@ -63,8 +63,8 @@ body:
         - Firefox
         - Safari
         - Edge
-        - Firefox for Android
-        - Chrome for Android
+        - Firefox for Mobile
+        - Chrome for Mobile
         - Safari on iOS
         - Other (list in "Additional Notes" box)
   - type: textarea
