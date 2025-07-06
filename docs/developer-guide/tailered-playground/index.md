@@ -2,7 +2,7 @@
 
 This guide covers setting up your FM Playground by forking the existing repository. This approach gives you access to all existing tools and the complete codebase.
 
-## 🎯 Overview
+## Overview
 
 The existing project approach is ideal when you:
 
@@ -12,7 +12,7 @@ The existing project approach is ideal when you:
 - Want to learn from existing tool implementations
 - Prefer to customize existing tools rather than build from scratch
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have:
 
@@ -37,7 +37,7 @@ git --version
 # Should show git version
 ```
 
-## 🍴 Step 1: Fork the Repository
+## Step 1: Fork the Repository
 
 1. **Navigate to the main repository**
       - [https://github.com/fm4se/fm-playground](https://github.com/fm4se/fm-playground)
@@ -54,7 +54,7 @@ git --version
    
    You should now see the repository at `https://github.com/YOUR_USERNAME/fm-playground`
 
-## 📥 Step 2: Clone Your Fork
+## Step 2: Clone Your Fork
 
 ```bash
 # Clone your forked repository
@@ -76,23 +76,85 @@ git remote -v
 ```
 
 ## Step 3: Environment Variables
-The FM Playground uses environment variables for configuration. There are two environment files- one in the frontend and one in the backend. Make a copy of the `.env.example` files in both directories and rename them to `.env`. Update the values as needed.
+The FM Playground uses environment variables for configuration. Each service (frontend, backend, and tools) has its own `.env` file. You will need to set up these files to run the project locally. An example `.env` file is provided for each service named `.env.example`. You can copy these files and update them with your specific configuration.
 
 ```bash
-# Navigate to frontend directory
-cd frontend
-# Copy the example env file
+# In the project root directory
 cp .env.example .env
-# Update the .env file with your configuration
 
-# Navigate to backend directory
-cd ../backend
-# Copy the example env file
+# Navigate to frontend directory and copy the example env file and update it
+cd frontend
 cp .env.example .env
-# Update the .env file with your configuration
+
+# Navigate to backend directory and copy the example env file and update it
+cd ../backend
+cp .env.example .env
+
+# Navigate to each tool directory and copy the example env file and update it
+cd limboole-api
+cp .env.example .env
+# ... repeat for other tools 
+
+# Note: Use copy command appropriate for your OS 
+#     (e.g., `copy` on Windows, `cp` on Linux/Mac)
 ```
 
-## 🔧 Step 3: Install Dependencies
+### Frontend `.env` example
+```env
+# API URL for the FM Playground backend
+VITE_FMP_API_URL=http://localhost:8000/api
+
+# Version of the FM Playground. This is used for docker images.
+VITE_FMP_VERSION=1.5.0
+```
+
+### Backend `.env` example
+```env
+# Frontend URL for the FM Playground
+FRONTEND_URL="http://localhost:5173/" 
+
+# API URL for the FM Playground backend
+VITE_FMP_API_URL=http://localhost:8000/api
+
+# Database configuration
+# Note: If you are using PostgreSQL, ensure you have it running and the credentials match
+# If you prefer SQLite, set USE_SQLITE=True
+USE_SQLITE=True
+# PostgreSQL configuration
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+DB_HOST=postgres
+DB_PORT=5432
+
+# Secret key for Flask sessions
+# This should be a strong random key for production
+APP_SECKET_KEY="secret-key"
+# Flask environment (development or production)
+FLASK_ENV=development
+
+# OAuth configuration
+# These are used for Google and GitHub authentication
+# You can create OAuth applications on Google and GitHub to get these credentials
+GOOGLE_CLIENT_ID="google-client-id"
+GOOGLE_CLIENT_SECRET="google-client-secret"
+GITHUB_CLIENT_ID="github-client-id"
+GITHUB_CLIENT_SECRET="github-client-secret"
+```
+
+### Tool `.env` example
+Each tool may have its own `.env` file with specific configurations. Two primary variables are common in python-based tools:
+
+```env
+# API URL for the FM Playground 
+API_URL = "https://play.formal-methods.net/"
+# Redis URL for caching and task management
+REDIS_URL = "redis://localhost:6379/0"
+```
+Other tools may have additional configurations specific to their requirements. Check the `.env.example` file in each tool's directory for details.
+
+
+## Step 3: Install Dependencies
 
 The FM Playground consists of both frontend and backend components:
 
@@ -105,12 +167,6 @@ cd frontend
 # Install dependencies
 npm install
 
-# This will install all required packages including:
-# - React and TypeScript
-# - Monaco Editor for code editing
-# - Vite for development server
-# - Material-UI components
-# - Tool-specific dependencies
 ```
 
 ### Backend Setup
@@ -120,9 +176,7 @@ npm install
 cd backend
 
 # Install poetry environment (if not already installed)
-poetry install --no-root  
-# This will set up the Python environment and install:
-
+poetry install --no-root 
 ```
 
 ### Tool Specific Setup
@@ -139,7 +193,6 @@ cd alloy-api
 
 # Install Alloy dependencies and build the project
 ./gradlew clean build -x test
-# This will compile the Alloy backend and prepare it for use
 ```
 
 #### Limboole
@@ -150,9 +203,11 @@ In the FM Playground, Limboole is running as a WebAssembly module. You can run i
 # Navigate to Limboole tool directory
 cd limboole-api
 # Install Limboole dependencies
-poetry install --no-root  
-# This will set up the Python environment and install necessary packages for Limboole
+poetry install --no-root
 ```
+
+!!! note "Note"
+      The `limboole-api` directory contains both the WebAssembly module and the FastAPI backend service. The WebAssembly module is used by default, but you can switch to the backend service if needed. You need to install the `limboole` binary and place it in the `lib/` directory if you want to run the backend service.
 
 #### nuXmv 
 nuXmv is running as a backend service using FastAPI. 
@@ -161,9 +216,14 @@ nuXmv is running as a backend service using FastAPI.
 # Navigate to nuXmv tool directory
 cd nuxmv-api
 # Install nuXmv dependencies
-poetry install --no-root  
-# This will set up the Python environment and install necessary packages for nuXmv
+poetry install --no-root
+
+# Copy the nuXmv binary to the tool directory
+./install_dependencies.sh
+# This will download the nuXmv binary and place it in the correct location
 ```
+!!! note "Note"
+    The `install_dependencies.sh` script downloads the linux binary of nuXmv. If you are on a different OS, you may need to modify this script or manually download the appropriate binary and place it in the `lib/` directory.
 
 #### SMT/Z3
 In the FM Playground, SMT/Z3 is running a WebAssembly module. It also has a backend service using FastAPI. In case the WebAssembly module fails, it falls back to the backend service.
@@ -172,9 +232,11 @@ In the FM Playground, SMT/Z3 is running a WebAssembly module. It also has a back
 # Navigate to SMT/Z3 tool directory
 cd z3-api
 # Install SMT/Z3 dependencies
-poetry install --no-root  
-# This will set up the Python environment and install necessary packages for SMT/Z3
+poetry install --no-root
 ```
+
+!!! note "Note"
+      The `z3-api` directory contains both the WebAssembly module and the FastAPI backend service. The WebAssembly module is used by default, but you can switch to the backend service if needed. You need to install the `z3` binary if you want to run the backend service.
 
 #### Spectra
 Spectra is running as a backend service using FastAPI. 
@@ -187,8 +249,7 @@ poetry install --no-root
 # This will set up the Python environment and install necessary packages for Spectra
 ```
 
-
-## 🚀 Step 4: Start Development Environment
+## Step 4: Start Development Environment
 
 ```bash
 # From the project root, you can start both frontend and backend
@@ -212,32 +273,30 @@ You can start each tool's backend service in separate terminals:
 
 
 ```bash
-# Terminal 3: Start Alloy backend
+# Start Alloy backend
 cd alloy-api
 ./gradlew bootRun
 # Alloy backend will be available at http://localhost:8080
-# Terminal 4: Start Limboole backend
+
+# Start Limboole backend
 cd limboole-api
-uvicorn main:app --reload
-# Limboole backend will be available at http://localhost:8001
-# Terminal 5: Start nuXmv backend
+fastapi run main.py --port 8081
+
+# Start nuXmv backend
 cd nuxmv-api
-uvicorn main:app --reload
-# nuXmv backend will be available at http://localhost:8002
-# Terminal 6: Start SMT/Z3 backend
+fastapi run main.py --port 8082
+
+# Start SMT/Z3 backend
 cd z3-api
-uvicorn main:app --reload
-# SMT/Z3 backend will be available at http://localhost:8003
-# Terminal 7: Start Spectra backend
+fastapi run main.py --port 8083
+
+# Start Spectra backend
 cd spectra-api
-uvicorn main:app --reload
-# Spectra backend will be available at http://localhost:8004
+fastapi run main.py --port 8084
 ```
 
 
-
-
-## 🧪 Step 5: Verify Your Setup
+## Step 5: Verify Your Setup
 
 1. **Check Frontend**
    
@@ -260,22 +319,5 @@ You have successfully set up your FM Playground with all existing tools! You can
 Now that you have the basic setup running, you can:
 
 1. **[Explore the Project Structure →](project-structure.md)** - Understand the codebase organization
-2. **[Keep Your Fork Updated →](maintenance.md)** - Learn to sync with upstream changes
-3. **[Add New Tools →](adding-tools.md)** - Extend the playground with custom tools
-4. **[Customize Your Setup →](customization.md)** - Modify existing tools and interface
-5. **[Test and Deploy →](testing-deployment.md)** - Test changes and build for production
-
-## 🤝 Contributing Back
-
-If you make improvements that could benefit others:
-
-1. **Create a Pull Request** following the [Contributing Guide](../../development/contributing.md)
-2. **Follow Coding Standards** as outlined in the [Development Guide](../../development/development-guide.md)
-3. **Add Tests** for new features using the [Testing Guide](../../development/testing.md)
-
-## 🔗 Quick Links
-
-- **[Main Repository](https://github.com/fm4se/fm-playground)** - Source code and issues
-- **[Development Guide](../../development/development-guide.md)** - Advanced development topics
-- **[API Reference](../../development/api-reference.md)** - Backend API documentation
-- **[Community Discussions](https://github.com/fm4se/fm-playground/discussions)** - Ask questions and share ideas
+2. **[Add New Tools →](../../development/adding-tools.md)** - Extend the playground with custom tools
+3. **[Deploy →](../../development/deployment.md)** - Test changes and build for production

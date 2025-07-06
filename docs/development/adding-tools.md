@@ -14,8 +14,8 @@ Each tool in FM Playground consists of:
 
 Integrating a new tool consists of two main steps:
 
-1. **Backend Service**: Create a backend service that executes the tool and expose APIs for interaction. You can develop a new service or use existing APIs running anywhere that can be accessed by the frontend.
-2. **Frontend Integration**: Add the tool to the frontend, allowing users to interact with it through the UI.
+1. **Frontend Integration**: Add the tool to the frontend, allowing users to interact with it through the UI.
+2. **Backend Service**: Create a backend service that executes the tool and expose APIs for interaction. You can develop a new service or use existing APIs running anywhere that can be accessed by the frontend.
 
 
 ## Step 1: Choose Your Tool
@@ -30,494 +30,500 @@ Before adding a tool, ensure:
 - You understand its input/output formats
 - Licensing allows redistribution (if including binaries)
 
-## 
+## Step 2: Frontend Integration
 
-## Step 2: Create the API Service
+First, we will integrate the tool into the FM Playground frontend. The frontend is where users will interact with your tool through the web interface.
 
-### Create Directory Structure
+### Overview
+The easiest way to add a new tool is by using `fmp-tool` CLI. `fmp-tool` is a command-line interface (CLI) that generates boilerplate code for new formal method tools. It creates all necessary files and provides integration instructions to add your tool to the FM Playground.
+
+### Create a New Tool
 
 ```bash
-cd fm-playground-main
-mkdir cbmc-api
-cd cbmc-api
+# Go to the frontend directory
+cd frontend
+# Create a new tool configuration
+npx fmp-tool
+```
+!!! warning "Warning"
+    You need to run this command in the `frontend` directory. Otherwise, the configuration will not be created correctly.
+
+This command will prompt you for the tool name, description, and other metadata. It will generate a new directory under `frontend/tools/` with the necessary files.
+
+```bash
+$ npx fmp-tool
+
+🛠️  FM Tool Generator
+Creating a new formal methods tool for fm-playground
+
+? What is the name of your tool? (e.g., nuxmv, z3, alloy) nuxmv
+? Display name for the tool: (nuxmv) nuXmv
+ool ID (uppercase, used in maps): (NUXMV) NUXMV
+? File extension for the language: (nuxmv) xmv
+? Does this tool require an API endpoint? (Y/n) Y
+? API endpoint path: (/nuxmv) /xmv
+? Output component type: (Use arrow keys)
+❯ TextualOutput 
+  CustomOutput 
+? Create additional input component (for options)? (y/N) N
+? Create additional output component (for extra UI elements)? (y/N) Y
+
+📋 Configuration:
+Tool Name: nuxmv
+Tool ID: NUXMV
+File Extension: xmv
+Target Path: ./tools
+
+? Proceed with creating the tool? (Y/n) Y
+Looking for ToolMaps.tsx at default path: src/ToolMaps.tsx
+✅ Successfully updated ToolMaps.tsx with nuxmv tool
+
+✅ Tool created successfully!
+
+📝 Next steps:
+1. Update ToolMaps.tsx to register your new tool (see TOOLMAPS_INTEGRATION.md)
+2. Add language configuration to the monaco editor setup if needed
+3. Implement the API endpoint if needed
+4. Customize the generated files to fit your tool's requirements
 ```
 
-### Core Service (`main.py`)
+#### Configuration Options
 
-```python
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
-from cbmc import CBMCTool
+##### Tool Name
+- **Purpose**: Internal identifier for your tool
+- **Format**: Lowercase, alphanumeric, underscores allowed
+- **Examples**: `prolog`, `coq`, `lean`, `isabelle`
+- **Used for**: File names, directory names, internal references
 
-app = FastAPI(
-    title="CBMC API",
-    description="Bounded Model Checker for C/C++ programs",
-    version="1.0.0"
-)
+##### Display Name  
+- **Purpose**: User-facing name shown in the interface
+- **Format**: Any readable string
+- **Examples**: `Prolog Interpreter`, `Coq Proof Assistant`, `Lean 4`
+- **Used for**: UI labels, component names
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+##### Tool ID
+- **Purpose**: Uppercase identifier for tool mappings
+- **Format**: Uppercase letters, underscores allowed
+- **Examples**: `PROLOG`, `COQ`, `LEAN_4`
+- **Used for**: ToolMaps.tsx keys, internal configurations
 
-cbmc_tool = CBMCTool()
+##### File Extension
+- **Purpose**: File extension for your tool's language
+- **Format**: Lowercase, no dot prefix
+- **Examples**: `pl`, `v`, `lean`, `thy`
+- **Used for**: Monaco editor language association, file operations
 
-class CBMCRequest(BaseModel):
-    code: str
-    options: dict = {}
+##### API Endpoint
+- **Purpose**: Backend endpoint for tool execution
+- **Default**: `/{tool-name}`
+- **Examples**: `/prolog`, `/coq/verify`, `/lean/check`
+- **Used for**: Frontend-backend communication
 
-class CBMCResponse(BaseModel):
-    success: bool
-    output: str
-    error: str = ""
-    verification_result: str = ""
+##### Output Component Type
+- **PlainOutput**: Simple text display (default)
+- **CustomOutput**: Advanced formatting with custom components
 
-@app.post("/run", response_model=CBMCResponse)
-async def run_cbmc(request: CBMCRequest):
-    try:
-        result = cbmc_tool.run(request.code, request.options)
-        return CBMCResponse(
-            success=result['success'],
-            output=result['output'],
-            verification_result=result.get('verification_result', ''),
-            error=result.get('error', '')
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+##### Additional Components
+- **Input Component**: For tool-specific options and parameters
+- **Output Component**: For specialized result visualization
 
-@app.get("/health")
-async def health():
-    return {"status": "healthy", "tool": "cbmc"}
+#### Generated File Structure
+After running `fmp-tool`, you'll get:
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+frontend/src/tools/your-tool/
+├── nuxmvExecutor.ts           # Core execution logic
+├── nuxmvTextMateGrammar.ts    # Syntax highlighting
+├── nuxmvOutput.tsx            # Output component (optional)
+├── INTEGRATION.md             # Integration instructions
+└── TOOLMAPS_INTEGRATION.md    # ToolMaps.tsx integration guide
 ```
 
-### Tool Implementation (`cbmc.py`)
+#### Understanding Generated Files
 
-```python
-import subprocess
-import tempfile
-import os
-from pathlib import Path
+##### Tool Executor
 
-class CBMCTool:
-    def __init__(self):
-        self.cbmc_path = "/usr/local/bin/cbmc"
-        
-    def run(self, code: str, options: dict = {}) -> dict:
-        """Execute CBMC on the provided C code."""
-        
-        # Create temporary file for C code
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as f:
-            f.write(code)
-            temp_file = f.name
-        
-        try:
-            # Build command
-            cmd = [self.cbmc_path]
-            
-            # Add options
-            if options.get('unwind'):
-                cmd.extend(['--unwind', str(options['unwind'])])
-            if options.get('bounds_check', True):
-                cmd.append('--bounds-check')
-            if options.get('memory_leak_check'):
-                cmd.append('--memory-leak-check')
-                
-            cmd.append(temp_file)
-            
-            # Execute CBMC
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            # Parse output
-            success = result.returncode == 0
-            verification_result = self._parse_verification_result(result.stdout)
-            
-            return {
-                'success': success,
-                'output': result.stdout,
-                'error': result.stderr if result.stderr else '',
-                'verification_result': verification_result
-            }
-            
-        except subprocess.TimeoutExpired:
-            return {
-                'success': False,
-                'output': '',
-                'error': 'Execution timeout (30s)',
-                'verification_result': 'TIMEOUT'
-            }
-        except Exception as e:
-            return {
-                'success': False,
-                'output': '',
-                'error': str(e),
-                'verification_result': 'ERROR'
-            }
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_file):
-                os.unlink(temp_file)
-    
-    def _parse_verification_result(self, output: str) -> str:
-        """Parse CBMC output to extract verification result."""
-        if "VERIFICATION SUCCESSFUL" in output:
-            return "SUCCESSFUL"
-        elif "VERIFICATION FAILED" in output:
-            return "FAILED"
-        elif "PARSING ERROR" in output:
-            return "PARSE_ERROR"
-        else:
-            return "UNKNOWN"
-```
-
-### Dependencies (`pyproject.toml`)
-
-```toml
-[tool.poetry]
-name = "cbmc-api"
-version = "1.0.0"
-description = "CBMC API service for FM Playground"
-authors = ["Your Name <your.email@example.com>"]
-
-[tool.poetry.dependencies]
-python = "^3.11"
-fastapi = "^0.104.1"
-uvicorn = "^0.24.0"
-pydantic = "^2.5.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
-pytest-asyncio = "^0.21.1"
-httpx = "^0.25.2"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-```
-
-### Container Configuration (`Dockerfile`)
-
-```dockerfile
-FROM ubuntu:22.04
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    build-essential \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install CBMC
-RUN wget -O cbmc.deb https://github.com/diffblue/cbmc/releases/download/cbmc-5.95.1/ubuntu-22.04-cbmc-5.95.1-Linux.deb \
-    && dpkg -i cbmc.deb \
-    && rm cbmc.deb
-
-# Set up Python environment
-WORKDIR /app
-COPY pyproject.toml poetry.lock ./
-
-# Install Poetry and dependencies
-RUN pip3 install poetry
-RUN poetry config virtualenvs.create false
-RUN poetry install --no-root   --no-dev
-
-# Copy application
-COPY . .
-
-# Expose port
-EXPOSE 8000
-
-# Run application
-CMD ["python3", "main.py"]
-```
-
-### Service Orchestration (`compose.yml`)
-
-```yaml
-version: '3.8'
-
-services:
-  cbmc-api:
-    build: .
-    ports:
-      - "8007:8000"
-    environment:
-      - PYTHONPATH=/app
-    volumes:
-      - /tmp:/tmp
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-```
-
-## Step 3: Add Tests
-
-Create `tests/test_cbmc.py`:
-
-```python
-import pytest
-from cbmc import CBMCTool
-
-@pytest.fixture
-def cbmc_tool():
-    return CBMCTool()
-
-def test_simple_verification(cbmc_tool):
-    code = """
-    #include <assert.h>
-    
-    int main() {
-        int x = 5;
-        assert(x > 0);
-        return 0;
-    }
-    """
-    
-    result = cbmc_tool.run(code)
-    assert result['success'] == True
-    assert result['verification_result'] == "SUCCESSFUL"
-
-def test_failing_assertion(cbmc_tool):
-    code = """
-    #include <assert.h>
-    
-    int main() {
-        int x = -1;
-        assert(x > 0);
-        return 0;
-    }
-    """
-    
-    result = cbmc_tool.run(code)
-    assert result['success'] == False
-    assert result['verification_result'] == "FAILED"
-```
-
-## Step 4: Update Main Docker Compose
-
-Add your service to the main `compose.yml`:
-
-```yaml
-services:
-  # ... existing services ...
-  
-  cbmc-api:
-    build: ./cbmc-api
-    ports:
-      - "8007:8000"
-    environment:
-      - PYTHONPATH=/app
-    restart: unless-stopped
-    networks:
-      - fm-playground
-```
-
-## Step 5: Frontend Integration
-
-### Add Tool Configuration
-
-In `frontend/src/config/tools.ts`:
+This file contains the logic to execute your tool. It typically includes an API call to your backend service, handling the tool's input and output. And export a function that can be called from the frontend to execute the tool.
 
 ```typescript
-export const tools = [
-  // ... existing tools ...
-  {
-    id: 'cbmc',
-    name: 'CBMC',
-    description: 'Bounded Model Checker for C/C++',
-    category: 'Model Checking',
-    language: 'c',
-    apiUrl: 'http://localhost:8007',
-    defaultCode: `#include <assert.h>
-
-int main() {
-    int x;
-    // Add your verification conditions
-    assert(x >= 0);
-    return 0;
-}`,
-    options: [
-      {
-        name: 'unwind',
-        type: 'number',
-        label: 'Unwind Depth',
-        default: 10,
-        description: 'Maximum loop unwind depth'
-      },
-      {
-        name: 'bounds_check',
-        type: 'boolean',
-        label: 'Bounds Checking',
-        default: true,
-        description: 'Enable array bounds checking'
-      },
-      {
-        name: 'memory_leak_check',
-        type: 'boolean', 
-        label: 'Memory Leak Check',
-        default: false,
-        description: 'Check for memory leaks'
-      }
-    ]
-  }
-];
-```
-
-### Add Tool Component (Optional)
-
-For custom UI, create `frontend/src/components/tools/CBMCTool.vue`:
-
-```vue
-<template>
-  <div class="cbmc-tool">
-    <ToolEditor
-      :tool="tool"
-      :code="code"
-      :options="options"
-      @run="executeCode"
-      @code-change="updateCode"
-      @options-change="updateOptions"
-    />
-    
-    <div class="cbmc-results" v-if="result">
-      <div class="result-status" :class="resultClass">
-        {{ result.verification_result }}
-      </div>
-      
-      <pre class="output">{{ result.output }}</pre>
-      
-      <div v-if="result.error" class="error">
-        {{ result.error }}
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-export default {
-  name: 'CBMCTool',
-  // ... component logic
+async function executenuxmv(permalink: Permalink) {
+  let url = `/nuxmv/run/?check=${permalink.check}&p=${permalink.permalink}`;
+  const response = await axios.get(url);
+  return response.data;
 }
-</script>
+
+export const executenuxmvTool = async () => {
+  // Get the contents of the editor, selected language, and permalink
+  const editorValue = jotaiStore.get(editorValueAtom);
+  const language = jotaiStore.get(languageAtom);
+  const permalink = jotaiStore.get(permalinkAtom);
+  
+  // Save the code to the database
+  // This will return the permalink object with the permalink and check
+  const response = await saveCode(editorValue, language.short, permalink.permalink || null, null);
+  if (response) {
+    jotaiStore.set(permalinkAtom, response.data);
+  } else {
+    jotaiStore.set(
+      outputAtom,
+      `error handling ...`
+    );
+    jotaiStore.set(isExecutingAtom, false);
+    return;
+  }
+
+  // With the returned permalink, we can now execute the tool
+  try {
+    const res = await executenuxmv(response?.data);
+    jotaiStore.set(outputAtom, res);
+  } catch (err: any) {
+    jotaiStore.set(
+      outputAtom,
+      `error handling ...`
+    );
+  }
+  jotaiStore.set(isExecutingAtom, false);
+};
 ```
 
-## Step 6: Test Integration
+##### TextMate Grammar
 
-### Start Services
+This file defines the syntax highlighting rules for your tool's language using TextMate grammar. It allows the Monaco editor to provide proper syntax highlighting when users write code in your tool's language.
 
-```bash
-# Build and start your new service
-cd cbmc-api
-docker compose up -d
+You can refer to the [Monaco Editor documentation](https://microsoft.github.io/monaco-editor/monarch.html) for details on how to define your language's syntax.
 
-# Start main application
-cd ..
-docker compose up -d
+```typescript
+// Language configuration for Monaco Editor
+export const yourToolConf: languages.LanguageConfiguration = {
+  brackets: [
+    ['{', '}'],
+    ... // other brackets
+  ],
+  autoClosingPairs: [
+    { open: '{', close: '}' },
+    ... // other pairs
+  ],
+  surroundingPairs: [
+    { open: '{', close: '}' },
+    ... // other pairs
+  ]
+};
+
+// TextMate grammar for syntax highlighting
+export const yourToolLang: languages.IMonarchLanguage = {
+  keywords: ['DEFINE','E', 'EBF', 'EBG', 'EF', 'EG','F'],
+  operators: [':', '=', '->', '<->', '∀', '∃'],
+  symbols: /[=><!~?:&|+\-*\/\^%]+/,
+  
+  tokenizer: {
+    root: [
+      [/[a-zA-Z_$][\w$]*/, {
+        cases: {
+          '@keywords': 'keyword',
+          '@default': 'identifier'
+        }
+      }],
+      [/\d+/, 'number'],
+      [/"([^"\\]|\\.)*$/, 'string.invalid'],
+      [/"/, 'string', '@string']
+    ],
+    // ... more tokenization rules
+  }
+};
 ```
 
-### Test the Integration
+##### Output Component
 
-1. **API Test**:
-```bash
-curl -X POST http://localhost:8007/run \
-  -H "Content-Type: application/json" \
-  -d '{"code": "#include <assert.h>\nint main() { assert(1 > 0); return 0; }"}'
+For `? Output component type:`, if you selected `CustomOutput`, instead of a simple text output, a new file `nuxmvOutput.tsx` will be created. This file can contain custom React components to display the output of your tool in a more user-friendly way.
+
+##### Additional Input and Output Components 
+
+If you selected `Y` for creating an additional input and/or output component, a new file `nuxmvInput.tsx`and/or `nuxmvOutput.tsx` will be created. These files can contain custom React components to handle tool-specific input options and display results in a structured way.
+
+For example, we choose to create an additional output component, `nuxmvOutput.tsx` might look like this:
+```tsx
+const nuxmvOutput: React.FC = () => {
+  return (
+    <MDBContainer className="p-3">
+      <MDBRow>
+        <MDBCol md="12">
+          <div className="border rounded p-3 bg-light">
+            <h6 className="mb-2">nuxmv Information</h6>
+            <p className="mb-1 small text-muted">
+              This tool is powered by nuxmv.
+            </p>
+            <p className="mb-0 small text-muted">
+              For more information, visit the official documentation.
+            </p>
+          </div>
+        </MDBCol>
+      </MDBRow>
+    </MDBContainer>
+  );
+};
+export default nuxmvOutput;
 ```
 
-2. **Frontend Test**:
-   - Navigate to `http://localhost:3000`
-   - Select "CBMC" from the tools sidebar
-   - Enter test code and verify execution
+### ToolMaps.tsx Integration
 
-## Step 7: Documentation
+The `ToolMaps.tsx` file serves as the central registry that connects all tool components and configurations within the FM Playground frontend. When you generate a new tool using the `fmp-tool` CLI, this file is automatically updated to include your tool's configuration. Understanding this integration is crucial for customizing tool behavior and troubleshooting integration issues.
 
-Create tool-specific documentation in `docs/tools/cbmc.md`:
+The `fmp-tool` CLI automatically updates the `ToolMaps.tsx` file with the new tool configuration, but it's important to understand what each mapping does:
 
-```markdown
-# CBMC Tool
+```typescript
+// src/ToolMaps.tsx
+import TextualOutput from '@/components/Playground/TextualOutput';
+import { nuxmvConf, nuxmvLang } from '@/../tools/nuxmv/nuxmvTextMateGrammar';
+import { executenuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
+import nuxmvOutput from '@/../tools/nuxmv/nuxmvOutput';
+import type { FmpConfig } from '@/types';
 
-CBMC (Bounded Model Checker) is a verification tool for C/C++ programs...
+export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
+  // EXT: ExampleToolCheckOptions,
+};
+export const additonalOutputAreaUiMap: Record<string, React.FC<any>> = {
+  XMV: nuxmvOutput,
+};
+export const toolExecutionMap: Record<string, () => void> = {
+  XMV: executenuxmvTool,
+};
+export const toolOutputMap: Record<string, React.FC<any>> = {
+  XMV: TextualOutput,
+};
 
-## Usage Examples
+export const languageConfigMap: Record<string, { tokenProvider: any; configuration: any }> = {
+  XMV: { tokenProvider: nuxmvLang, configuration: nuxmvConf },
+};
 
-### Basic Assertion Checking
-...
+// Configuration for LSP (Language Server Protocol) support by tool
+export const lspSupportMap: Record<string, boolean> = {
+  // EXT: true,
+  XMV: false,
+};
 
-### Options Reference
-...
+export const fmpConfig: FmpConfig = {
+  title: 'FM Playground',
+  // repository: 'https://github.com/se-buw/fm-playground',
+  // issues: 'https://github.com/se-buw/fm-playground/issues',
+  tools: {
+    // exampleTool: { name: 'ExampleTool', extension: 'exampleTool', shortName: 'EXT' },
+    nuxmv: { name: 'nuxmv', extension: 'XMV', shortName: 'XMV' },
+  },
+};
 ```
 
-## Advanced Patterns
+#### Understanding the Mapping Objects
 
-### Custom Input Formats
+**1. `additionalInputAreaUiMap`**
 
-For tools requiring special input formats:
+- **Purpose**: Maps tool IDs to custom input components that appear above the code editor
+- **Usage**: For tools requiring specific configuration options, parameter inputs, or command-line flags
+- **Example**: Alloy's command selection, Spectra's CLI options
+- **When to use**: When your tool needs user-configurable parameters before execution
+
+**2. `additonalOutputAreaUiMap`**
+
+- **Purpose**: Maps tool IDs to additional UI components that appear in the output area
+- **Usage**: For supplementary information, tool credits, copyright notices, or interactive result exploration
+- **Example**: nuXmv's copyright notice, Alloy's instance navigation controls
+- **When to use**: When you need to display non-result information alongside tool output
+
+**3. `toolExecutionMap`**
+
+- **Purpose**: Maps tool IDs to their execution functions
+- **Critical**: This is the core mapping that enables tool execution
+- **Function signature**: `() => void` - typically async functions that handle the complete execution flow
+- **Responsibility**: Manages editor content saving, API calls, result handling, and error management
+
+**4. `toolOutputMap`**
+
+- **Purpose**: Maps tool IDs to their primary output rendering components
+- **Default**: `TextualOutput` for simple text-based results
+- **Custom options**: `AlloyOutput` for graph visualization, custom components for structured data
+- **When to customize**: When tool results require special formatting, visualization, or interaction
+
+**5. `languageConfigMap`**
+
+- **Purpose**: Configures Monaco Editor language support for each tool
+- **Components**: 
+
+    - `tokenProvider`: Defines syntax highlighting rules (TextMate grammar)
+    - `configuration`: Sets language behavior (brackets, auto-completion, indentation)
+
+- **Impact**: Directly affects the code editing experience and syntax highlighting quality
+
+**6. `lspSupportMap`**
+
+- **Purpose**: Indicates whether a tool supports Language Server Protocol features
+- **Features enabled**: Real-time error checking, intelligent auto-completion, semantic highlighting
+- **Current support**: Limboole, SMT (partial), Spectra
+- **Development**: New tools can implement LSP for enhanced editing experience
+
+**7. `fmpConfig`**
+
+- **Purpose**: Central configuration object defining all available tools
+- **Structure**: Each tool entry contains:
+
+    - `name`: Internal identifier for the tool
+    - `extension`: File extension and language identifier for Monaco Editor
+    - `shortName`: Uppercase identifier used in all mapping objects
+    
+- **Consistency**: The `shortName` must match across all mapping objects for proper tool registration
+
+#### Manual Configuration
+
+While `fmp-tool` automates most of the integration, you may need to manually adjust configurations for advanced features:
+
+```typescript
+// Adding custom input component
+export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
+  NUXMV: NuxmvModelOptions, // Custom component for model checking options
+};
+
+// Enabling LSP support (requires separate LSP server implementation)
+export const lspSupportMap: Record<string, boolean> = {
+  NUXMV: true, // Enable after implementing LSP server
+};
+
+// Using custom output renderer
+export const toolOutputMap: Record<string, React.FC<any>> = {
+  NUXMV: NuxmvGraphOutput, // Custom component for counterexample visualization
+};
+```
+
+#### Troubleshooting Integration
+
+**Common Issues:**
+
+1. **Tool not appearing in interface**: Check that the tool is properly added to `fmpConfig.tools`
+2. **Execution not working**: Verify `toolExecutionMap` contains the correct function reference
+3. **Syntax highlighting missing**: Ensure `languageConfigMap` includes both `tokenProvider` and `configuration`
+4. **Custom components not loading**: Check import statements and component exports
+
+**Validation Steps:**
+
+1. Verify all imports resolve correctly
+2. Ensure tool ID consistency across all mappings
+3. Test that execution function is properly exported
+4. Confirm language grammar is syntactically correct
+
+This mapping system provides a clean separation between tool logic and platform integration, enabling the FM Playground to support diverse formal methods tools while maintaining a consistent user experience.
+
+## Step 3: Create the API Service
+
+We will create a new [FastAPI](https://fastapi.tiangolo.com/) service that wraps the nuXmv tool, allowing it to be executed via HTTP requests.
+
+!!! note "Note"
+    If you have an existing API for the tool, you can skip this step and directly integrate it into the frontend.
+
+We will utilize poetry to manage our Python dependencies and create a FastAPI service that will execute the nuXmv tool.
 
 ```python
-class ToolWithCustomInput:
-    def prepare_input(self, user_input: str) -> str:
-        """Convert user input to tool-specific format."""
-        # Parse and transform input
-        return transformed_input
-    
-    def parse_output(self, raw_output: str) -> dict:
-        """Parse tool output into structured format."""
-        # Extract relevant information
-        return structured_output
+# Install Poetry if not already installed
+poetry new nuxmv-api
 ```
 
-### Binary Tool Integration
+This will create a new directory `nuxmv-api` with the following structure:
 
-For tools distributed as binaries:
-
-```dockerfile
-# Download and install binary
-RUN wget https://example.com/tool.tar.gz \
-    && tar -xzf tool.tar.gz \
-    && mv tool /usr/local/bin/ \
-    && chmod +x /usr/local/bin/tool
+```
+nuxmv-api/
+├── nuxmv_api/
+│   ├── __init__.py
+│   └── main.py
+├── tests/
+│   └── __init__.py
+├── pyproject.toml
+└── README.md
 ```
 
-### Multi-file Projects
+Now, we will add the necessary dependencies and implement the service.
+### Update `pyproject.toml`
+```toml
+[tool.poetry.dependencies]
+python = "^3.10" # Adjust based on your Python version
+fastapi = {extras = ["standard"], version = "^0.115.2"}
+httpx = "^0.27.0"
+pytest = "^8.3.2"
+pytest-asyncio = "^0.23.8"
+requests = "^2.32.3"
+uvicorn = "^0.30.5"
+redis = "^5.0.8"
+python-dotenv = "^1.0.1"
+python-redis-cache = "^4.0.1"
+```
 
-For tools requiring multiple files:
+Install the dependencies:
+
+```bash
+cd nuxmv-api
+poetry install
+```
+
+### Download nuXmv
+
+Create a `lib/` directory in the `nuxmv-api` folder to store the nuXmv binary:
+
+```bash
+mkdir nuxmv_api/lib
+```
+
+Download the [nuXmv binary](https://nuxmv.fbk.eu/download.html) and place the executables in the `nuxmv_api/lib/` directory. Ensure the binary is executable:
+
+```bash
+chmod +x nuxmv_api/lib/nuxmv
+```
+
+
+### Create the FastAPI Service
+Create `nuxmv_api/main.py`:
 
 ```python
-def handle_project(self, files: dict) -> dict:
-    """Handle multi-file input."""
-    temp_dir = tempfile.mkdtemp()
-    
+# nuxmv_api/main.py
+# ... 
+app = FastAPI()
+
+# Route to run nuXmv
+@app.get("/xmv/run/", response_model=None)
+def code(check: str, p: str):
+    code = get_code_by_permalink(check, p)
     try:
-        # Write all files
-        for filename, content in files.items():
-            filepath = Path(temp_dir) / filename
-            filepath.parent.mkdir(parents=True, exist_ok=True)
-            filepath.write_text(content)
-        
-        # Execute tool on project
-        result = self.run_on_directory(temp_dir)
-        return result
-        
-    finally:
-        shutil.rmtree(temp_dir)
+        return run_nuxmv(code)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error running code")
 ```
+
+This service will expose an endpoint `/xmv/run/` that accepts a `check` and `p` parameter, retrieves the code associated with those parameters, and runs the nuXmv tool on it. For the sake of this example, we will assume that `get_code_by_permalink` is a function that retrieves the code based on the provided parameters. For a complete implementation, see the [nuXmv API](https://github.com/fm4se/fm-playground/blob/main/nuxmv-api/main.py)
+
+
+### Implement the Tool Execution Logic
+Create `nuxmv_api/nuxmv.py`:
+
+```python
+def run_nuxmv(code: str) -> str:
+    tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    tmp_file.write(code.strip())
+    tmp_file.close()
+
+    NU_XMV_PATH = os.path.join(os.path.dirname(__file__), "lib", "nuxmv")
+    command = [NU_XMV_PATH, "-dynamic", tmp_file.name]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=60)
+        os.remove(tmp_file.name)
+        if result.returncode != 0:
+            return prettify_error(result.stderr)
+        return prettify_output(result.stdout) + prettify_error(result.stderr)
+    except subprocess.TimeoutExpired:
+        os.remove(tmp_file.name)
+        return "<i style='color: red;'>Timeout: Process timed out after 60 seconds.</i>"
+```
+This function creates a temporary file with the provided code, runs the nuXmv tool on it, and returns the output. It handles errors and timeouts gracefully.
+
+
+!!! warning "Warning"
+    This is an example implementation with minimal effort to keep it simple. In a production environment, you should handle security, input validation, and error handling more robustly. Our primary focus is on demonstrating the integration pattern in the FM Playground.
+
+
+
 
 ## Best Practices
 
@@ -533,38 +539,6 @@ def handle_project(self, files: dict) -> dict:
 - **Caching**: Cache tool binaries and dependencies
 - **Parallel Execution**: Design for concurrent requests
 - **Resource Management**: Clean up temporary files
-
-### Maintenance
-
-- **Version Pinning**: Pin tool versions in Dockerfile
-- **Health Checks**: Implement service health endpoints
-- **Logging**: Add structured logging for debugging
-- **Monitoring**: Include metrics and monitoring hooks
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Tool Installation Fails**
-   - Check tool dependencies
-   - Verify download URLs
-   - Review container logs
-
-2. **Execution Timeouts**
-   - Increase timeout values
-   - Optimize tool parameters
-   - Check resource constraints
-
-3. **Frontend Integration Issues**
-   - Verify API endpoints
-   - Check CORS configuration
-   - Review network connectivity
-
-## Next Steps
-
-- **[Customize Your Setup →](customization.md)** - Modify existing tools and interface
-- **[Testing and Deployment →](testing-deployment.md)** - Test your new tool thoroughly
-- **[Project Structure →](project-structure.md)** - Understand how tools fit in the architecture
 
 ## Related Documentation
 

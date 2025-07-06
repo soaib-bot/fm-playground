@@ -2,7 +2,7 @@
 
 This guide covers creating a new FM Playground project using `fmp-create`. This approach gives you a minimal, customizable setup with only the tools you need.
 
-## 🎯 Overview
+## Overview
 
 The start-from-scratch approach is ideal when you:
 
@@ -12,7 +12,7 @@ The start-from-scratch approach is ideal when you:
 - Are building a specialized or domain-specific playground
 - Want to learn the platform architecture step by step
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have:
 
@@ -37,7 +37,7 @@ docker --version
 # Should show Docker version info
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 
 ### Interactive Setup
@@ -103,7 +103,7 @@ This starts an interactive setup process that guides you through all configurati
 - **No**: You'll need to run `npm install` manually later
 
 
-## 💡 Example Sessions
+## Example Sessions
 
 ### Minimal Setup (No Tools)
 
@@ -172,7 +172,7 @@ Happy formal method modeling! 🎉
 ```
 
 
-## 🔧 What Gets Created
+## What Gets Created
 
 Based on your selections, `fmp-create` will generate:
 
@@ -200,13 +200,13 @@ Based on your selections, `fmp-create` will generate:
 ### 1. Directory Already Exists
 
 ```bash
-Error: Directory 'my-project' already exists
+Error: Directory 'my-fm-playground' already exists
 ```
 
 **Solution:**
 ```bash
 # Remove existing directory
-rm -rf my-project
+rm -rf my-fm-playground
 
 # Or choose a different name
 npx fmp-create

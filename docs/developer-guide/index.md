@@ -9,13 +9,13 @@ This guide will help you to set up your own instance of the FM Playground and ad
 
 There are two main approaches to develop your own FM Playground instance, depending on your needs and preferences:
 
-## 🍴 Working with Existing Project
+## 🍴 Working with Tailered Playground
 
 **Best for:** Developers who want access to all existing tools and prefer a complete codebase as starting point.
 
 If you want to start with all existing formal method tools (Alloy, Limboole, nuXmv, SMT/Z3, Spectra) and build upon them, this approach gives you the full codebase to work with.
 
-**[📖 Read the detailed guide →](existing-project/)**
+**[📖 Read the detailed guide →](tailered-playground/)**
 
 ---
 
@@ -25,7 +25,7 @@ If you want to start with all existing formal method tools (Alloy, Limboole, nuX
 
 If you want a clean, minimal starting point and only need specific formal method tools, this approach lets you create a customized playground from the ground up.
 
-**[📖 Read the detailed guide →](start-from-scratch/)**
+**[📖 Read the detailed guide →](empty-playground/)**
 
 ---
 
@@ -46,13 +46,13 @@ Both approaches support adding custom tools using the `fmp-tool` CLI. This power
 npx fmp-tool
 ```
 
-**[📖 Learn more about tool development →](../development/development-guide.md)**
+**[📖 Learn more about tool development →](../development/adding-tools.md)**
 
 ---
 
 ## 🎯 Choose Your Path
 
-| Aspect | Existing Project | Start from Scratch |
+| Aspect | Tailered Playground | Empty Playground |
 |--------|------------------|-------------------|
 | **Setup Time** | Quick (fork & clone) | Medium (guided setup) |
 | **Initial Tools** | All tools included | Select only what you need |
@@ -64,8 +64,8 @@ npx fmp-tool
 
 ## Quick Navigation
 
-- **[Existing Project Setup →](existing-project/)** - Fork and extend the full repository
-- **[Start from Scratch →](start-from-scratch/)** - Create a minimal, custom playground  
-- **[Development Guide →](../development/development-guide.md)** - Learn about tool development
+- **[Tailered Playground →](tailered-playground/)** - Fork and extend the full repository
+- **[Empty Playground →](empty-playground/)** - Create a minimal, custom playground  
+- **[Development Guide →](../development/adding-tools.md)** - Learn about tool development
 - **[API Reference →](../development/api-reference.md)** - Technical documentation
 - **[Main Repository →](https://github.com/fm4se/fm-playground)** - Source code and issues

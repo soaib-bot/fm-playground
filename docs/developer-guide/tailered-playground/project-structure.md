@@ -2,7 +2,7 @@
 
 This guide explains the organization and architecture of the FM Playground codebase to help you understand how components work together.
 
-## 📁 Complete Project Structure
+## Complete Project Structure
 
 Your forked FM Playground project contains:
 
@@ -29,6 +29,7 @@ fm-playground/
 │   ├── vite.config.ts          # Vite build configuration
 │   ├── package.json            # Frontend dependencies
 │   └── tsconfig.json           # TypeScript configuration
+│   └── Dockerfile              # Container configuration
 ├── backend/                    # Python Flask server
 │   ├── db/                     # Database models and queries
 │   │   ├── models.py           # SQLAlchemy models
@@ -41,7 +42,6 @@ fm-playground/
 │   ├── app.py                  # Main application entry point
 │   ├── config.py               # Application configuration
 │   ├── .env.example            # Environment variables example
-│   ├── requirements.txt        # Python dependencies (pip)
 │   └── pyproject.toml          # Python dependencies (poetry)
 ├── alloy-api/                  # Alloy backend service (Java)
 │   ├── src/                    # Java source code
@@ -90,7 +90,7 @@ fm-playground/
 └── README.md                   # Project documentation
 ```
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 
 ### Data Flow Diagram
@@ -285,4 +285,8 @@ def run_nuxmv(code: str) -> str:
 
 ## 🔗 Next Steps
 
-Now that you understand the project structure:
+Now that you understand the project structure and architecture, you can:
+
+1. **[Add New Tools →](../../development/adding-tools.md)** - Extend the playground with custom tools
+2. **[Deploy →](../../development/deployment.md)** - Test changes and build for production
+
