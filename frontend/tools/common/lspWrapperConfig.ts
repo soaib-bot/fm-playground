@@ -10,22 +10,14 @@ import { configureMonacoWorkers } from '@/../tools/limboole/langium/utils';
 import workerPortUrlLimboole from '@/../tools/limboole/langium/worker/limboole-server-port?worker&url';
 import limbooleLanguageConfig from '@/../tools/limboole/langium/config/language-configuration.json?raw';
 import responseLimbooleTm from '@/../tools/limboole/langium/syntaxes/limboole.tmLanguage.json?raw';
-// Smt specific imports
-import workerPortUrlSmt from '@/../tools/smt/langium/worker/smt-server-port?worker&url';
+// Smt specific imports - keep the language config but use Dolmen LSP
+import { createDolmenWebSocketWorker } from '@/../tools/smt/dolmen/dolmenWebSocketClient';
 import smtLanguageConfig from '@/../tools/smt/langium/config/language-configuration.json?raw';
 import responseSmtTm from '@/../tools/smt/langium/syntaxes/smt.tmLanguage.json?raw';
 // Spectra specific imports
 import workerPortUrlSpectra from '@/../tools/spectra/langium/worker/spectra-server-port?worker&url';
 import spectraLanguageConfig from '@/../tools/spectra/langium/config/language-configuration.json?raw';
 import responseSpectraTm from '@/../tools/spectra/langium/syntaxes/spectra.tmLanguage.json?raw';
-
-const loadSmtpWorkerPort = () => {
-    console.log(`Smt worker URL: ${workerPortUrlSmt}`);
-    return new Worker(workerPortUrlSmt, {
-        type: 'module',
-        name: 'Smt Server Port',
-    });
-};
 
 const loadLimbooleWorkerPort = () => {
     console.log(`Limboole worker URL: ${workerPortUrlLimboole}`);
@@ -59,13 +51,15 @@ export const createLangiumGlobalConfig = async (): Promise<WrapperConfig> => {
     spectraExtensionFilesOrContents.set(`/spectra-grammar.json`, responseSpectraTm);
 
     // Load the workers
-    const smtWorkerPort = loadSmtpWorkerPort();
     const limbooleWorkerPort = loadLimbooleWorkerPort();
     const spectraWorkerPort = loadSpectraWorkerPort();
 
+    // Create Dolmen WebSocket worker for SMT
+    const dolmenWorker = createDolmenWebSocketWorker('ws://localhost:5173/dolmen-lsp');
+
     // Create message channels for each worker
-    const smtChannel = new MessageChannel();
-    smtWorkerPort.postMessage({ port: smtChannel.port2 }, [smtChannel.port2]);
+    const dolmenChannel = new MessageChannel();
+    dolmenWorker.postMessage({ port: dolmenChannel.port2 }, [dolmenChannel.port2]);
 
     const limbooleChannel = new MessageChannel();
     limbooleWorkerPort.postMessage({ port: limbooleChannel.port2 }, [limbooleChannel.port2]);
@@ -74,8 +68,8 @@ export const createLangiumGlobalConfig = async (): Promise<WrapperConfig> => {
     spectraWorkerPort.postMessage({ port: spectraChannel.port2 }, [spectraChannel.port2]);
 
     // Create message readers and writers for each channel
-    const smtReader = new BrowserMessageReader(smtChannel.port1);
-    const smtWriter = new BrowserMessageWriter(smtChannel.port1);
+    const dolmenReader = new BrowserMessageReader(dolmenChannel.port1);
+    const dolmenWriter = new BrowserMessageWriter(dolmenChannel.port1);
 
     const limbooleReader = new BrowserMessageReader(limbooleChannel.port1);
     const limbooleWriter = new BrowserMessageWriter(limbooleChannel.port1);
@@ -106,6 +100,38 @@ export const createLangiumGlobalConfig = async (): Promise<WrapperConfig> => {
                     independentColorPoolPerBracketType: true,
                 },
                 glyphMargin: false,
+                // Enable completion and suggestions
+                quickSuggestions: true,
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnCommitCharacter: true,
+                acceptSuggestionOnEnter: 'on',
+                wordBasedSuggestions: 'off', // Disable Monaco's word-based suggestions to rely on LSP
+                // Configure completion behavior
+                suggest: {
+                    showKeywords: true,
+                    showSnippets: true,
+                    showFunctions: true,
+                    showConstructors: true,
+                    showFields: true,
+                    showVariables: true,
+                    showClasses: true,
+                    showStructs: true,
+                    showInterfaces: true,
+                    showModules: true,
+                    showProperties: true,
+                    showEvents: true,
+                    showOperators: true,
+                    showUnits: true,
+                    showValues: true,
+                    showConstants: true,
+                    showEnums: true,
+                    showEnumMembers: true,
+                    showColors: true,
+                    showFiles: true,
+                    showReferences: true,
+                    showFolders: true,
+                    showTypeParameters: true,
+                },
             },
             codeResources: {
                 main: {
@@ -242,10 +268,10 @@ export const createLangiumGlobalConfig = async (): Promise<WrapperConfig> => {
                 connection: {
                     options: {
                         $type: 'WorkerDirect',
-                        worker: smtWorkerPort,
-                        messagePort: smtChannel.port1,
+                        worker: dolmenWorker as any,
+                        messagePort: dolmenChannel.port1,
                     },
-                    messageTransports: { reader: smtReader, writer: smtWriter },
+                    messageTransports: { reader: dolmenReader, writer: dolmenWriter },
                 },
             },
             limboole: {

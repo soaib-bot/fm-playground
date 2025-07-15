@@ -25,34 +25,9 @@ services:
       - .env
     ports:
       - "8000:8000"
-    depends_on: # Remove if you use sqlite
-      postgres:
-        condition: service_healthy
     networks:
       - my_network
     restart: unless-stopped
-
-  # Remove if you use sqlite
-  postgres:
-    image: postgres:15.4
-    container_name: fmp-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    env_file:
-      - .env
-    networks:
-      - my_network
-    restart: unless-stopped
-
   z3:
     build:
       context: ./z3-api
@@ -66,68 +41,23 @@ services:
     networks:
       - my_network
   
-  nuxmv:
-    build:
-      context: ./nuxmv-api
-      dockerfile: Dockerfile
-    container_name: fmp-nuxmv-api
-    environment:
-      API_URL: http://fmp-backend:8000/
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - redis
-    networks:
-      - my_network
-  
-  alloy:
-    build:
-      context: ./alloy-api
-    container_name: fmp-alloy-api
-    environment:
-      API_URL: http://fmp-backend:8000/
+
+  dolmen-lsp:
+    image: ghcr.io/soaibsafi/dolmen-lsp-proxy:0.0.1
+    platform: linux/amd64
+    container_name: fmp-dolmen-lsp-api
+    ports:
+      - "8003:8003"
     networks:
       - my_network
     restart: unless-stopped
 
-  spectra:
-    build:
-      context: ./spectra-api
-      dockerfile: Dockerfile
-    container_name: fmp-spectra-api
-    environment:
-      API_URL: http://fmp-backend:8000/
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - redis
-    networks:
-      - my_network
-
   redis:
     image: redis:alpine
+    platform: linux/amd64
     container_name: fmp-redis
     ports:
       - "6379:6379"
-    networks:
-      - my_network
-
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: fmp-redisinsight
-    ports:
-      - "5540:5540"
-    networks:
-      - my_network
-
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: fmp-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: soaib@soaib.me
-      PGADMIN_DEFAULT_PASSWORD: Soaib@123
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
     networks:
       - my_network
 

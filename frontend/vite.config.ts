@@ -39,6 +39,13 @@ export default defineConfig({
         host: '0.0.0.0',
         allowedHosts: true,
         proxy: {
+            '/dolmen-lsp': {
+                target: 'ws://fmp-dolmen-lsp-api:8003',
+                ws: true,
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/dolmen-lsp/, '/lsp'),
+            },
             '/nuxmv': {
                 target: 'http://fmp-nuxmv-api:8080',
                 changeOrigin: true,
