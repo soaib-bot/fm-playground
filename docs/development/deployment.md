@@ -1,415 +1,379 @@
-# Development Setup Guide
+# Deployment Guide
 
-This guide shows you how to get your FM Playground running locally for development.
+This guide shows you how to deploy the FM Playground for development and production environments.
 
-## 🎯 Prerequisites
+## Prerequisites
 
-Ensure you have completed:
-- [Project Creation](project-creation.md) - Your project is created
-- [Project Structure](project-structure.md) - You understand the layout
+If you haven't already setup the project, please follow the setup guide of either the [Tailered](../developer-guide/tailered-playground/index.md) or [Empty](../developer-guide/empty-playground/index.md) playground.
 
-## 🚀 Quick Start
+## Quick Start
 
-### Option 1: Docker Compose (Recommended)
+### Create Environment Configuration
+
+Create a `.env` file in the project root:
 
 ```bash
-# Navigate to your project
-cd your-project-name
+# Database Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=postgres
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
 
+# Flask Configuration
+FLASK_ENV=development
+SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-jwt-secret-here
+
+# Redis Configuration
+REDIS_URL=redis://redis:6379/0
+
+# API Configuration
+API_URL=http://fmp-backend:8000/
+
+# Frontend Configuration
+VITE_FMP_API_URL=http://127.0.0.1:8000/api
+```
+
+### Create Docker Network
+
+```bash
+docker network create my_network
+```
+
+### Start the Application
+
+```bash
 # Start all services
 docker-compose up -d
 
-# Check status
-docker-compose ps
-
 # View logs
 docker-compose logs -f
+
+# Check service status
+docker-compose ps
 ```
 
-Your playground will be available at: **http://localhost:3000**
+### Access the Application
 
-### Option 2: Manual Setup
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **PgAdmin**: http://localhost:5050 (admin tools)
+- **RedisInsight**: http://localhost:5540 (Redis management)
 
-If you prefer to run services individually:
+## Service Architecture
+
+### Core Services
+
+#### Frontend (`fmp-frontend`)
+```yaml
+frontend:
+  build: 
+    context: ./frontend
+    args:
+      VITE_FMP_API_URL: http://127.0.0.1:8000/api
+  container_name: fmp-frontend
+  ports:
+    - "5173:5173"
+```
+
+- **Purpose**: Serves the web application
+- **Technology**: Vite + React + TypeScript
+- **Port**: 5173
+
+#### Backend (`fmp-backend`)
+```yaml
+backend:
+  build:
+    context: ./backend
+  container_name: fmp-backend
+  ports:
+    - "8000:8000"
+  depends_on:
+    postgres:
+      condition: service_healthy
+```
+
+- **Purpose**: Main API server and business logic
+- **Technology**: Flask/FastAPI + Python
+- **Port**: 8000
+- **Dependencies**: PostgreSQL database
+
+#### Database (`fmp-db`)
+```yaml
+postgres:
+  image: postgres:15.4
+  container_name: fmp-db
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_DB: postgres
+  volumes:
+    - postgres_data:/var/lib/postgresql/data
+  healthcheck:
+    test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+
+```
+- **Purpose**: Primary data storage
+- **Technology**: PostgreSQL 15.4
+- **Data**: Persistent volume for data storage
+- **Health Check**: Ensures database is ready before starting dependent services
+
+### Tool Services
+
+#### Z3 SMT Solver (`fmp-z3-api`)
+```yaml
+z3:
+  build:
+    context: ./z3-api
+  container_name: fmp-z3-api
+  environment:
+    REDIS_URL: redis://redis:6379/0
+```
+
+- **Purpose**: Z3 SMT solver integration
+- **Technology**: Python + Z3 bindings
+- **Dependencies**: Redis for caching
+
+#### nuXmv Model Checker (`fmp-nuxmv-api`)
+```yaml
+nuxmv:
+  build:
+    context: ./nuxmv-api
+  container_name: fmp-nuxmv-api
+  environment:
+    REDIS_URL: redis://redis:6379/0
+```
+
+- **Purpose**: nuXmv temporal logic model checking
+- **Technology**: Python + nuXmv binary
+- **Dependencies**: Redis for caching
+
+#### Alloy Analyzer (`fmp-alloy-api`)
+```yaml
+alloy:
+  build:
+    context: ./alloy-api
+  container_name: fmp-alloy-api
+```
+
+- **Purpose**: Alloy structural modeling and analysis
+- **Technology**: Java + Alloy library
+- **Features**: Model finding and instance generation
+
+#### Spectra Synthesis (`fmp-spectra-api`)
+```yaml
+spectra:
+  build:
+    context: ./spectra-api
+  container_name: fmp-spectra-api
+  environment:
+    REDIS_URL: redis://redis:6379/0
+```
+
+- **Purpose**: Spectra reactive synthesis
+- **Technology**: Python + Spectra tools
+- **Dependencies**: Redis for caching
+
+### Supporting Services
+
+#### Redis Cache (`fmp-redis`)
+```yaml
+redis:
+  image: redis:alpine
+  container_name: fmp-redis
+  ports:
+    - "6379:6379"
+```
+
+- **Purpose**: Session storage and API caching
+- **Technology**: Redis Alpine
+- **Port**: 6379
+
+#### Admin Tools
+
+**PgAdmin** (`fmp-pgadmin`)
+```yaml
+pgadmin:
+  image: dpage/pgadmin4:latest
+  container_name: fmp-pgadmin
+  environment:
+    PGADMIN_DEFAULT_EMAIL: soaib@soaib.me
+    PGADMIN_DEFAULT_PASSWORD: Soaib@123
+  ports:
+    - "5050:80"
+```
+
+- **Purpose**: PostgreSQL database administration
+- **Access**: http://localhost:5050
+- **Credentials**: Set in environment variables
+
+**RedisInsight** (`fmp-redisinsight`)
+```yaml
+redisinsight:
+  image: redis/redisinsight:latest
+  container_name: fmp-redisinsight
+  ports:
+    - "5540:5540"
+```
+
+- **Purpose**: Redis monitoring and management
+- **Access**: http://localhost:5540
+
+## Development Deployment
+
+### Local Development
 
 ```bash
-# Terminal 1: Frontend
+# Start core services only
+docker-compose up frontend backend postgres redis -d
+
+# Start specific tool services as needed
+docker-compose up z3 alloy -d
+
+# Hot reload for frontend development
 cd frontend
-npm install
 npm run dev
 
-# Terminal 2: Backend  
+# Backend development with auto-reload
 cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python app.py
-
-# Terminal 3+: Tool APIs (for each selected tool)
-cd [tool-name]-api
-# Follow tool-specific setup below
+python app.py 
 ```
 
-## 🐳 Docker Setup Details
+### Development with SQLite
 
-### Starting Services
+For simpler development setup, you can use SQLite instead of PostgreSQL:
+
+1. Update `.env`:
+```bash
+DATABASE_URL=sqlite:///./instance/fmp.db
+```
+
+2. Remove PostgreSQL dependency from `compose.yml`:
+```yaml
+backend:
+  build:
+    context: ./backend
+  container_name: fmp-backend
+  # Remove depends_on section
+```
+
+3. Start without PostgreSQL:
+```bash
+docker-compose up frontend backend redis z3 alloy -d
+```
+
+## Production Deployment
+
+### Environment Configuration
+
+Create a production `.env` file:
 
 ```bash
-# Start in detached mode
+# Production Database
+POSTGRES_USER=fmp_prod_user
+POSTGRES_PASSWORD=secure_password_here
+POSTGRES_DB=fmp_production
+DATABASE_URL=postgresql://fmp_prod_user:secure_password_here@postgres:5432/fmp_production
+
+# Production Flask Settings
+FLASK_ENV=production
+SECRET_KEY=very-secure-secret-key
+JWT_SECRET_KEY=very-secure-jwt-key
+
+# Redis Configuration
+REDIS_URL=redis://redis:6379/0
+
+# API Configuration
+API_URL=https://your-domain.com/api/
+
+# Frontend Configuration
+VITE_FMP_API_URL=https://your-domain.com/api
+```
+
+### Production Deployment Steps
+
+1. **Secure the Environment**
+```bash
+# Generate secure keys
+openssl rand -base64 32  # For SECRET_KEY
+openssl rand -base64 32  # For JWT_SECRET_KEY
+
+# Update .env with secure values
+```
+
+2. **Build and Deploy**
+```bash
+# Pull latest code
+git pull origin main
+
+# Build all images
+docker-compose build
+
+# Start production services
 docker-compose up -d
 
-# Start with logs visible
-docker-compose up
-
-# Start specific service
-docker-compose up frontend
-
-# Rebuild and start
-docker-compose up --build
-```
-
-### Managing Services
-
-```bash
-# Check running containers
+# Verify all services are healthy
 docker-compose ps
-
-# View logs
-docker-compose logs                    # All services
-docker-compose logs frontend           # Specific service
-docker-compose logs -f --tail=50 backend  # Follow with tail
-
-# Restart services
-docker-compose restart                 # All services
-docker-compose restart backend         # Specific service
-
-# Stop services
-docker-compose down                    # Stop all
-docker-compose stop frontend          # Stop specific
+docker-compose logs --tail=50
 ```
 
-### Expected Services
+### Reverse Proxy Configuration
 
-Based on your tool selection, you should see:
+For production, use a reverse proxy like Nginx:
 
+```nginx
+# /etc/nginx/sites-available/fm-playground
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # Frontend
+    location / {
+        proxy_pass http://localhost:5173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:8000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket support for language servers
+    location /ws/ {
+        proxy_pass http://localhost:8000/ws/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Backup and Recovery
+
+**Database Backup**
+
+
+**Volume Backup**
+
+**Scaling Tool Services**
 ```bash
-$ docker-compose ps
-
-Name                 Command               State           Ports
-----------------------------------------------------------------
-frontend            npm run dev              Up      0.0.0.0:3000->3000/tcp
-backend             python app.py            Up      0.0.0.0:8000->8000/tcp
-alloy-api           java -jar app.jar        Up      0.0.0.0:8001->8001/tcp
-limboole-api        python main.py           Up      0.0.0.0:8002->8002/tcp
+# Scale tool APIs for high load
+docker-compose up --scale z3=3 --scale alloy=2 -d
 ```
 
-## 🔧 Manual Setup Details
-
-### Frontend Setup
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Alternative: with specific port
-npm run dev -- --port 3001
-```
-
-**Frontend Environment Variables:**
-```bash
-# frontend/.env
-VITE_API_BASE_URL=http://localhost:8000
-VITE_ALLOY_API_URL=http://localhost:8001
-VITE_LIMBOOLE_API_URL=http://localhost:8002
-VITE_NUXMV_API_URL=http://localhost:8003
-VITE_SMT_API_URL=http://localhost:8004
-VITE_SPECTRA_API_URL=http://localhost:8005
-```
-
-### Backend Setup
-
-```bash
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start Flask server
-python app.py
-
-# Alternative: with Flask CLI
-flask run --port 8000 --debug
-```
-
-**Backend Environment Variables:**
-```bash
-# backend/.env
-FLASK_ENV=development
-FLASK_DEBUG=True
-DATABASE_URL=sqlite:///playground.db
-ALLOY_API_URL=http://localhost:8001
-LIMBOOLE_API_URL=http://localhost:8002
-```
-
-### Tool API Setup
-
-#### Python-based Tools (Limboole, nuXmv, SMT, Spectra)
-
-```bash
-cd limboole-api
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start FastAPI server
-python main.py
-
-# Alternative: with uvicorn
-uvicorn main:app --reload --port 8002
-```
-
-#### Java-based Tools (Alloy)
-
-```bash
-cd alloy-api
-
-# Build with Gradle
-./gradlew build
-
-# Run the application
-./gradlew run
-
-# Alternative: run JAR directly
-java -jar build/libs/alloy-api.jar
-```
-
-## 🧪 Testing Your Setup
-
-### 1. Service Health Checks
-
-```bash
-# Test frontend
-curl http://localhost:3000
-
-# Test backend
-curl http://localhost:8000/health
-
-# Test tool APIs
-curl http://localhost:8001/health  # Alloy
-curl http://localhost:8002/health  # Limboole
-curl http://localhost:8003/health  # nuXmv
-curl http://localhost:8004/health  # SMT
-curl http://localhost:8005/health  # Spectra
-```
-
-### 2. Frontend Interface
-
-Visit [http://localhost:3000](http://localhost:3000) and verify:
-
-- ✅ FM Playground interface loads
-- ✅ Selected tools appear in sidebar
-- ✅ Code editor is functional
-- ✅ No console errors
-
-### 3. Tool Execution Tests
-
-#### Test Limboole
-1. Select "Limboole" from sidebar
-2. Enter: `(a & b) | (!a & c)`
-3. Click "Run"
-4. Expect: Satisfiability results
-
-#### Test Alloy
-1. Select "Alloy" from sidebar  
-2. Enter:
-   ```alloy
-   sig Person {
-     age: Int
-   }
-   
-   pred canVote[p: Person] {
-     p.age >= 18
-   }
-   
-   run canVote for 3
-   ```
-3. Click "Run"
-4. Expect: Model instances
-
-#### Test SMT/Z3
-1. Select "SMT" from sidebar
-2. Enter:
-   ```smt
-   (declare-const x Int)
-   (declare-const y Int)
-   (assert (> x 0))
-   (assert (< y 10))
-   (assert (= (+ x y) 15))
-   (check-sat)
-   (get-model)
-   ```
-3. Click "Run"
-4. Expect: SAT with model
-
-### 4. API Integration Tests
-
-```bash
-# Test backend → tool API communication
-curl -X POST http://localhost:8000/api/execute/limboole \
-  -H "Content-Type: application/json" \
-  -d '{"code": "(a & b)"}'
-
-# Test tool API directly
-curl -X POST http://localhost:8002/solve \
-  -H "Content-Type: application/json" \
-  -d '{"formula": "(a & b)"}'
-```
-
-## 🔧 Common Development Tasks
-
-### Code Changes
-
-**Frontend Changes:**
-- Files auto-reload with Vite dev server
-- No restart needed for React components
-
-**Backend Changes:**
-```bash
-# With Flask debug mode (auto-reload)
-export FLASK_DEBUG=1
-python app.py
-
-# Manual restart
-docker-compose restart backend
-```
-
-**Tool API Changes:**
-```bash
-# Python APIs with uvicorn (auto-reload)
-uvicorn main:app --reload
-
-# Manual restart
-docker-compose restart limboole-api
-```
-
-### Database Operations
-
-```bash
-# Initialize database
-cd backend
-python -c "from app import create_tables; create_tables()"
-
-# Reset database
-rm -f playground.db
-python -c "from app import create_tables; create_tables()"
-```
-
-### Adding Dependencies
-
-**Frontend:**
-```bash
-cd frontend
-npm install new-package
-# Restart if using Docker
-docker-compose restart frontend
-```
-
-**Backend:**
-```bash
-cd backend
-pip install new-package
-pip freeze > requirements.txt
-# Rebuild Docker image
-docker-compose build backend
-```
-
-## 🐛 Troubleshooting
-
-### Port Conflicts
-
-```bash
-# Find processes using ports
-lsof -ti:3000 | xargs kill -9  # macOS/Linux
-netstat -ano | findstr :3000   # Windows
-
-# Use different ports
-# In docker-compose.yml:
-ports:
-  - "3001:3000"  # host:container
-```
-
-### Container Issues
-
-```bash
-# Check container status
-docker-compose ps
-
-# View container logs
-docker-compose logs [service-name]
-
-# Restart containers
-docker-compose restart
-
-# Rebuild containers
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### Python Environment Issues
-
-```bash
-# Clear Python cache
-find . -name "*.pyc" -delete
-find . -name "__pycache__" -delete
-
-# Recreate virtual environment
-rm -rf venv
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### Node.js Issues
-
-```bash
-# Clear npm cache
-npm cache clean --force
-
-# Delete and reinstall node_modules
-rm -rf node_modules package-lock.json
-npm install
-```
-
-## 🎯 Next Steps
-
-With your development environment running:
-
-1. **[Add Tools →](adding-tools.md)** - Extend with more formal method tools
-2. **[Customize →](customization.md)** - Personalize your playground
-3. **[Deploy →](deployment.md)** - Share your playground with others
-
-## 💡 Development Tips
-
-- **Use Docker**: Simplifies dependency management
-- **Check Logs**: First step in debugging
-- **Hot Reload**: Frontend changes reflect immediately
-- **API Testing**: Use curl or Postman for API testing
-- **Version Control**: Commit working states frequently
+*← Back to [Development Guide](./index.md)*

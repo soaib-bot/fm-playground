@@ -7,6 +7,9 @@ FM Playground is designed to be extensible, allowing you to add new formal metho
 Each tool in FM Playground consists of:
 
 - **API Service**: A containerized backend service that handles tool execution
+!!! warning "Web Assembly (WASM) Tools"
+    If your tool has a WebAssembly (WASM) bindings, you can skip the backend service step. WASM tools can be executed directly in the browser without a separate backend.
+    See the [WASM Tools Guide](../wasm-tools.md) for more details.
 - **Frontend Integration**: UI components for tool interaction
 - **Configuration**: Tool metadata and Docker orchestration
 
@@ -15,6 +18,8 @@ Each tool in FM Playground consists of:
 Integrating a new tool consists of two main steps:
 
 1. **Frontend Integration**: Add the tool to the frontend, allowing users to interact with it through the UI.
+
+    
 2. **Backend Service**: Create a backend service that executes the tool and expose APIs for interaction. You can develop a new service or use existing APIs running anywhere that can be accessed by the frontend.
 
 
@@ -50,7 +55,7 @@ npx fmp-tool
 
 This command will prompt you for the tool name, description, and other metadata. It will generate a new directory under `frontend/tools/` with the necessary files.
 
-```bash
+```
 $ npx fmp-tool
 
 🛠️  FM Tool Generator
@@ -105,7 +110,7 @@ Looking for ToolMaps.tsx at default path: src/ToolMaps.tsx
 - **Purpose**: Uppercase identifier for tool mappings
 - **Format**: Uppercase letters, underscores allowed
 - **Examples**: `PROLOG`, `COQ`, `LEAN_4`
-- **Used for**: ToolMaps.tsx keys, internal configurations
+- **Used for**: ToolMaps.tsx keys, internal configurations, permalink `check` values, database entries 
 
 ##### File Extension
 - **Purpose**: File extension for your tool's language
@@ -119,9 +124,13 @@ Looking for ToolMaps.tsx at default path: src/ToolMaps.tsx
 - **Examples**: `/prolog`, `/coq/verify`, `/lean/check`
 - **Used for**: Frontend-backend communication
 
+!!! note "Note"
+    The `fmp-tool` CLI will create a default API endpoint for you. If your tool requires a custom API, you can modify the generated code later.
+
 ##### Output Component Type
-- **PlainOutput**: Simple text display (default)
-- **CustomOutput**: Advanced formatting with custom components
+- **TextualOutput**: For tools that produce plain text output
+- **CustomOutput**: Advanced formatting with custom components, e.g., graphs, tables, etc.
+
 
 ##### Additional Components
 - **Input Component**: For tool-specific options and parameters
@@ -134,9 +143,7 @@ After running `fmp-tool`, you'll get:
 frontend/src/tools/your-tool/
 ├── nuxmvExecutor.ts           # Core execution logic
 ├── nuxmvTextMateGrammar.ts    # Syntax highlighting
-├── nuxmvOutput.tsx            # Output component (optional)
-├── INTEGRATION.md             # Integration instructions
-└── TOOLMAPS_INTEGRATION.md    # ToolMaps.tsx integration guide
+└── nuxmvOutput.tsx            # Output component (optional)
 ```
 
 #### Understanding Generated Files
@@ -145,7 +152,7 @@ frontend/src/tools/your-tool/
 
 This file contains the logic to execute your tool. It typically includes an API call to your backend service, handling the tool's input and output. And export a function that can be called from the frontend to execute the tool.
 
-```typescript
+```typescript hl_lines="2 9-11 15 29" linenums="1" title="nuxmvExecutor.ts"
 async function executenuxmv(permalink: Permalink) {
   let url = `/nuxmv/run/?check=${permalink.check}&p=${permalink.permalink}`;
   const response = await axios.get(url);
@@ -186,15 +193,25 @@ export const executenuxmvTool = async () => {
 };
 ```
 
+- **Line 2:** We define a proxy in the `vite.config.ts` file to redirect requests to the backend service. This allows us to call the API without worrying about CORS issues. You can modify the URL to point to your backend service if it's hosted elsewhere.
+
+- **Lines 9-11:** The `executenuxmvTool` function retrieves the current editor value, language, and permalink from the state. It then saves the code to the database and executes the tool using the permalink.
+
+- **Line 15:** Makes an API call to the backend service to save the specification and get the gereated permalink. This permalink is then used to execute the tool.
+
+- **Line 29:** Calling the `executenuxmv` function with the permalink to execute the tool and retrieve the results.
+
+
+
 ##### TextMate Grammar
 
 This file defines the syntax highlighting rules for your tool's language using TextMate grammar. It allows the Monaco editor to provide proper syntax highlighting when users write code in your tool's language.
 
 You can refer to the [Monaco Editor documentation](https://microsoft.github.io/monaco-editor/monarch.html) for details on how to define your language's syntax.
 
-```typescript
+```typescript hl_lines="2 18" linenums="1" title="nuxmvTextMateGrammar.ts"
 // Language configuration for Monaco Editor
-export const yourToolConf: languages.LanguageConfiguration = {
+export const nuxmvConf: languages.LanguageConfiguration = {
   brackets: [
     ['{', '}'],
     ... // other brackets
@@ -210,7 +227,7 @@ export const yourToolConf: languages.LanguageConfiguration = {
 };
 
 // TextMate grammar for syntax highlighting
-export const yourToolLang: languages.IMonarchLanguage = {
+export const nuxmvLang: languages.IMonarchLanguage = {
   keywords: ['DEFINE','E', 'EBF', 'EBG', 'EF', 'EG','F'],
   operators: [':', '=', '->', '<->', '∀', '∃'],
   symbols: /[=><!~?:&|+\-*\/\^%]+/,
@@ -232,6 +249,9 @@ export const yourToolLang: languages.IMonarchLanguage = {
 };
 ```
 
+- **Line 2:** Defines the language configuration for Monaco Editor, including brackets and auto-closing pairs.
+- **Line 18:** Defines the TextMate grammar for syntax highlighting, including keywords, operators, and tokenization rules.
+
 ##### Output Component
 
 For `? Output component type:`, if you selected `CustomOutput`, instead of a simple text output, a new file `nuxmvOutput.tsx` will be created. This file can contain custom React components to display the output of your tool in a more user-friendly way.
@@ -241,7 +261,7 @@ For `? Output component type:`, if you selected `CustomOutput`, instead of a sim
 If you selected `Y` for creating an additional input and/or output component, a new file `nuxmvInput.tsx`and/or `nuxmvOutput.tsx` will be created. These files can contain custom React components to handle tool-specific input options and display results in a structured way.
 
 For example, we choose to create an additional output component, `nuxmvOutput.tsx` might look like this:
-```tsx
+```tsx title="nuxmvOutput.tsx" linenums="1"
 const nuxmvOutput: React.FC = () => {
   return (
     <MDBContainer className="p-3">
@@ -249,12 +269,6 @@ const nuxmvOutput: React.FC = () => {
         <MDBCol md="12">
           <div className="border rounded p-3 bg-light">
             <h6 className="mb-2">nuxmv Information</h6>
-            <p className="mb-1 small text-muted">
-              This tool is powered by nuxmv.
-            </p>
-            <p className="mb-0 small text-muted">
-              For more information, visit the official documentation.
-            </p>
           </div>
         </MDBCol>
       </MDBRow>
@@ -270,17 +284,14 @@ The `ToolMaps.tsx` file serves as the central registry that connects all tool co
 
 The `fmp-tool` CLI automatically updates the `ToolMaps.tsx` file with the new tool configuration, but it's important to understand what each mapping does:
 
-```typescript
-// src/ToolMaps.tsx
+```typescript hl_lines="1" linenums="1" title="ToolMaps.tsx"
 import TextualOutput from '@/components/Playground/TextualOutput';
 import { nuxmvConf, nuxmvLang } from '@/../tools/nuxmv/nuxmvTextMateGrammar';
 import { executenuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
 import nuxmvOutput from '@/../tools/nuxmv/nuxmvOutput';
 import type { FmpConfig } from '@/types';
 
-export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
-  // EXT: ExampleToolCheckOptions,
-};
+export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {};
 export const additonalOutputAreaUiMap: Record<string, React.FC<any>> = {
   XMV: nuxmvOutput,
 };
@@ -297,16 +308,14 @@ export const languageConfigMap: Record<string, { tokenProvider: any; configurati
 
 // Configuration for LSP (Language Server Protocol) support by tool
 export const lspSupportMap: Record<string, boolean> = {
-  // EXT: true,
   XMV: false,
 };
 
 export const fmpConfig: FmpConfig = {
   title: 'FM Playground',
-  // repository: 'https://github.com/se-buw/fm-playground',
-  // issues: 'https://github.com/se-buw/fm-playground/issues',
+  repository: 'https://github.com/se-buw/fm-playground',
+  issues: 'https://github.com/se-buw/fm-playground/issues',
   tools: {
-    // exampleTool: { name: 'ExampleTool', extension: 'exampleTool', shortName: 'EXT' },
     nuxmv: { name: 'nuxmv', extension: 'XMV', shortName: 'XMV' },
   },
 };
@@ -316,7 +325,7 @@ export const fmpConfig: FmpConfig = {
 
 **1. `additionalInputAreaUiMap`**
 
-- **Purpose**: Maps tool IDs to custom input components that appear above the code editor
+- **Purpose**: Maps tool IDs to custom input components that appear below the code editor
 - **Usage**: For tools requiring specific configuration options, parameter inputs, or command-line flags
 - **Example**: Alloy's command selection, Spectra's CLI options
 - **When to use**: When your tool needs user-configurable parameters before execution
@@ -374,7 +383,7 @@ export const fmpConfig: FmpConfig = {
 
 While `fmp-tool` automates most of the integration, you may need to manually adjust configurations for advanced features:
 
-```typescript
+```typescript title="ToolMaps.tsx" linenums="1"
 // Adding custom input component
 export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
   NUXMV: NuxmvModelOptions, // Custom component for model checking options

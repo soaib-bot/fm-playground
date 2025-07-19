@@ -20,6 +20,10 @@ nav:
       - Project Structure: developer-guide/empty-playground/project-structure.md
     - Development:
       - Adding Tools: development/adding-tools.md
+      - Language Servers:
+        - Overview: development/language-servers.md
+        - Langium Implementation: development/langium-language-servers.md
+        - External LSP Integration: development/external-language-servers.md
       - Deployment: development/deployment.md
       - API Reference: development/api-reference.md
   - Release Notes: CHANGELOG.md
