@@ -31,6 +31,7 @@ interface InputAreaProps {
 }
 
 const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, onFullScreenButtonClick }) => {
+    const location = useLocation();
     const [enableLsp, setEnableLsp] = useAtom(enableLspAtom);
     const [editorValue, setEditorValue] = useAtom(editorValueAtom);
     const [, setOutput] = useAtom(outputAtom);
@@ -76,7 +77,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
 
     const handleDownload = () => {
         const content = editorValue;
-        const queryParams = new URLSearchParams(useLocation().search);
+        const queryParams = new URLSearchParams(location.search);
         const p = queryParams.get('p');
         const fileName = p ? p : 'code';
         const fileExtension = language.id ?? 'txt';
@@ -179,7 +180,9 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                 <Editor height={isFullScreen ? '80vh' : '60vh'} editorTheme={editorTheme} />
             )}
 
-            <div>{AdditionalUi && <AdditionalUi />}</div>
+            <div className="additional-input-ui">
+                {AdditionalUi && <AdditionalUi />}
+            </div>
             <MDBBtn
                 className='mx-auto my-3'
                 style={{ width: '95%' }}

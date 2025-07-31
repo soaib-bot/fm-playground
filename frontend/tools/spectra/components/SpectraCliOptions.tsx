@@ -34,6 +34,10 @@ const SpectraCliOptions = () => {
                     isSearchable={true}
                     options={options}
                     onChange={handleOptionChange}
+                    menuPortalTarget={document.body}
+                    styles={{
+                        menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                    }}
                 />
             </div>
         </div>

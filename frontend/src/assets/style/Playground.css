@@ -43,6 +43,8 @@
             background-color 250ms ease-in-out,
             color 250ms ease-in-out;
         border: 1px solid var(--border-color);
+        z-index: 9999;
+        position: relative;
     }
 
     .select__option {
@@ -69,6 +71,11 @@
     .select__single-value {
         color: var(--primary-text-color);
     }
+}
+
+.additional-input-ui {
+    z-index: 1000;
+    position: relative;
 }
 
 .tools {
