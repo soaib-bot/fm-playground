@@ -53,12 +53,26 @@ const AlloyOutput = () => {
     const [instanceIndexToShow, setInstanceIndexToShow] = useState(0);
     const [evaluatorOutput, setEvaluatorOutput] = useState('');
 
+    // New state for managing multiple instances
+    const [alloyInstances, setAlloyInstances] = useState<any[]>([]);
+    const [currentInstanceIndex, setCurrentInstanceIndex] = useState(0);
+
     /**
      * Update the Alloy instance in the state when the API response is received
+     * This effect only runs when alloyInstance changes from external sources (atom updates)
      */
     useEffect(() => {
+        if (alloyInstance) {
+            // Reset instances array when we get a completely new instance (e.g., new specification run)
+            // This should only happen when alloyInstance is updated from external sources, not from our navigation
+            const isNavigationUpdate = alloyInstances.some(instance => instance === alloyInstance);
+            if (!isNavigationUpdate) {
+                setAlloyInstances([alloyInstance]);
+                setCurrentInstanceIndex(0);
+            }
+        }
         setAlloyInstance(alloyInstance);
-        setAlloySpecId((alloyInstance as any).specId);
+        setAlloySpecId((alloyInstance as any)?.specId);
         setalloyTraceIndex(0);
         setIsLastInstance(false);
     }, [alloyInstance]);
@@ -166,6 +180,17 @@ const AlloyOutput = () => {
     }, [alloyInstance, alloyTraceIndex, isTemporal]);
 
     const handleNextInstance = () => {
+        // Check if we already have a next instance cached
+        if (currentInstanceIndex < alloyInstances.length - 1) {
+            // Move to next cached instance
+            const nextIndex = currentInstanceIndex + 1;
+            setCurrentInstanceIndex(nextIndex);
+            setAlloyInstance(alloyInstances[nextIndex]);
+            setalloyTraceIndex(0);
+            return;
+        }
+
+        // Fetch new instance from API
         setIsNextInstanceExecuting(true);
         getAlloyNextInstance(alloySpecId)
             .then((data) => {
@@ -176,6 +201,11 @@ const AlloyOutput = () => {
                     setIsNextInstanceExecuting(false);
                     return;
                 }
+                // Add new instance to the array
+                const updatedInstances = [...alloyInstances, data];
+                const newIndex = updatedInstances.length - 1;
+                setAlloyInstances(updatedInstances);
+                setCurrentInstanceIndex(newIndex);
                 setAlloyInstance(data);
                 setalloyTraceIndex(0);
                 setIsNextInstanceExecuting(false);
@@ -184,6 +214,16 @@ const AlloyOutput = () => {
                 console.log(error);
                 setIsNextInstanceExecuting(false);
             });
+    };
+
+    const handlePreviousInstance = () => {
+        if (currentInstanceIndex > 0) {
+            const prevIndex = currentInstanceIndex - 1;
+            setCurrentInstanceIndex(prevIndex);
+            setAlloyInstance(alloyInstances[prevIndex]);
+            setalloyTraceIndex(0);
+            setIsLastInstance(false); // Reset last instance flag when going back
+        }
     };
 
     const handleForwardTrace = () => {
@@ -312,8 +352,9 @@ const AlloyOutput = () => {
                             }}
                             dangerouslySetInnerHTML={{
                                 __html: alloyPlainMessage
-                                    ? alloyPlainMessage + (alloyTraceLoop ? ' | ' + alloyTraceLoop : '')
-                                    : alloyTraceLoop,
+                                    ? alloyPlainMessage + (alloyTraceLoop ? ' | ' + alloyTraceLoop : '') + 
+                                      (alloyInstances.length > 1 ? ` | Instance ${currentInstanceIndex + 1}/${alloyInstances.length}` : '')
+                                    : alloyTraceLoop + (alloyInstances.length > 1 ? ` | Instance ${currentInstanceIndex + 1}/${alloyInstances.length}` : ''),
                             }}
                         />
                     </div>
@@ -326,14 +367,23 @@ const AlloyOutput = () => {
                         }}
                     >
                         {alloyInstance && 'alloy' in alloyInstance && 'specId' in alloyInstance && (
-                            <MDBBtn
-                                color='success'
-                                onClick={handleNextInstance}
-                                disabled={isNextInstanceExecuting || isLastInstance}
-                            >
-                                {isNextInstanceExecuting ? 'Computing...' : isTemporal ? 'Next Trace' : 'Next Instance'}
-                                {/* {isTemporal ? "Next Trace" : "Next Instance"} */}
-                            </MDBBtn>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <MDBBtn
+                                    color='warning'
+                                    onClick={handlePreviousInstance}
+                                    disabled={currentInstanceIndex === 0}
+                                >
+                                    {isTemporal ? 'Previous Trace' : 'Previous Instance'}
+                                </MDBBtn>
+                                <MDBBtn
+                                    color='success'
+                                    onClick={handleNextInstance}
+                                    disabled={isNextInstanceExecuting || isLastInstance}
+                                >
+                                    {isNextInstanceExecuting ? 'Computing...' : isTemporal ? 'Next Trace' : 'Next Instance'}
+                                    {/* {isTemporal ? "Next Trace" : "Next Instance"} */}
+                                </MDBBtn>
+                            </div>
                         )}
                         {isTemporal && (
                             <div
