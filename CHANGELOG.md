@@ -1,15 +1,26 @@
 # Change Log
 
+## v2.6.13 [2025-07-31]
+
+- ✨ Added Navigating back on Alloy Instances #23
+- 🐛 Fixed #22 - Not all available command options are displayed.
+
+## v2.6.10-12 [2025-07-01]
+
+- ♻️ Migrate repository from se-buw to fm4se
+- ♻️ Moved alloy CSS to alloy tool dir
+- 🔧 updated Vite config for local dev
+
 ## v2.6.8-9 [2025-06-04]
 
-- 🐛Fixed Alloy, tabular instance view not showing #17
-- 🐛Fixed Spectra Syntax Highlighting is not working while LSP is enabled #19
-- 🐛Fixed Line Highlighting is not working in the lsp editor #20
+- 🐛 Fixed Alloy, tabular instance view not showing #17
+- 🐛 Fixed Spectra Syntax Highlighting is not working while LSP is enabled #19
+- 🐛 Fixed Line Highlighting is not working in the lsp editor #20
 
 
 ## v2.6.7 [2025-06-02]
 
-- 🐛Fixed language support is not working from permalink 
+- 🐛 Fixed language support is not working from permalink
 
 ## v2.6.4-6 [2025-06-01]
 
