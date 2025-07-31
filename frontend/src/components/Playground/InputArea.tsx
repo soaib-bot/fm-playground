@@ -180,9 +180,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                 <Editor height={isFullScreen ? '80vh' : '60vh'} editorTheme={editorTheme} />
             )}
 
-            <div className="additional-input-ui">
-                {AdditionalUi && <AdditionalUi />}
-            </div>
+            <div className='additional-input-ui'>{AdditionalUi && <AdditionalUi />}</div>
             <MDBBtn
                 className='mx-auto my-3'
                 style={{ width: '95%' }}

@@ -65,7 +65,7 @@ const AlloyOutput = () => {
         if (alloyInstance) {
             // Reset instances array when we get a completely new instance (e.g., new specification run)
             // This should only happen when alloyInstance is updated from external sources, not from our navigation
-            const isNavigationUpdate = alloyInstances.some(instance => instance === alloyInstance);
+            const isNavigationUpdate = alloyInstances.some((instance) => instance === alloyInstance);
             if (!isNavigationUpdate) {
                 setAlloyInstances([alloyInstance]);
                 setCurrentInstanceIndex(0);
@@ -352,9 +352,15 @@ const AlloyOutput = () => {
                             }}
                             dangerouslySetInnerHTML={{
                                 __html: alloyPlainMessage
-                                    ? alloyPlainMessage + (alloyTraceLoop ? ' | ' + alloyTraceLoop : '') + 
-                                      (alloyInstances.length > 1 ? ` | Instance ${currentInstanceIndex + 1}/${alloyInstances.length}` : '')
-                                    : alloyTraceLoop + (alloyInstances.length > 1 ? ` | Instance ${currentInstanceIndex + 1}/${alloyInstances.length}` : ''),
+                                    ? alloyPlainMessage +
+                                      (alloyTraceLoop ? ' | ' + alloyTraceLoop : '') +
+                                      (alloyInstances.length > 1
+                                          ? ` | Instance ${currentInstanceIndex + 1}/${alloyInstances.length}`
+                                          : '')
+                                    : alloyTraceLoop +
+                                      (alloyInstances.length > 1
+                                          ? ` | Instance ${currentInstanceIndex + 1}/${alloyInstances.length}`
+                                          : ''),
                             }}
                         />
                     </div>
@@ -380,7 +386,11 @@ const AlloyOutput = () => {
                                     onClick={handleNextInstance}
                                     disabled={isNextInstanceExecuting || isLastInstance}
                                 >
-                                    {isNextInstanceExecuting ? 'Computing...' : isTemporal ? 'Next Trace' : 'Next Instance'}
+                                    {isNextInstanceExecuting
+                                        ? 'Computing...'
+                                        : isTemporal
+                                          ? 'Next Trace'
+                                          : 'Next Instance'}
                                     {/* {isTemporal ? "Next Trace" : "Next Instance"} */}
                                 </MDBBtn>
                             </div>

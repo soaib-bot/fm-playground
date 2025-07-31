@@ -67,7 +67,7 @@ const AlloyCmdOptions = () => {
                     onChange={handleOptionChange}
                     menuPortalTarget={document.body}
                     styles={{
-                        menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     }}
                 />
             </div>
