@@ -10,6 +10,7 @@ import { AbstractAstReflection } from 'langium';
 export const SmtTerminals = {
     PSEUDO_BOOL_KEYWORD: /((pbeq|pbge)|pble)/,
     CARDINALITY_KEYWORD: /(at-least|at-most)/,
+    BV_LITERAL: /(#b[01]+|#x[0-9a-fA-F]+)/,
     PAR_OPEN: /\(/,
     PAR_CLOSE: /\)/,
     BValue: /(true|false)/,
@@ -18,9 +19,10 @@ export const SmtTerminals = {
     HEXADECIMAL: /#x[0-9a-fA-F]+/,
     BINARY: /#b[01]+/,
     STRING: /"([^"\\]|\\.|(WS|PRINTABLE_CHAR))+"/,
+    SEPERATOR: /,/,
     WS: /\s+/,
-    ARITHMETIC_OPERATOR: /((((((((((-|\+)|\*)|\/)|div)|mod)|abs)|<=)|<)|>=)|>)/,
-    BOOLEAN_OPERATOR: /(((((((not|=>)|and)|or)|xor)|=)|ite)|distinct)/,
+    ARITHMETIC_OPERATOR: /(((((((((div|mod)|abs)|<=)|<)|>=)|>)|to_real)|to_int)|is_int)/,
+    BOOLEAN_OPERATOR: /((((((not|=>)|and)|or)|xor)|ite)|distinct)/,
     SIMPLE_SYMBOL: /(((((((((((((((((((([a-zA-Z])|\+)|-)|\/)|\*)|,)|=)|%)|\?)|!)|\.)|\$)|_)|~)|&)|\^)|<)|>)|@)((((((((((((((((((([a-zA-Z])|([0-9]))|\+)|-)|\/)|\*)|=)|%)|\?)|!)|\.)|\$)|_)|~)|&)|\^)|<)|>)|@)*)/,
     SL_COMMENT: /;[^\n\r]*/,
 };
@@ -29,6 +31,10 @@ export type SmtTerminalNames = keyof typeof SmtTerminals;
 
 export type SmtKeywordNames = 
     | "!"
+    | "*"
+    | "+"
+    | "-"
+    | "/"
     | ":"
     | ":diagnostic-output-channel"
     | ":global-declarations"
@@ -52,18 +58,54 @@ export type SmtKeywordNames =
     | ":smt.macro-finder"
     | ":smt.mbqi"
     | ":verbosity"
+    | "="
     | "Array"
+    | "BitVec"
     | "Bool"
     | "Int"
     | "List"
     | "Real"
+    | "RegLan"
+    | "RoundingMode"
+    | "String"
     | "_"
     | "all-statistics"
+    | "as"
     | "assert"
     | "assertion-stack-levels"
     | "authors"
+    | "bv2nat"
+    | "bvadd"
+    | "bvand"
+    | "bvashr"
+    | "bvcomp"
+    | "bvlshr"
+    | "bvmul"
+    | "bvnand"
+    | "bvneg"
+    | "bvnor"
+    | "bvnot"
+    | "bvor"
+    | "bvsdiv"
+    | "bvsge"
+    | "bvsgt"
+    | "bvshl"
+    | "bvsle"
+    | "bvslt"
+    | "bvsmod"
+    | "bvsrem"
+    | "bvsub"
+    | "bvudiv"
+    | "bvuge"
+    | "bvugt"
+    | "bvule"
+    | "bvult"
+    | "bvurem"
+    | "bvxnor"
+    | "bvxor"
     | "check-sat"
     | "check-sat-assuming"
+    | "concat"
     | "declare-const"
     | "declare-datatype"
     | "declare-datatypes"
@@ -90,12 +132,13 @@ export type SmtKeywordNames =
     | "get-value"
     | "head"
     | "if"
+    | "incremental"
     | "is"
     | "let"
-    | "match"
     | "maximize"
     | "minimize"
     | "name"
+    | "nat2bv"
     | "nil"
     | "par"
     | "pop"
@@ -103,9 +146,23 @@ export type SmtKeywordNames =
     | "reason-unknown"
     | "reset"
     | "reset-assertions"
+    | "select"
     | "set-info"
     | "set-logic"
     | "set-option"
+    | "status"
+    | "store"
+    | "str.++"
+    | "str.at"
+    | "str.contains"
+    | "str.from_int"
+    | "str.indexof"
+    | "str.len"
+    | "str.prefixof"
+    | "str.replace"
+    | "str.substr"
+    | "str.suffixof"
+    | "str.to_int"
     | "tail"
     | "version";
 
@@ -117,7 +174,13 @@ export function isBasicCommand(item: unknown): item is BasicCommand {
     return item === 'check-sat' || item === 'reset' || item === 'reset-assertions' || item === 'get-model' || item === 'exit' || item === 'get-assertions' || item === 'get-assignment' || item === 'get-proof' || item === 'get-unsat-assumptions' || item === 'get-unsat-core';
 }
 
-export type CommonDataTypeDec = DataTypeDec | DataTypeDecZ3;
+export type BvOperation = 'bv2nat' | 'bvadd' | 'bvand' | 'bvashr' | 'bvcomp' | 'bvlshr' | 'bvmul' | 'bvnand' | 'bvneg' | 'bvnor' | 'bvnot' | 'bvor' | 'bvsdiv' | 'bvsge' | 'bvsgt' | 'bvshl' | 'bvsle' | 'bvslt' | 'bvsmod' | 'bvsrem' | 'bvsub' | 'bvudiv' | 'bvuge' | 'bvugt' | 'bvule' | 'bvult' | 'bvurem' | 'bvxnor' | 'bvxor' | 'concat' | 'nat2bv';
+
+export function isBvOperation(item: unknown): item is BvOperation {
+    return item === 'concat' || item === 'bvnot' || item === 'bvand' || item === 'bvor' || item === 'bvneg' || item === 'bvadd' || item === 'bvmul' || item === 'bvudiv' || item === 'bvurem' || item === 'bvshl' || item === 'bvlshr' || item === 'bvult' || item === 'bvnand' || item === 'bvnor' || item === 'bvxor' || item === 'bvxnor' || item === 'bvcomp' || item === 'bvsub' || item === 'bvsdiv' || item === 'bvsrem' || item === 'bvsmod' || item === 'bvashr' || item === 'bvule' || item === 'bvugt' || item === 'bvuge' || item === 'bvslt' || item === 'bvsle' || item === 'bvsgt' || item === 'bvsge' || item === 'bv2nat' || item === 'nat2bv';
+}
+
+export type CommonDataTypeDec = DataTypeDec | DataTypeDecZ3 | NamedDataTypeDec;
 
 export const CommonDataTypeDec = 'CommonDataTypeDec';
 
@@ -139,7 +202,7 @@ export function isInfoFlag(item: unknown): item is InfoFlag {
     return reflection.isInstance(item, InfoFlag);
 }
 
-export type NamedElement = CmdConstDecl | CmdFunDecl | FunctionDec | FunctionDef | SortedVar;
+export type NamedElement = CmdConstDecl | CmdFunDecl | ConstructorDec | FunctionDec | FunctionDef | NamedAttribute | SimpleConstructor | SortedVar;
 
 export const NamedElement = 'NamedElement';
 
@@ -147,7 +210,7 @@ export function isNamedElement(item: unknown): item is NamedElement {
     return reflection.isInstance(item, NamedElement);
 }
 
-export type NamedSort = CmdDecDataType | CmdDefSort | CmdSortDeclZ3 | SortDec | SortDecZ3 | SortedParameter;
+export type NamedSort = CmdDecDataType | CmdDefSort | CmdSortDeclZ3 | DataTypeDec | DataTypeDecZ3 | NamedDataTypeDec | SortDec | SortDecZ3 | SortedParameter;
 
 export const NamedSort = 'NamedSort';
 
@@ -155,10 +218,10 @@ export function isNamedSort(item: unknown): item is NamedSort {
     return reflection.isInstance(item, NamedSort);
 }
 
-export type Operator = string;
+export type Operator = '*' | '+' | '-' | '/' | '=' | BvOperation | StringOperation | string;
 
 export function isOperator(item: unknown): item is Operator {
-    return (typeof item === 'string' && (/((((((((((-|\+)|\*)|\/)|div)|mod)|abs)|<=)|<)|>=)|>)/.test(item) || /(((((((not|=>)|and)|or)|xor)|=)|ite)|distinct)/.test(item)));
+    return isBvOperation(item) || isStringOperation(item) || item === '+' || item === '-' || item === '*' || item === '/' || item === '=' || (typeof item === 'string' && (/(((((((((div|mod)|abs)|<=)|<)|>=)|>)|to_real)|to_int)|is_int)/.test(item) || /((((((not|=>)|and)|or)|xor)|ite)|distinct)/.test(item)));
 }
 
 export type Option = Attribute | OptionKeyword;
@@ -178,10 +241,15 @@ export function isSmtSymbol(item: unknown): item is SmtSymbol {
 export type SpecConstant = number | string;
 
 
+export type StringOperation = 'str.++' | 'str.at' | 'str.contains' | 'str.from_int' | 'str.indexof' | 'str.len' | 'str.prefixof' | 'str.replace' | 'str.substr' | 'str.suffixof' | 'str.to_int';
+
+export function isStringOperation(item: unknown): item is StringOperation {
+    return item === 'str.len' || item === 'str.substr' || item === 'str.indexof' || item === 'str.replace' || item === 'str.++' || item === 'str.at' || item === 'str.contains' || item === 'str.prefixof' || item === 'str.suffixof' || item === 'str.from_int' || item === 'str.to_int';
+}
+
 export interface Attribute extends AstNode {
-    readonly $container: Command;
-    readonly $type: 'Attribute';
-    keyWord: Keyword;
+    readonly $type: 'Attribute' | 'NamedAttribute';
+    keyWord?: Keyword;
     value?: AttributeValue;
 }
 
@@ -207,10 +275,12 @@ export function isAttributeValue(item: unknown): item is AttributeValue {
 }
 
 export interface Command extends AstNode {
-    readonly $type: 'AttributedTerm' | 'CmdAssert' | 'CmdCheckSat' | 'CmdConstDecl' | 'CmdDecDataType' | 'CmdDecDataTypes' | 'CmdDefFun' | 'CmdDefFunsRec' | 'CmdDefSort' | 'CmdFunDecl' | 'CmdSortDeclZ3' | 'Command' | 'FunctionDef' | 'Operator' | 'QualIdentifier' | 'QuantifiedTerm' | 'SmtSymbol' | 'Sort' | 'SpecConstant' | 'Term';
+    readonly $type: 'CmdAssert' | 'CmdCheckSat' | 'CmdConstDecl' | 'CmdDecDataType' | 'CmdDecDataTypes' | 'CmdDefFun' | 'CmdDefFunsRec' | 'CmdDefSort' | 'CmdFunDecl' | 'CmdSortDeclZ3' | 'Command' | 'FunctionDef';
+    arity?: number;
+    attribute?: Attribute;
     basicCommand?: BasicCommand;
     infoFlag?: InfoFlag;
-    name?: Attribute;
+    name?: SmtSymbol;
     option?: Option;
     options?: Keyword | OptionKeyword;
     symbol?: SmtSymbol;
@@ -235,6 +305,18 @@ export function isConditionalTerm(item: unknown): item is ConditionalTerm {
     return reflection.isInstance(item, ConditionalTerm);
 }
 
+export interface ConstDecVar extends AstNode {
+    readonly $container: ConstructorDecZ3;
+    readonly $type: 'ConstDecVar';
+    name: SmtSymbol;
+}
+
+export const ConstDecVar = 'ConstDecVar';
+
+export function isConstDecVar(item: unknown): item is ConstDecVar {
+    return reflection.isInstance(item, ConstDecVar);
+}
+
 export interface ConstructorDec extends AstNode {
     readonly $container: DataTypeDec;
     readonly $type: 'ConstructorDec';
@@ -251,8 +333,9 @@ export function isConstructorDec(item: unknown): item is ConstructorDec {
 export interface ConstructorDecZ3 extends AstNode {
     readonly $container: DataTypeDecZ3;
     readonly $type: 'ConstructorDecZ3';
-    selectorDec: Array<SelectorDecZ3>;
-    symbol: SmtSymbol;
+    name: ConstDecVar;
+    right: Array<ConstDecVar>;
+    selector: Array<SelectorDecZ3>;
 }
 
 export const ConstructorDecZ3 = 'ConstructorDecZ3';
@@ -265,7 +348,8 @@ export interface DataTypeDec extends AstNode {
     readonly $container: CmdDecDataType | CmdDecDataTypes;
     readonly $type: 'DataTypeDec';
     constructorDecs: Array<ConstructorDec>;
-    symbol: Array<SmtSymbol>;
+    parameters: Array<SmtSymbol>;
+    simpleConstructors: Array<SimpleConstructor>;
 }
 
 export const DataTypeDec = 'DataTypeDec';
@@ -277,7 +361,8 @@ export function isDataTypeDec(item: unknown): item is DataTypeDec {
 export interface DataTypeDecZ3 extends AstNode {
     readonly $container: CmdDecDataType | CmdDecDataTypes;
     readonly $type: 'DataTypeDecZ3';
-    constructorDecs: Array<ConstructorDecZ3>;
+    constructorDecs: ConstructorDecZ3;
+    name: SmtSymbol;
 }
 
 export const DataTypeDecZ3 = 'DataTypeDecZ3';
@@ -287,9 +372,10 @@ export function isDataTypeDecZ3(item: unknown): item is DataTypeDecZ3 {
 }
 
 export interface FunctionDec extends AstNode {
-    readonly $container: CmdConstDecl | CmdDefFunsRec | CmdFunDecl | SelectorDec | SelectorDecZ3 | Sort | SortedVar;
-    readonly $type: 'FunctionDec' | 'Sort';
+    readonly $container: CmdDefFunsRec;
+    readonly $type: 'FunctionDec';
     name: SmtSymbol;
+    returnSort: Sort;
     vars: Array<SortedVar>;
 }
 
@@ -300,8 +386,10 @@ export function isFunctionDec(item: unknown): item is FunctionDec {
 }
 
 export interface FunctionDefRec extends AstNode {
-    readonly $type: 'AttributedTerm' | 'FunctionDefRec' | 'Operator' | 'QualIdentifier' | 'QuantifiedTerm' | 'SmtSymbol' | 'Sort' | 'SpecConstant' | 'Term';
+    readonly $type: 'FunctionDefRec';
+    body: Term;
     name: SmtSymbol;
+    returnSort: Sort;
     sortedVars: Array<SortedVar>;
 }
 
@@ -336,19 +424,6 @@ export function isKeyword(item: unknown): item is Keyword {
     return reflection.isInstance(item, Keyword);
 }
 
-export interface MatchCase extends AstNode {
-    readonly $container: Term;
-    readonly $type: 'MatchCase';
-    pattern: Pattern;
-    term: Term;
-}
-
-export const MatchCase = 'MatchCase';
-
-export function isMatchCase(item: unknown): item is MatchCase {
-    return reflection.isInstance(item, MatchCase);
-}
-
 export interface Model extends AstNode {
     readonly $type: 'Model';
     commands: Array<Command>;
@@ -358,6 +433,19 @@ export const Model = 'Model';
 
 export function isModel(item: unknown): item is Model {
     return reflection.isInstance(item, Model);
+}
+
+export interface NamedDataTypeDec extends AstNode {
+    readonly $container: CmdDecDataTypes;
+    readonly $type: 'NamedDataTypeDec';
+    name: SmtSymbol;
+    simpleConstructors: Array<SimpleConstructor>;
+}
+
+export const NamedDataTypeDec = 'NamedDataTypeDec';
+
+export function isNamedDataTypeDec(item: unknown): item is NamedDataTypeDec {
+    return reflection.isInstance(item, NamedDataTypeDec);
 }
 
 export interface OptionKeyword extends AstNode {
@@ -374,7 +462,6 @@ export function isOptionKeyword(item: unknown): item is OptionKeyword {
 }
 
 export interface Pattern extends AstNode {
-    readonly $container: MatchCase;
     readonly $type: 'Pattern';
     symbol: SmtSymbol;
     symbols: Array<SmtSymbol>;
@@ -414,7 +501,7 @@ export function isPatternedTerm(item: unknown): item is PatternedTerm {
 export interface PreDefinedSort extends AstNode {
     readonly $container: SortIdentifier | SortedParameter;
     readonly $type: 'PreDefinedSort';
-    ID: 'Bool' | 'Int' | 'List' | 'Real';
+    ID: 'Bool' | 'Int' | 'List' | 'Real' | 'RegLan' | 'RoundingMode' | 'String';
 }
 
 export const PreDefinedSort = 'PreDefinedSort';
@@ -465,6 +552,31 @@ export function isSExpr(item: unknown): item is SExpr {
     return reflection.isInstance(item, SExpr);
 }
 
+export interface SimpleConstructor extends AstNode {
+    readonly $container: DataTypeDec | NamedDataTypeDec;
+    readonly $type: 'SimpleConstructor';
+    name: SmtSymbol;
+}
+
+export const SimpleConstructor = 'SimpleConstructor';
+
+export function isSimpleConstructor(item: unknown): item is SimpleConstructor {
+    return reflection.isInstance(item, SimpleConstructor);
+}
+
+export interface Sort extends AstNode {
+    readonly $container: CmdConstDecl | CmdDefSort | CmdFunDecl | FunctionDec | FunctionDef | FunctionDefRec | SelectorDec | SelectorDecZ3 | Sort | SortedVar | Term;
+    readonly $type: 'Sort';
+    identifier: SortIdentifier;
+    sorts: Array<Sort>;
+}
+
+export const Sort = 'Sort';
+
+export function isSort(item: unknown): item is Sort {
+    return reflection.isInstance(item, Sort);
+}
+
 export interface SortDec extends AstNode {
     readonly $container: CmdDecDataTypes;
     readonly $type: 'SortDec';
@@ -480,7 +592,7 @@ export function isSortDec(item: unknown): item is SortDec {
 
 export interface SortDecZ3 extends AstNode {
     readonly $type: 'SortDecZ3';
-    symbol: Array<SmtSymbol>;
+    symbols: Array<SmtSymbol>;
 }
 
 export const SortDecZ3 = 'SortDecZ3';
@@ -519,6 +631,8 @@ export interface SortIdentifier extends AstNode {
     readonly $type: 'SortIdentifier';
     ID?: Reference<NamedSort>;
     indices: Array<Index>;
+    name?: SmtSymbol;
+    size?: number;
     sort?: PreDefinedSort;
 }
 
@@ -526,6 +640,32 @@ export const SortIdentifier = 'SortIdentifier';
 
 export function isSortIdentifier(item: unknown): item is SortIdentifier {
     return reflection.isInstance(item, SortIdentifier);
+}
+
+export interface Term extends AstNode {
+    readonly $type: 'BvOperation' | 'Operator' | 'QualIdentifier' | 'QuantifiedTerm' | 'SmtSymbol' | 'SpecConstant' | 'StringOperation' | 'Term';
+    args: Array<Term>;
+    array?: Term;
+    attribute: Array<Attribute>;
+    body: Array<Term>;
+    boolean?: string;
+    condition: Array<Term>;
+    index?: Term;
+    listKey?: 'head' | 'tail';
+    operands: Array<Term>;
+    qualId?: QualIdentifier;
+    sort?: Sort;
+    statement: Array<ConditionalTerm>;
+    term?: Term;
+    terms: Array<Term>;
+    value?: Term;
+    varBinding: Array<VarBinding>;
+}
+
+export const Term = 'Term';
+
+export function isTerm(item: unknown): item is Term {
+    return reflection.isInstance(item, Term);
 }
 
 export interface VarBinding extends AstNode {
@@ -541,6 +681,17 @@ export function isVarBinding(item: unknown): item is VarBinding {
     return reflection.isInstance(item, VarBinding);
 }
 
+export interface NamedAttribute extends Attribute {
+    readonly $type: 'NamedAttribute';
+    name: SmtSymbol;
+}
+
+export const NamedAttribute = 'NamedAttribute';
+
+export function isNamedAttribute(item: unknown): item is NamedAttribute {
+    return reflection.isInstance(item, NamedAttribute);
+}
+
 export interface CmdAssert extends Command {
     readonly $type: 'CmdAssert';
     term: Term;
@@ -554,7 +705,7 @@ export function isCmdAssert(item: unknown): item is CmdAssert {
 
 export interface CmdCheckSat extends Command {
     readonly $type: 'CmdCheckSat';
-    propLiteral: Array<Term>;
+    propLiteral: Array<Reference<NamedElement>>;
 }
 
 export const CmdCheckSat = 'CmdCheckSat';
@@ -563,7 +714,6 @@ export function isCmdCheckSat(item: unknown): item is CmdCheckSat {
     return reflection.isInstance(item, CmdCheckSat);
 }
 
-// @ts-ignore
 export interface CmdConstDecl extends Command {
     readonly $type: 'CmdConstDecl';
     commandType: 'declare-const';
@@ -577,7 +727,6 @@ export function isCmdConstDecl(item: unknown): item is CmdConstDecl {
     return reflection.isInstance(item, CmdConstDecl);
 }
 
-// @ts-ignore
 export interface CmdDecDataType extends Command {
     readonly $type: 'CmdDecDataType';
     commandType: 'declare-datatype';
@@ -605,8 +754,7 @@ export function isCmdDecDataTypes(item: unknown): item is CmdDecDataTypes {
 }
 
 export interface CmdDefFun extends Command {
-    readonly $container: CmdConstDecl | CmdFunDecl | SelectorDec | SelectorDecZ3 | Sort | SortedVar;
-    readonly $type: 'AttributedTerm' | 'CmdDefFun' | 'FunctionDef' | 'Operator' | 'QualIdentifier' | 'QuantifiedTerm' | 'SmtSymbol' | 'Sort' | 'SpecConstant' | 'Term';
+    readonly $type: 'CmdDefFun' | 'FunctionDef';
     commandType: DefFunCommandName;
 }
 
@@ -629,13 +777,12 @@ export function isCmdDefFunsRec(item: unknown): item is CmdDefFunsRec {
     return reflection.isInstance(item, CmdDefFunsRec);
 }
 
-// @ts-ignore
 export interface CmdDefSort extends Command {
-    readonly $container: CmdConstDecl | CmdFunDecl | SelectorDec | SelectorDecZ3 | Sort | SortedVar;
-    readonly $type: 'CmdDefSort' | 'Sort';
+    readonly $type: 'CmdDefSort';
     commandType: 'define-sort';
     name: SmtSymbol;
-    symbol: Array<SortedParameter>;
+    parameters: Array<SortedParameter>;
+    resultSort: Sort;
 }
 
 export const CmdDefSort = 'CmdDefSort';
@@ -644,7 +791,6 @@ export function isCmdDefSort(item: unknown): item is CmdDefSort {
     return reflection.isInstance(item, CmdDefSort);
 }
 
-// @ts-ignore
 export interface CmdFunDecl extends Command {
     readonly $type: 'CmdFunDecl';
     commandType: 'declare-fun';
@@ -659,7 +805,6 @@ export function isCmdFunDecl(item: unknown): item is CmdFunDecl {
     return reflection.isInstance(item, CmdFunDecl);
 }
 
-// @ts-ignore
 export interface CmdSortDeclZ3 extends Command {
     readonly $type: 'CmdSortDeclZ3';
     commandType: 'declare-sort';
@@ -673,64 +818,6 @@ export function isCmdSortDeclZ3(item: unknown): item is CmdSortDeclZ3 {
     return reflection.isInstance(item, CmdSortDeclZ3);
 }
 
-// @ts-ignore
-export interface Sort extends CmdDefSort, FunctionDec, FunctionDef, FunctionDefRec {
-    readonly $container: CmdConstDecl | CmdFunDecl | SelectorDec | SelectorDecZ3 | Sort | SortedVar;
-    readonly $type: 'Sort';
-    identifier: SortIdentifier;
-    sorts: Array<Sort>;
-}
-
-export const Sort = 'Sort';
-
-export function isSort(item: unknown): item is Sort {
-    return reflection.isInstance(item, Sort);
-}
-
-// @ts-ignore
-export interface Term extends FunctionDef, FunctionDefRec {
-    readonly $type: 'AttributedTerm' | 'Operator' | 'QualIdentifier' | 'QuantifiedTerm' | 'SmtSymbol' | 'SpecConstant' | 'Term';
-    boolean?: string;
-    listKey?: 'head' | 'tail';
-    matchCase: Array<MatchCase>;
-    qualId?: QualIdentifier;
-    statement: Array<ConditionalTerm>;
-    term?: Array<Term> | Term;
-    varBinding: Array<VarBinding>;
-}
-
-export const Term = 'Term';
-
-export function isTerm(item: unknown): item is Term {
-    return reflection.isInstance(item, Term);
-}
-
-// @ts-ignore
-export interface FunctionDef extends CmdDefFun {
-    readonly $type: 'AttributedTerm' | 'FunctionDef' | 'Operator' | 'QualIdentifier' | 'QuantifiedTerm' | 'SmtSymbol' | 'Sort' | 'SpecConstant' | 'Term';
-    name: SmtSymbol;
-    sortedVars: Array<SortedVar>;
-}
-
-export const FunctionDef = 'FunctionDef';
-
-export function isFunctionDef(item: unknown): item is FunctionDef {
-    return reflection.isInstance(item, FunctionDef);
-}
-
-export interface AttributedTerm extends Term {
-    readonly $type: 'AttributedTerm';
-    name: SmtSymbol;
-    term: Term;
-}
-
-export const AttributedTerm = 'AttributedTerm';
-
-export function isAttributedTerm(item: unknown): item is AttributedTerm {
-    return reflection.isInstance(item, AttributedTerm);
-}
-
-// @ts-ignore
 export interface QualIdentifier extends Term {
     readonly $container: Term;
     readonly $type: 'QualIdentifier';
@@ -743,11 +830,10 @@ export function isQualIdentifier(item: unknown): item is QualIdentifier {
     return reflection.isInstance(item, QualIdentifier);
 }
 
-// @ts-ignore
 export interface QuantifiedTerm extends Term {
     readonly $type: 'QuantifiedTerm';
+    innerTerm: PatternedTerm | Term;
     sortedVar: Array<SortedVar>;
-    term: PatternedTerm | Term;
 }
 
 export const QuantifiedTerm = 'QuantifiedTerm';
@@ -756,10 +842,23 @@ export function isQuantifiedTerm(item: unknown): item is QuantifiedTerm {
     return reflection.isInstance(item, QuantifiedTerm);
 }
 
+export interface FunctionDef extends CmdDefFun {
+    readonly $type: 'FunctionDef';
+    body: Term;
+    name: SmtSymbol;
+    returnSort: Sort;
+    sortedVars: Array<SortedVar>;
+}
+
+export const FunctionDef = 'FunctionDef';
+
+export function isFunctionDef(item: unknown): item is FunctionDef {
+    return reflection.isInstance(item, FunctionDef);
+}
+
 export type SmtAstType = {
     Attribute: Attribute
     AttributeValue: AttributeValue
-    AttributedTerm: AttributedTerm
     CmdAssert: CmdAssert
     CmdCheckSat: CmdCheckSat
     CmdConstDecl: CmdConstDecl
@@ -773,6 +872,7 @@ export type SmtAstType = {
     Command: Command
     CommonDataTypeDec: CommonDataTypeDec
     ConditionalTerm: ConditionalTerm
+    ConstDecVar: ConstDecVar
     ConstructorDec: ConstructorDec
     ConstructorDecZ3: ConstructorDecZ3
     DataTypeDec: DataTypeDec
@@ -783,8 +883,9 @@ export type SmtAstType = {
     Index: Index
     InfoFlag: InfoFlag
     Keyword: Keyword
-    MatchCase: MatchCase
     Model: Model
+    NamedAttribute: NamedAttribute
+    NamedDataTypeDec: NamedDataTypeDec
     NamedElement: NamedElement
     NamedSort: NamedSort
     Option: Option
@@ -798,6 +899,7 @@ export type SmtAstType = {
     SExpr: SExpr
     SelectorDec: SelectorDec
     SelectorDecZ3: SelectorDecZ3
+    SimpleConstructor: SimpleConstructor
     Sort: Sort
     SortDec: SortDec
     SortDecZ3: SortDecZ3
@@ -811,7 +913,7 @@ export type SmtAstType = {
 export class SmtAstReflection extends AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return [Attribute, AttributeValue, AttributedTerm, CmdAssert, CmdCheckSat, CmdConstDecl, CmdDecDataType, CmdDecDataTypes, CmdDefFun, CmdDefFunsRec, CmdDefSort, CmdFunDecl, CmdSortDeclZ3, Command, CommonDataTypeDec, ConditionalTerm, ConstructorDec, ConstructorDecZ3, DataTypeDec, DataTypeDecZ3, FunctionDec, FunctionDef, FunctionDefRec, Index, InfoFlag, Keyword, MatchCase, Model, NamedElement, NamedSort, Option, OptionKeyword, Pattern, PatternAttribute, PatternedTerm, PreDefinedSort, QualIdentifier, QuantifiedTerm, SExpr, SelectorDec, SelectorDecZ3, Sort, SortDec, SortDecZ3, SortIdentifier, SortedParameter, SortedVar, Term, VarBinding];
+        return [Attribute, AttributeValue, CmdAssert, CmdCheckSat, CmdConstDecl, CmdDecDataType, CmdDecDataTypes, CmdDefFun, CmdDefFunsRec, CmdDefSort, CmdFunDecl, CmdSortDeclZ3, Command, CommonDataTypeDec, ConditionalTerm, ConstDecVar, ConstructorDec, ConstructorDecZ3, DataTypeDec, DataTypeDecZ3, FunctionDec, FunctionDef, FunctionDefRec, Index, InfoFlag, Keyword, Model, NamedAttribute, NamedDataTypeDec, NamedElement, NamedSort, Option, OptionKeyword, Pattern, PatternAttribute, PatternedTerm, PreDefinedSort, QualIdentifier, QuantifiedTerm, SExpr, SelectorDec, SelectorDecZ3, SimpleConstructor, Sort, SortDec, SortDecZ3, SortIdentifier, SortedParameter, SortedVar, Term, VarBinding];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -819,11 +921,6 @@ export class SmtAstReflection extends AbstractAstReflection {
             case Attribute:
             case OptionKeyword: {
                 return this.isSubtype(Option, supertype);
-            }
-            case AttributedTerm:
-            case QualIdentifier:
-            case QuantifiedTerm: {
-                return this.isSubtype(Term, supertype);
             }
             case CmdAssert:
             case CmdCheckSat:
@@ -841,13 +938,16 @@ export class SmtAstReflection extends AbstractAstReflection {
             case CmdSortDeclZ3: {
                 return this.isSubtype(Command, supertype) || this.isSubtype(NamedSort, supertype);
             }
-            case DataTypeDec:
-            case DataTypeDecZ3: {
-                return this.isSubtype(CommonDataTypeDec, supertype);
-            }
+            case ConstructorDec:
             case FunctionDec:
+            case SimpleConstructor:
             case SortedVar: {
                 return this.isSubtype(NamedElement, supertype);
+            }
+            case DataTypeDec:
+            case DataTypeDecZ3:
+            case NamedDataTypeDec: {
+                return this.isSubtype(CommonDataTypeDec, supertype) || this.isSubtype(NamedSort, supertype);
             }
             case FunctionDef: {
                 return this.isSubtype(CmdDefFun, supertype) || this.isSubtype(NamedElement, supertype);
@@ -855,16 +955,17 @@ export class SmtAstReflection extends AbstractAstReflection {
             case Keyword: {
                 return this.isSubtype(InfoFlag, supertype);
             }
-            case Sort: {
-                return this.isSubtype(CmdDefSort, supertype) || this.isSubtype(FunctionDec, supertype) || this.isSubtype(FunctionDef, supertype) || this.isSubtype(FunctionDefRec, supertype);
+            case NamedAttribute: {
+                return this.isSubtype(Attribute, supertype) || this.isSubtype(NamedElement, supertype);
+            }
+            case QualIdentifier:
+            case QuantifiedTerm: {
+                return this.isSubtype(Term, supertype);
             }
             case SortDec:
             case SortDecZ3:
             case SortedParameter: {
                 return this.isSubtype(NamedSort, supertype);
-            }
-            case Term: {
-                return this.isSubtype(FunctionDef, supertype) || this.isSubtype(FunctionDefRec, supertype);
             }
             default: {
                 return false;
@@ -875,6 +976,7 @@ export class SmtAstReflection extends AbstractAstReflection {
     getReferenceType(refInfo: ReferenceInfo): string {
         const referenceId = `${refInfo.container.$type}:${refInfo.property}`;
         switch (referenceId) {
+            case 'CmdCheckSat:propLiteral':
             case 'QualIdentifier:ID': {
                 return NamedElement;
             }
@@ -913,6 +1015,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: Command,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'infoFlag' },
                         { name: 'name' },
@@ -931,6 +1035,14 @@ export class SmtAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
+            case ConstDecVar: {
+                return {
+                    name: ConstDecVar,
+                    properties: [
+                        { name: 'name' }
+                    ]
+                };
+            }
             case ConstructorDec: {
                 return {
                     name: ConstructorDec,
@@ -944,8 +1056,9 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: ConstructorDecZ3,
                     properties: [
-                        { name: 'selectorDec', defaultValue: [] },
-                        { name: 'symbol' }
+                        { name: 'name' },
+                        { name: 'right', defaultValue: [] },
+                        { name: 'selector', defaultValue: [] }
                     ]
                 };
             }
@@ -954,7 +1067,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                     name: DataTypeDec,
                     properties: [
                         { name: 'constructorDecs', defaultValue: [] },
-                        { name: 'symbol', defaultValue: [] }
+                        { name: 'parameters', defaultValue: [] },
+                        { name: 'simpleConstructors', defaultValue: [] }
                     ]
                 };
             }
@@ -962,7 +1076,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: DataTypeDecZ3,
                     properties: [
-                        { name: 'constructorDecs', defaultValue: [] }
+                        { name: 'constructorDecs' },
+                        { name: 'name' }
                     ]
                 };
             }
@@ -971,6 +1086,7 @@ export class SmtAstReflection extends AbstractAstReflection {
                     name: FunctionDec,
                     properties: [
                         { name: 'name' },
+                        { name: 'returnSort' },
                         { name: 'vars', defaultValue: [] }
                     ]
                 };
@@ -979,7 +1095,9 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: FunctionDefRec,
                     properties: [
+                        { name: 'body' },
                         { name: 'name' },
+                        { name: 'returnSort' },
                         { name: 'sortedVars', defaultValue: [] }
                     ]
                 };
@@ -1001,20 +1119,20 @@ export class SmtAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
-            case MatchCase: {
-                return {
-                    name: MatchCase,
-                    properties: [
-                        { name: 'pattern' },
-                        { name: 'term' }
-                    ]
-                };
-            }
             case Model: {
                 return {
                     name: Model,
                     properties: [
                         { name: 'commands', defaultValue: [] }
+                    ]
+                };
+            }
+            case NamedDataTypeDec: {
+                return {
+                    name: NamedDataTypeDec,
+                    properties: [
+                        { name: 'name' },
+                        { name: 'simpleConstructors', defaultValue: [] }
                     ]
                 };
             }
@@ -1091,6 +1209,23 @@ export class SmtAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
+            case SimpleConstructor: {
+                return {
+                    name: SimpleConstructor,
+                    properties: [
+                        { name: 'name' }
+                    ]
+                };
+            }
+            case Sort: {
+                return {
+                    name: Sort,
+                    properties: [
+                        { name: 'identifier' },
+                        { name: 'sorts', defaultValue: [] }
+                    ]
+                };
+            }
             case SortDec: {
                 return {
                     name: SortDec,
@@ -1104,7 +1239,7 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: SortDecZ3,
                     properties: [
-                        { name: 'symbol', defaultValue: [] }
+                        { name: 'symbols', defaultValue: [] }
                     ]
                 };
             }
@@ -1131,7 +1266,32 @@ export class SmtAstReflection extends AbstractAstReflection {
                     properties: [
                         { name: 'ID' },
                         { name: 'indices', defaultValue: [] },
+                        { name: 'name' },
+                        { name: 'size' },
                         { name: 'sort' }
+                    ]
+                };
+            }
+            case Term: {
+                return {
+                    name: Term,
+                    properties: [
+                        { name: 'args', defaultValue: [] },
+                        { name: 'array' },
+                        { name: 'attribute', defaultValue: [] },
+                        { name: 'body', defaultValue: [] },
+                        { name: 'boolean' },
+                        { name: 'condition', defaultValue: [] },
+                        { name: 'index' },
+                        { name: 'listKey' },
+                        { name: 'operands', defaultValue: [] },
+                        { name: 'qualId' },
+                        { name: 'sort' },
+                        { name: 'statement', defaultValue: [] },
+                        { name: 'term' },
+                        { name: 'terms', defaultValue: [] },
+                        { name: 'value' },
+                        { name: 'varBinding', defaultValue: [] }
                     ]
                 };
             }
@@ -1144,10 +1304,22 @@ export class SmtAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
+            case NamedAttribute: {
+                return {
+                    name: NamedAttribute,
+                    properties: [
+                        { name: 'keyWord' },
+                        { name: 'name' },
+                        { name: 'value' }
+                    ]
+                };
+            }
             case CmdAssert: {
                 return {
                     name: CmdAssert,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'infoFlag' },
                         { name: 'name' },
@@ -1162,6 +1334,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdCheckSat,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'infoFlag' },
                         { name: 'name' },
@@ -1177,6 +1351,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdConstDecl,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'infoFlag' },
@@ -1193,6 +1369,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdDecDataType,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'dataTypeDec' },
@@ -1209,6 +1387,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdDecDataTypes,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'dataTypeDecs', defaultValue: [] },
@@ -1226,6 +1406,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdDefFun,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'infoFlag' },
@@ -1241,6 +1423,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdDefFunsRec,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'functionDec', defaultValue: [] },
@@ -1257,13 +1441,17 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdDefSort,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'infoFlag' },
                         { name: 'name' },
                         { name: 'option' },
                         { name: 'options' },
-                        { name: 'symbol', defaultValue: [] },
+                        { name: 'parameters', defaultValue: [] },
+                        { name: 'resultSort' },
+                        { name: 'symbol' },
                         { name: 'term' }
                     ]
                 };
@@ -1272,6 +1460,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdFunDecl,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'infoFlag' },
@@ -1289,6 +1479,8 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: CmdSortDeclZ3,
                     properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
                         { name: 'basicCommand' },
                         { name: 'commandType' },
                         { name: 'infoFlag' },
@@ -1301,104 +1493,26 @@ export class SmtAstReflection extends AbstractAstReflection {
                     ]
                 };
             }
-            case Sort: {
-                return {
-                    name: Sort,
-                    properties: [
-                        { name: 'basicCommand' },
-                        { name: 'commandType' },
-                        { name: 'identifier' },
-                        { name: 'infoFlag' },
-                        { name: 'name' },
-                        { name: 'option' },
-                        { name: 'options' },
-                        { name: 'sortedVars', defaultValue: [] },
-                        { name: 'sorts', defaultValue: [] },
-                        { name: 'symbol', defaultValue: [] },
-                        { name: 'term' },
-                        { name: 'vars', defaultValue: [] }
-                    ]
-                };
-            }
-            case Term: {
-                return {
-                    name: Term,
-                    properties: [
-                        { name: 'basicCommand' },
-                        { name: 'boolean' },
-                        { name: 'commandType' },
-                        { name: 'infoFlag' },
-                        { name: 'listKey' },
-                        { name: 'matchCase', defaultValue: [] },
-                        { name: 'name' },
-                        { name: 'option' },
-                        { name: 'options' },
-                        { name: 'qualId' },
-                        { name: 'sortedVars', defaultValue: [] },
-                        { name: 'statement', defaultValue: [] },
-                        { name: 'symbol' },
-                        { name: 'term' },
-                        { name: 'varBinding', defaultValue: [] }
-                    ]
-                };
-            }
-            case FunctionDef: {
-                return {
-                    name: FunctionDef,
-                    properties: [
-                        { name: 'basicCommand' },
-                        { name: 'commandType' },
-                        { name: 'infoFlag' },
-                        { name: 'name' },
-                        { name: 'option' },
-                        { name: 'options' },
-                        { name: 'sortedVars', defaultValue: [] },
-                        { name: 'symbol' },
-                        { name: 'term' }
-                    ]
-                };
-            }
-            case AttributedTerm: {
-                return {
-                    name: AttributedTerm,
-                    properties: [
-                        { name: 'basicCommand' },
-                        { name: 'boolean' },
-                        { name: 'commandType' },
-                        { name: 'infoFlag' },
-                        { name: 'listKey' },
-                        { name: 'matchCase', defaultValue: [] },
-                        { name: 'name' },
-                        { name: 'option' },
-                        { name: 'options' },
-                        { name: 'qualId' },
-                        { name: 'sortedVars', defaultValue: [] },
-                        { name: 'statement', defaultValue: [] },
-                        { name: 'symbol' },
-                        { name: 'term' },
-                        { name: 'varBinding', defaultValue: [] }
-                    ]
-                };
-            }
             case QualIdentifier: {
                 return {
                     name: QualIdentifier,
                     properties: [
-                        { name: 'basicCommand' },
+                        { name: 'args', defaultValue: [] },
+                        { name: 'array' },
+                        { name: 'attribute', defaultValue: [] },
+                        { name: 'body', defaultValue: [] },
                         { name: 'boolean' },
-                        { name: 'commandType' },
+                        { name: 'condition', defaultValue: [] },
                         { name: 'ID' },
-                        { name: 'infoFlag' },
+                        { name: 'index' },
                         { name: 'listKey' },
-                        { name: 'matchCase', defaultValue: [] },
-                        { name: 'name' },
-                        { name: 'option' },
-                        { name: 'options' },
+                        { name: 'operands', defaultValue: [] },
                         { name: 'qualId' },
-                        { name: 'sortedVars', defaultValue: [] },
+                        { name: 'sort' },
                         { name: 'statement', defaultValue: [] },
-                        { name: 'symbol' },
                         { name: 'term' },
+                        { name: 'terms', defaultValue: [] },
+                        { name: 'value' },
                         { name: 'varBinding', defaultValue: [] }
                     ]
                 };
@@ -1407,22 +1521,44 @@ export class SmtAstReflection extends AbstractAstReflection {
                 return {
                     name: QuantifiedTerm,
                     properties: [
-                        { name: 'basicCommand' },
+                        { name: 'args', defaultValue: [] },
+                        { name: 'array' },
+                        { name: 'attribute', defaultValue: [] },
+                        { name: 'body', defaultValue: [] },
                         { name: 'boolean' },
+                        { name: 'condition', defaultValue: [] },
+                        { name: 'index' },
+                        { name: 'innerTerm' },
+                        { name: 'listKey' },
+                        { name: 'operands', defaultValue: [] },
+                        { name: 'qualId' },
+                        { name: 'sort' },
+                        { name: 'sortedVar', defaultValue: [] },
+                        { name: 'statement', defaultValue: [] },
+                        { name: 'term' },
+                        { name: 'terms', defaultValue: [] },
+                        { name: 'value' },
+                        { name: 'varBinding', defaultValue: [] }
+                    ]
+                };
+            }
+            case FunctionDef: {
+                return {
+                    name: FunctionDef,
+                    properties: [
+                        { name: 'arity' },
+                        { name: 'attribute' },
+                        { name: 'basicCommand' },
+                        { name: 'body' },
                         { name: 'commandType' },
                         { name: 'infoFlag' },
-                        { name: 'listKey' },
-                        { name: 'matchCase', defaultValue: [] },
                         { name: 'name' },
                         { name: 'option' },
                         { name: 'options' },
-                        { name: 'qualId' },
-                        { name: 'sortedVar', defaultValue: [] },
+                        { name: 'returnSort' },
                         { name: 'sortedVars', defaultValue: [] },
-                        { name: 'statement', defaultValue: [] },
                         { name: 'symbol' },
-                        { name: 'term' },
-                        { name: 'varBinding', defaultValue: [] }
+                        { name: 'term' }
                     ]
                 };
             }
