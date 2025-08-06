@@ -11,8 +11,6 @@ import { configureMonacoWorkers } from '../utils';
 import workerPortUrlSmt from '../worker/smt-server-port?worker&url';
 
 const loadLangiumWorkerPort = () => {
-    // Language Server preparation
-    console.log(`Langium worker URL: ${workerPortUrlSmt}`);
     return new Worker(workerPortUrlSmt, {
         type: 'module',
         name: 'Smt Server Port',
@@ -22,24 +20,18 @@ const loadLangiumWorkerPort = () => {
 export const createLangiumSmtConfig = async (): Promise<WrapperConfig> => {
     const extensionFilesOrContents = new Map<string, string | URL>();
     extensionFilesOrContents.set(`/smt-configuration.json`, smtLanguageConfig);
-    extensionFilesOrContents.set(`/-smt-grammar.json`, responseSmtTm);
+    extensionFilesOrContents.set(`/smt-grammar.json`, responseSmtTm);
 
     const smtWorkerPort = loadLangiumWorkerPort();
-    smtWorkerPort.onmessage = (event) => {
-        console.log('Received message from worker:', event.data);
-    };
 
     const channel = new MessageChannel();
     smtWorkerPort.postMessage({ port: channel.port2 }, [channel.port2]);
 
     const reader = new BrowserMessageReader(channel.port1);
     const writer = new BrowserMessageWriter(channel.port1);
-    reader.listen((message) => {
-        console.log('Received message from worker:', message);
-    });
 
     return {
-        logLevel: LogLevel.Debug,
+        logLevel: LogLevel.Error,
         serviceConfig: {
             userServices: {
                 ...getKeybindingsServiceOverride(),
@@ -49,9 +41,21 @@ export const createLangiumSmtConfig = async (): Promise<WrapperConfig> => {
         },
         editorAppConfig: {
             $type: 'extended',
+            editorOptions: {
+                minimap: {
+                    enabled: false,
+                },
+                automaticLayout: true,
+                mouseWheelZoom: true,
+                bracketPairColorization: {
+                    enabled: true,
+                    independentColorPoolPerBracketType: true,
+                },
+                glyphMargin: false,
+            },
             codeResources: {
                 main: {
-                    text: '(check-sat)',
+                    text: '',
                     fileExt: 'smt2',
                 },
             },
@@ -59,7 +63,7 @@ export const createLangiumSmtConfig = async (): Promise<WrapperConfig> => {
             extensions: [
                 {
                     config: {
-                        name: 'smt-example',
+                        name: 'smt',
                         publisher: 'soaibuzzaman',
                         version: '1.0.0',
                         engine: {
@@ -88,10 +92,11 @@ export const createLangiumSmtConfig = async (): Promise<WrapperConfig> => {
             ],
             userConfiguration: {
                 json: JSON.stringify({
-                    'workbench.colorTheme': 'Default Dark Modern',
+                    'workbench.colorTheme': 'Default Light Modern',
                     'editor.guides.bracketPairsHorizontal': 'active',
                     'editor.wordBasedSuggestions': 'off',
                     'editor.experimental.asyncTokenization': true,
+                    'editor.semanticHighlighting.enabled': true,
                 }),
             },
             monacoWorkerFactory: configureMonacoWorkers,

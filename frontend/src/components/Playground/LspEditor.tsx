@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as vscode from 'vscode';
 import { createModelReference } from 'vscode/monaco';
 import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper';
-import { createLangiumGlobalConfig } from '@/../tools/common/lspWrapperConfig';
+import { createDynamicLspConfig } from '@/../tools/common/dynamicLspWrapperConfig';
 import '../../assets/style/Playground.css';
 import '@codingame/monaco-vscode-theme-defaults-default-extension';
 import type { LanguageProps } from './Tools';
@@ -57,30 +57,43 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
             }
 
             if (!isInitializedRef.current) {
-                const langiumGlobalConfig = await createLangiumGlobalConfig();
-                await wrapperInstance!.initAndStart(langiumGlobalConfig, document.getElementById('monaco-editor-root'));
+                try {
+                    const langiumGlobalConfig = await createDynamicLspConfig(props.language.short);
 
-                const currentExtension = getExtensionById(props.language?.id ?? '');
-                const uri = vscode.Uri.parse(`/workspace/example.${currentExtension}`);
-                const modelRef = await createModelReference(uri, props.editorValue);
-                wrapperInstance!.updateEditorModels({
-                    modelRef,
-                });
+                    if (!langiumGlobalConfig) {
+                        console.warn(`No LSP configuration available for language: ${props.language.short}`);
+                        return;
+                    }
 
-                editorRef.current = wrapperInstance!.getEditor();
-                editorRef.current.onDidChangeModelContent(() => {
-                    handleCodeChange(editorRef.current.getValue());
-                });
+                    await wrapperInstance!.initAndStart(
+                        langiumGlobalConfig,
+                        document.getElementById('monaco-editor-root')
+                    );
 
-                const code = localStorage.getItem('editorValue');
-                if (code) {
-                    editorRef.current.setValue(code);
-                } else {
-                    editorRef.current.setValue(props.editorValue);
+                    const currentExtension = getExtensionById(props.language?.id ?? '');
+                    const uri = vscode.Uri.parse(`/workspace/example.${currentExtension}`);
+                    const modelRef = await createModelReference(uri, props.editorValue);
+                    wrapperInstance!.updateEditorModels({
+                        modelRef,
+                    });
+
+                    editorRef.current = wrapperInstance!.getEditor();
+                    editorRef.current.onDidChangeModelContent(() => {
+                        handleCodeChange(editorRef.current.getValue());
+                    });
+
+                    const code = localStorage.getItem('editorValue');
+                    if (code) {
+                        editorRef.current.setValue(code);
+                    } else {
+                        editorRef.current.setValue(props.editorValue);
+                    }
+
+                    isInitializedRef.current = true;
+                    prevLanguageRef.current = props.language;
+                } catch (error) {
+                    console.error('Error initializing LSP editor:', error);
                 }
-
-                isInitializedRef.current = true;
-                prevLanguageRef.current = props.language;
             }
         };
 
