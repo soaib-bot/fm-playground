@@ -1,5 +1,10 @@
 # Change Log
 
+## v2.6.14 [2025-08-06]
+
+- ⚡️ Updated smt grammar
+- ♻️ Updated LSP wrapper configuration modularity
+
 ## v2.6.13 [2025-07-31]
 
 - ✨ Added Navigating back on Alloy Instances #23
