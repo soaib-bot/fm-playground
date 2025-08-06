@@ -42,6 +42,10 @@ const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
                 options={options}
                 onChange={props.onChange}
                 value={props.selected}
+                menuPortalTarget={document.body}
+                styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                }}
             />
         </div>
     );
