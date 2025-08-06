@@ -76,7 +76,7 @@ export const fmpConfig: FmpConfig = {
     tools: {
         limboole: { name: 'Limboole', extension: 'limboole', shortName: 'SAT' },
         smt2: { name: 'SMT', extension: 'smt2', shortName: 'SMT' },
-        xmv: { name: 'nuXmv', extension: '.xmv', shortName: 'XMV' },
+        xmv: { name: 'nuXmv', extension: 'xmv', shortName: 'XMV' },
         als: { name: 'Alloy', extension: 'als', shortName: 'ALS' },
         spectra: { name: 'Spectra', extension: 'spectra', shortName: 'SPECTRA' },
     },
