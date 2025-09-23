@@ -228,6 +228,18 @@ class ApplicationTests {
     assertTrue(getField(resultJson, "tabularInstance").contains("this/"));
   }
 
+  @Test
+  void translationErrorTest() throws Exception {
+    AlloyInstanceControllerLocal controller = new AlloyInstanceControllerLocal();
+    String result = "";
+    try {
+      result = controller.getInstance(Specs.FARMER_CODE, 0);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    assertFalse(result.contains("is not bound to a legal value during translation"));
+  }
+
   /**
    * Get a field from a JSON string
    *

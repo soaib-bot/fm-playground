@@ -2,20 +2,20 @@ package de.buw.fmp.alloy.api;
 
 import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.Pos;
-import edu.mit.csail.sdg.alloy4.SafeList;
 import edu.mit.csail.sdg.alloy4.XMLNode;
 import edu.mit.csail.sdg.ast.Command;
 import edu.mit.csail.sdg.ast.Expr;
 import edu.mit.csail.sdg.ast.ExprConstant;
 import edu.mit.csail.sdg.ast.ExprVar;
-import edu.mit.csail.sdg.ast.Sig;
 import edu.mit.csail.sdg.parser.CompModule;
 import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.translator.A4Options;
 import edu.mit.csail.sdg.translator.A4Solution;
 import edu.mit.csail.sdg.translator.A4SolutionReader;
 import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -79,7 +79,16 @@ public class AlloyInstanceController {
     CompModule module = null;
     // parse Alloy file from code variable
     try {
-      module = CompUtil.parseEverything_fromString(A4Reporter.NOP, code);
+      File tmpAls = File.createTempFile("alloy_heredoc", ".als");
+      tmpAls.deleteOnExit();
+      BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpAls));
+      bos.write(code.getBytes());
+      bos.flush();
+      bos.close();
+
+      // Parse with null map to allow standard library module resolution
+      module = CompUtil.parseEverything_fromFile(A4Reporter.NOP, null, tmpAls.getAbsolutePath());
+      tmpAls.deleteOnExit();
     } catch (Exception e) {
       // return error message as JSON with http status code 400
       JSONObject obj = new JSONObject();
@@ -87,7 +96,8 @@ public class AlloyInstanceController {
       obj.put("status", HttpStatus.BAD_REQUEST.value());
       return obj.toString();
     }
-
+    
+    final CompModule finalModule = module; // final for use in lambda
     Command runCommand = module.getAllCommands().get(cmd);
     if (cmd == 0 && hasDefaultCommand(module)) {
       runCommand =
@@ -111,7 +121,7 @@ public class AlloyInstanceController {
     A4Options options = getOptions();
     // get the first instance of the Alloy file
     A4Solution instance;
-    SafeList<Sig> sigs = module.getAllSigs();
+    // SafeList<Sig> sigs = module.getAllSigs();
     try {
       Command finalRunCommand = runCommand;
       instance =
@@ -120,7 +130,7 @@ public class AlloyInstanceController {
                 @Override
                 public A4Solution runInstance() {
                   return TranslateAlloyToKodkod.execute_command(
-                      A4Reporter.NOP, sigs, finalRunCommand, options);
+                      A4Reporter.NOP, finalModule.getAllReachableSigs(), finalRunCommand, options);
                 }
               },
               TIME_OUT);
