@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { Stack } from '@mui/material';
@@ -42,11 +42,34 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false); // state to control the new spec modal
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Check screen size on mount and resize for mobile detection
+    useEffect(() => {
+        const checkScreenSize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+
+        return () => {
+            window.removeEventListener('resize', checkScreenSize);
+        };
+    }, []);
 
     const AdditionalUi = additionalInputAreaUiMap[language.short];
 
     // Check if current language supports LSP using the configuration from ToolMaps
     const isLspSupported = lspSupportMap[language.short] ?? false;
+
+    // Calculate editor height based on screen size and fullscreen state
+    const getEditorHeight = () => {
+        if (isFullScreen) {
+            return isMobile ? '70vh' : '80vh';
+        }
+        return isMobile ? '40vh' : '60vh';
+    };
 
     const openModal = () => setIsNewSpecModalOpen(true); // open the new spec modal
     const closeModal = () => setIsNewSpecModalOpen(false); // close the new spec modal
@@ -168,7 +191,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
             </div>
             {enableLsp && isLspSupported ? (
                 <LspEditor
-                    height={isFullScreen ? '80vh' : '60vh'}
+                    height={getEditorHeight()}
                     editorTheme={editorTheme}
                     setEditorValue={setEditorValue}
                     editorValue={editorValue}
@@ -177,12 +200,12 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                     setLineToHighlight={setLineToHighlight}
                 />
             ) : (
-                <Editor height={isFullScreen ? '80vh' : '60vh'} editorTheme={editorTheme} />
+                <Editor height={getEditorHeight()} editorTheme={editorTheme} />
             )}
 
             <div className='additional-input-ui'>{AdditionalUi && <AdditionalUi />}</div>
             <MDBBtn
-                className='mx-auto my-3'
+                className={`mx-auto my-3 ${isMobile ? 'mobile-run-button' : ''}`}
                 style={{ width: '95%' }}
                 color='primary'
                 onClick={onRunButtonClick}

@@ -22,6 +22,7 @@
     font-family: 'Courier New', Consolas, 'Lucida Console', monospace;
     unicode-bidi: plaintext;
     text-rendering: optimizeSpeed;
+    margin-bottom: 3rem;
 }
 
 .react-select-container {
