@@ -96,7 +96,7 @@ public class AlloyInstanceController {
       obj.put("status", HttpStatus.BAD_REQUEST.value());
       return obj.toString();
     }
-    
+
     final CompModule finalModule = module; // final for use in lambda
     Command runCommand = module.getAllCommands().get(cmd);
     if (cmd == 0 && hasDefaultCommand(module)) {
