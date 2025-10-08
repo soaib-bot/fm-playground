@@ -22,6 +22,7 @@ import FileDownload from '@/components/Utils/FileDownload';
 import CopyToClipboardBtn from '@/components/Utils/CopyToClipboardBtn';
 import LspEditor from './LspEditor';
 import Editor from './Editor';
+import CodeDiffEditor from './DiffEditor';
 import { additionalInputAreaUiMap, lspSupportMap } from '@/ToolMaps';
 
 interface InputAreaProps {
