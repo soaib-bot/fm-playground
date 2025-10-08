@@ -30,6 +30,11 @@
     justify-content: center;
 }
 
+.navbar-option-button:hover {
+    background-color: var(--hover-background-color, rgba(0, 0, 0, 0.05)) !important;
+    border-color: var(--border-color, #dee2e6) !important;
+}
+
 @media (max-width: 768px) {
     .navbar-option-button {
         width: 100% !important;
@@ -160,8 +165,8 @@
     gap: 1rem;
 }
 
-.nav-right button:hover {
-    background-color: #0056b3;
+.nav-right .github-icon-button:hover {
+    background-color: var(--hover-background-color, rgba(0, 0, 0, 0.1));
 }
 
 .text-lg {

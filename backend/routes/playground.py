@@ -16,6 +16,7 @@ from db.db_query import (  # noqa: E402
     get_metadata_by_permalink,
     get_user_data,
     get_user_history,
+    get_user_history_by_session,
     search_by_query,
     update_user_history_by_id,
 )
@@ -148,7 +149,13 @@ def get_code():
 @routes.route("/api/histories", methods=["GET"])
 def get_history():
     user_id = session.get("user_id")
+    user_session_id = session.sid
     if user_id is None:
+        if user_session_id:
+            page = request.args.get("page", 1, type=int)
+            per_page = 20
+            data, has_more_data = get_user_history_by_session(user_session_id, page=page, per_page=per_page)
+            return jsonify({"history": data, "has_more_data": has_more_data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     page = request.args.get("page", 1, type=int)
     per_page = 20

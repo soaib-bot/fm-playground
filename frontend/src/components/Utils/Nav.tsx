@@ -32,7 +32,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
     const [, setLanguage] = useAtom(languageAtom);
     const authContext = useContext(AuthContext);
     const isLoggedIn = authContext?.isLoggedIn ?? false;
-    const setIsLoggedIn = authContext?.setIsLoggedIn ?? (() => {});
+    const setIsLoggedIn = authContext?.setIsLoggedIn ?? (() => { });
     const [isDrawerOpen, setDrawerOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,6 +110,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
      * @param {*} code - Specification code.
      */
     const handleDrawerItemClick = (check: string, permalink: string, code: string) => {
+        console.log('Clicked item:', { check, permalink, code });
         setEditorValue(code);
         const options = Object.entries(fmpConfig.tools).map(([key, tool]) => ({
             id: key,
@@ -151,20 +152,22 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                 </MDBNavbarBrand>
 
                 <div className='nav-right d-none d-lg-flex gap-2'>
+                    <MDBBtn
+                        rounded
+                        color={isDarkTheme ? 'dark' : 'light'}
+                        className='navbar-option-button'
+                        onClick={handleDrawerOpen}
+                        style={{ width: 'auto', display: 'flex', alignItems: 'center', height: '38px' }}
+                    >
+                        History
+                    </MDBBtn>
+                    <DrawerComponent
+                        isOpen={isDrawerOpen}
+                        onClose={handleDrawerClose}
+                        onItemSelect={handleDrawerItemClick}
+                    />
                     {isLoggedIn ? (
                         <>
-                            <MDBBtn
-                                className='navbar-option-button'
-                                onClick={handleDrawerOpen}
-                                style={{ width: 'auto', display: 'flex', alignItems: 'center', height: '38px' }}
-                            >
-                                History
-                            </MDBBtn>
-                            <DrawerComponent
-                                isOpen={isDrawerOpen}
-                                onClose={handleDrawerClose}
-                                onItemSelect={handleDrawerItemClick}
-                            />
                             <MDBDropdown
                                 className='btn-group navbar-option-button'
                                 style={{ width: 'auto', display: 'flex', alignItems: 'center', height: '38px' }}
@@ -213,13 +216,9 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                         <MdOutlineMenu />
                     </MDBDropdownToggle>
                     <MDBDropdownMenu style={{ textAlign: 'right' }}>
-                        {isLoggedIn ? (
-                            <MDBDropdownItem link onClick={handleDrawerOpen}>
-                                History
-                            </MDBDropdownItem>
-                        ) : (
-                            <></>
-                        )}
+                        <MDBDropdownItem link onClick={handleDrawerOpen}>
+                            History
+                        </MDBDropdownItem>
                         {isLoggedIn ? (
                             <MDBDropdownItem link onClick={handleLogout}>
                                 Logout
