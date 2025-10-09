@@ -18,6 +18,7 @@ from db.db_query import (  # noqa: E402
     get_user_history,
     get_user_history_by_session,
     search_by_query,
+    search_by_query_and_session,
     update_user_history_by_id,
 )
 from db.models import Code, Data, db  # noqa: E402
@@ -178,7 +179,21 @@ def unlink_history_by_id():
 @routes.route("/api/code/<int:data_id>", methods=["GET"])
 def get_code_by_id(data_id: int):
     user_id = session.get("user_id")
+    session_id = session.sid
     if user_id is None:
+        if session_id:
+                data = get_code_by_data_id(data_id)
+                if data and Data.query.filter_by(id=data_id, session_id=session_id).first():
+                    return jsonify(
+                        {
+                            "result": "success",
+                            "code": data.code,
+                            "check": data.check_type,
+                            "permalink": data.permalink,
+                        }
+                    )
+                return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
+        # Not logged in and no session id
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     data = get_code_by_data_id(data_id)
     if data:
@@ -197,7 +212,12 @@ def get_code_by_id(data_id: int):
 @routes.route("/api/search", methods=["GET"])
 def search():
     user_id = session.get("user_id")
+    session_id = session.sid
     if user_id is None:
+        if session_id:
+            query = request.args.get("q")
+            data = search_by_query_and_session(query, session_id=session_id)
+            return jsonify({"history": data, "has_more_data": False})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     query = request.args.get("q")
     data = search_by_query(query, user_id=user_id)

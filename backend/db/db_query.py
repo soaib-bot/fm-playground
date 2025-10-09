@@ -199,6 +199,43 @@ def search_by_query(query, user_id: int = None):
     return result
 
 
+def search_by_query_and_session(query, session_id: str = None):
+    """
+    Search the ``code`` history of a user by query and session id; used when user is not logged in.
+    Parameters:
+        query (str): The query to search
+        session_id (str): The session id of the user
+    Returns:
+        list: The list of the data matching the query
+    """
+    search_result = (
+        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
+        .join(Code, Data.code_id == Code.id)
+        .order_by(Data.time.desc())
+        .filter(
+            Data.session_id == session_id,
+            func.lower(Code.code).ilike(func.lower(f"%{query}%")),
+        )
+        .all()
+    )
+
+    data = search_result
+    result = []
+    for d in data:
+        p_time = d.time.strftime(DATE_FORMAT)
+        p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        result.append(
+            {
+                "id": d.id,
+                "time": p_time,
+                "check": d.check_type,
+                "permalink": d.permalink,
+                "code": p_code,
+            }
+        )
+    return result
+
+
 def get_user_data(user_id):
     user = User.query.filter_by(id=user_id).first()
 
