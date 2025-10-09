@@ -155,7 +155,9 @@ def get_history():
         if user_session_id:
             page = request.args.get("page", 1, type=int)
             per_page = 20
-            data, has_more_data = get_user_history_by_session(user_session_id, page=page, per_page=per_page)
+            data, has_more_data = get_user_history_by_session(
+                user_session_id, page=page, per_page=per_page
+            )
             return jsonify({"history": data, "has_more_data": has_more_data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     page = request.args.get("page", 1, type=int)
@@ -182,17 +184,17 @@ def get_code_by_id(data_id: int):
     session_id = session.sid
     if user_id is None:
         if session_id:
-                data = get_code_by_data_id(data_id)
-                if data and Data.query.filter_by(id=data_id, session_id=session_id).first():
-                    return jsonify(
-                        {
-                            "result": "success",
-                            "code": data.code,
-                            "check": data.check_type,
-                            "permalink": data.permalink,
-                        }
-                    )
-                return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
+            data = get_code_by_data_id(data_id)
+            if data and Data.query.filter_by(id=data_id, session_id=session_id).first():
+                return jsonify(
+                    {
+                        "result": "success",
+                        "code": data.code,
+                        "check": data.check_type,
+                        "permalink": data.permalink,
+                    }
+                )
+            return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
         # Not logged in and no session id
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     data = get_code_by_data_id(data_id)
