@@ -21,9 +21,17 @@ interface DrawerComponentProps {
     isOpen: boolean;
     onClose: () => void;
     onItemSelect: (check: string, permalink: string, code: string) => void;
+    isDarkTheme?: boolean;
+    isLoggedIn: boolean;
 }
 
-const DrawerComponent: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItemSelect }) => {
+const DrawerComponent: React.FC<DrawerComponentProps> = ({
+    isOpen,
+    onClose,
+    onItemSelect,
+    isDarkTheme = false,
+    isLoggedIn,
+}) => {
     interface HistoryItem {
         id: number;
         time: string;
@@ -306,6 +314,43 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onIt
                             }
                         />
                     </ListItem>
+                    {!isLoggedIn && (
+                        <ListItem>
+                            <div
+                                style={{
+                                    padding: '6px 10px',
+                                    backgroundColor: isDarkTheme ? '#2d2a1f' : '#fff3cd',
+                                    border: isDarkTheme ? '1px solid #4a4318' : '1px solid #ffeaa7',
+                                    borderRadius: '4px',
+                                    width: '100%',
+                                    fontSize: '0.8rem',
+                                    color: isDarkTheme ? '#d4af37' : '#856404',
+                                }}
+                            >
+                                <Typography
+                                    variant='body2'
+                                    sx={{
+                                        fontWeight: 500,
+                                        marginBottom: '4px',
+                                        color: isDarkTheme ? '#d4af37' : '#856404',
+                                    }}
+                                >
+                                    ⚠️ Session History Only
+                                </Typography>
+                                <Typography
+                                    variant='caption'
+                                    sx={{
+                                        display: 'block',
+                                        lineHeight: 1.3,
+                                        color: isDarkTheme ? '#b8a532' : '#856404',
+                                    }}
+                                >
+                                    You're not logged in. Your history is temporary and will be lost after this session.
+                                    Consider logging in to save your work permanently.
+                                </Typography>
+                            </div>
+                        </ListItem>
+                    )}
                     {debouncedSearchQuery
                         ? uniqueSearchData.map((item, index) => (
                               <React.Fragment key={item?.id}>

@@ -18,7 +18,7 @@ import { downloadUserData, deleteProfile } from '@/api/playgroundApi';
 import axiosAuth from '@/api/axiosAuth';
 import SessionExpiredModal from '@/components/Utils/Modals//SessionExpiredModal';
 import Toggle from '@/components/Utils/Toggle';
-import { editorValueAtom, languageAtom } from '@/atoms';
+import { editorValueAtom, languageAtom, isDiffViewModeAtom, diffComparisonCodeAtom } from '@/atoms';
 import { fmpConfig } from '@/ToolMaps';
 import '@/assets/style/Nav.css';
 
@@ -30,9 +30,11 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
     const [, setEditorValue] = useAtom(editorValueAtom);
     const [, setLanguage] = useAtom(languageAtom);
+    const [isDiffViewMode] = useAtom(isDiffViewModeAtom);
+    const [, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom);
     const authContext = useContext(AuthContext);
     const isLoggedIn = authContext?.isLoggedIn ?? false;
-    const setIsLoggedIn = authContext?.setIsLoggedIn ?? (() => { });
+    const setIsLoggedIn = authContext?.setIsLoggedIn ?? (() => {});
     const [isDrawerOpen, setDrawerOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,22 +112,27 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
      * @param {*} code - Specification code.
      */
     const handleDrawerItemClick = (check: string, permalink: string, code: string) => {
-        console.log('Clicked item:', { check, permalink, code });
-        setEditorValue(code);
-        const options = Object.entries(fmpConfig.tools).map(([key, tool]) => ({
-            id: key,
-            value: tool.extension,
-            label: tool.name,
-            short: tool.shortName,
-        }));
-        const selectedOption = options.find((option) => option.short === check);
-        if (selectedOption) {
-            setLanguage(selectedOption);
-        }
-        window.history.pushState(null, '', `/?check=${check}&p=${permalink}`);
-        const info = document.getElementById('info');
-        if (info) {
-            info.innerText = '';
+        if (isDiffViewMode) {
+            // In diff mode, load code into comparison side
+            setDiffComparisonCode(code);
+        } else {
+            // In normal mode, load into main editor
+            setEditorValue(code);
+            const options = Object.entries(fmpConfig.tools).map(([key, tool]) => ({
+                id: key,
+                value: tool.extension,
+                label: tool.name,
+                short: tool.shortName,
+            }));
+            const selectedOption = options.find((option) => option.short === check);
+            if (selectedOption) {
+                setLanguage(selectedOption);
+            }
+            window.history.pushState(null, '', `/?check=${check}&p=${permalink}`);
+            const info = document.getElementById('info');
+            if (info) {
+                info.innerText = '';
+            }
         }
     };
 
@@ -165,6 +172,8 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                         isOpen={isDrawerOpen}
                         onClose={handleDrawerClose}
                         onItemSelect={handleDrawerItemClick}
+                        isDarkTheme={isDarkTheme}
+                        isLoggedIn={isLoggedIn}
                     />
                     {isLoggedIn ? (
                         <>
