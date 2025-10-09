@@ -253,6 +253,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
           <div className='col-md-4'>
             <div className='d-flex gap-2'>
               <MDBBtn
+                rounded
                 size='sm'
                 color='primary'
                 onClick={handleLoadFromPermalink}
@@ -262,6 +263,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
               </MDBBtn>
               {(loadedPermalinkCode || diffComparisonCode) && (
                 <MDBBtn
+                  rounded
                   size='sm'
                   color='secondary'
                   onClick={() => {
@@ -274,7 +276,9 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
               )}
               <MDBBtn
                 // className={`mx-auto my-3 ${isMobile ? 'mobile-run-button' : ''}`}
-                color='secondary'
+                rounded
+                outline 
+                color='warning'
                 onClick={onBackToEditingClick}
               >
                 {/* <VscEdit style={{ marginRight: '2px' }} /> */}
