@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaDownload } from 'react-icons/fa';
+import { VscArrowDown } from "react-icons/vsc";
 import { MDBIcon } from 'mdb-react-ui-kit';
 import '@/assets/style/Playground.css';
 
@@ -24,7 +24,7 @@ const FileDownload: React.FC<FileDownloadProps> = ({ content, fileName, fileExte
 
     return (
         <MDBIcon size='lg' className='playground-icon' onClick={handleDownload}>
-            <FaDownload
+            <VscArrowDown
                 className='playground-icon'
                 role='button'
                 data-tooltip-id='playground-tooltip'

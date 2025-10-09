@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { Stack } from '@mui/material';
 import { MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
-import { FaFileCirclePlus } from 'react-icons/fa6';
+import { VscDiffSingle, VscNewFile } from "react-icons/vsc";
 import { AiOutlineFullscreen, AiOutlineFullscreenExit } from 'react-icons/ai';
 import Toggle from 'react-toggle';
 import {
@@ -142,7 +142,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                 data-tooltip-id='playground-tooltip'
                                 data-tooltip-content='New Spec'
                             >
-                                <FaFileCirclePlus className='playground-icon' role='button' />
+                                <VscNewFile className='playground-icon' role='button' />
                             </MDBIcon>
                             <ConfirmModal
                                 isOpen={isNewSpecModalOpen}
@@ -171,6 +171,15 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                     <CopyToClipboardBtn />
                                 </MDBIcon>
                             )}
+                            <MDBIcon
+                                size='lg'
+                                className='playground-icon'
+                                data-tooltip-id='playground-tooltip'
+                                data-tooltip-content='Compare Specs'
+                                //onClick={()=> ToDo()}
+                            >
+                                <VscDiffSingle />
+                            </MDBIcon>
                             <MDBIcon size='lg' className='playground-icon' onClick={() => onFullScreenButtonClick()}>
                                 {isFullScreen ? (
                                     <AiOutlineFullscreenExit

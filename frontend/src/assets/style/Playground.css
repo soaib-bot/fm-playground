@@ -91,6 +91,7 @@
 
 .playground-icon {
     color: var(--primary-text-color);
+    cursor: pointer;
 }
 
 .custom-code-editor {
