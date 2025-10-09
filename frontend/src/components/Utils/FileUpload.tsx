@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { VscArrowUp } from "react-icons/vsc";
+import { VscArrowUp } from 'react-icons/vsc';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
 import { fmpConfig } from '@/ToolMaps';
 import '@/assets/style/Playground.css';

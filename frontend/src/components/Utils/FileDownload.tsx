@@ -1,5 +1,5 @@
 import React from 'react';
-import { VscArrowDown } from "react-icons/vsc";
+import { VscArrowDown } from 'react-icons/vsc';
 import { MDBIcon } from 'mdb-react-ui-kit';
 import '@/assets/style/Playground.css';
 

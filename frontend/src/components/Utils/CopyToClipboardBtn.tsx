@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAtom } from 'jotai';
 import { Snackbar } from '@mui/material';
-import { VscShare } from "react-icons/vsc";
+import { VscShare } from 'react-icons/vsc';
 import { permalinkAtom } from '@/atoms';
 import '@/assets/style/Playground.css';
 
