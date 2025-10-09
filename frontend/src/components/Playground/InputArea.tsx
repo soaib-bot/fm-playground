@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { Stack } from '@mui/material';
 import { MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
-import { VscDiffSingle, VscNewFile } from "react-icons/vsc";
+import { VscDiffSingle, VscNewFile } from 'react-icons/vsc';
 import { AiOutlineFullscreen, AiOutlineFullscreenExit } from 'react-icons/ai';
 import Toggle from 'react-toggle';
 import {
@@ -15,6 +15,8 @@ import {
     isExecutingAtom,
     isFullScreenAtom,
     lineToHighlightAtom,
+    isDiffViewModeAtom,
+    originalCodeAtom,
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
 import FileUploadButton from '@/components/Utils/FileUpload';
@@ -22,7 +24,6 @@ import FileDownload from '@/components/Utils/FileDownload';
 import CopyToClipboardBtn from '@/components/Utils/CopyToClipboardBtn';
 import LspEditor from './LspEditor';
 import Editor from './Editor';
-import CodeDiffEditor from './DiffEditor';
 import { additionalInputAreaUiMap, lspSupportMap } from '@/ToolMaps';
 
 interface InputAreaProps {
@@ -41,6 +42,8 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
     const [isExecuting] = useAtom(isExecutingAtom);
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
+    const [, setIsDiffViewMode] = useAtom(isDiffViewModeAtom);
+    const [, setOriginalCode] = useAtom(originalCodeAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false); // state to control the new spec modal
     const [isMobile, setIsMobile] = useState(false);
@@ -106,6 +109,13 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
         const fileName = p ? p : 'code';
         const fileExtension = language.id ?? 'txt';
         return <FileDownload content={content} fileName={fileName} fileExtension={fileExtension} />;
+    };
+
+    const handleEnterDiffView = () => {
+        // Store current code as original
+        setOriginalCode(editorValue);
+        // Enter diff view mode
+        setIsDiffViewMode(true);
     };
 
     return (
@@ -176,7 +186,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                 className='playground-icon'
                                 data-tooltip-id='playground-tooltip'
                                 data-tooltip-content='Compare Specs'
-                                //onClick={()=> ToDo()}
+                                onClick={handleEnterDiffView}
                             >
                                 <VscDiffSingle />
                             </MDBIcon>

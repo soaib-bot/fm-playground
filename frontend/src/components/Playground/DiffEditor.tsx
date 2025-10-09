@@ -37,6 +37,7 @@ const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProp
 
     useEffect(() => {
         if (diffEditorRef.current) {
+            // Highlight lines in the modified editor (right side - editable by default)
             const modifiedEditor = diffEditorRef.current.getModifiedEditor();
             if (lineToHighlight !== null && lineToHighlight.length > 0 && modifiedEditor) {
                 const decorations = lineToHighlight.map((line) => {
@@ -62,11 +63,20 @@ const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProp
     // Register the language configuration for each tool
     function handleDiffEditorDidMount(editor: monacoEditor.editor.IStandaloneDiffEditor, monaco: typeof monacoEditor) {
         diffEditorRef.current = editor;
-        const modifiedEditor = editor.getModifiedEditor();
-        modifiedEditor?.focus();
+        // Standard Monaco layout: original (left, read-only), modified (right, editable)
+        const originalEditor = editor.getOriginalEditor(); // Left side - read-only by default
+        const modifiedEditor = editor.getModifiedEditor(); // Right side - editable by default
 
-        // Listen for changes on the modified editor
+        // Configure editors with standard roles
+        if (originalEditor) {
+            originalEditor.updateOptions({ readOnly: true }); // Keep left side read-only
+        }
+
         if (modifiedEditor) {
+            modifiedEditor.updateOptions({ readOnly: props.readOnly || false }); // Make right side editable
+            modifiedEditor.focus();
+
+            // Listen for changes on the modified editor (right side)
             modifiedEditor.onDidChangeModelContent(() => {
                 const newCode = modifiedEditor.getValue();
                 handleCodeChange(newCode);
@@ -134,7 +144,7 @@ const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProp
                         enabled: true,
                         independentColorPoolPerBracketType: true,
                     },
-                    readOnly:false,
+                    readOnly: false,
                     renderSideBySide: true,
                     enableSplitViewResizing: true,
                     renderOverviewRuler: true,
