@@ -38,6 +38,7 @@ export const isLoadingPermalinkAtom = atom(false);
 export const isDiffViewModeAtom = atom(false);
 export const originalCodeAtom = atomWithStorage('originalCode', '', rawStringStorage);
 export const diffComparisonCodeAtom = atom('');
+export const diffComparisonHistoryIdAtom = atom<number | null>(null);
 
 export const spectraCliOptionsAtom = atom('check-realizability');
 export const limbooleCliOptionsAtom = atom({ value: '1', label: 'satisfiability' });

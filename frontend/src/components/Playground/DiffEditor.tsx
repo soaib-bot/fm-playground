@@ -4,6 +4,7 @@ import { DiffEditor } from '@monaco-editor/react';
 import { useAtom } from 'jotai';
 import { editorValueAtom, languageAtom, lineToHighlightAtom } from '@/atoms';
 import { fmpConfig, languageConfigMap } from '@/ToolMaps';
+import { DiffOutput } from "@/components/Playground/DiffOutput";
 import '@/assets/style/Playground.css';
 
 interface DiffCodeEditorProps {
@@ -12,6 +13,8 @@ interface DiffCodeEditorProps {
     originalValue?: string;
     modifiedValue?: string;
     readOnly?: boolean;
+    showDiffActions?: boolean;
+    isAnalyzeMode?: boolean;
 }
 
 const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProps) => {
@@ -127,31 +130,87 @@ const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProp
 
     return (
         <div className='custom-diff-editor'>
-            <DiffEditor
-                height={props.height}
-                width='100%'
-                language={language.id}
-                original={props.originalValue || ''}
-                modified={props.modifiedValue || editorValue}
-                theme={props.editorTheme}
-                options={{
-                    minimap: {
-                        enabled: false,
-                    },
-                    automaticLayout: true,
-                    mouseWheelZoom: true,
-                    bracketPairColorization: {
-                        enabled: true,
-                        independentColorPoolPerBracketType: true,
-                    },
-                    readOnly: false,
-                    renderSideBySide: true,
-                    enableSplitViewResizing: true,
-                    renderOverviewRuler: true,
-                    ignoreTrimWhitespace: false,
-                }}
-                onMount={handleDiffEditorDidMount}
-            />
+            {!props.isAnalyzeMode ? (
+                <DiffEditor
+                    height={props.height}
+                    width='100%'
+                    language={language.id}
+                    original={props.originalValue || ''}
+                    modified={props.modifiedValue || editorValue}
+                    theme={props.editorTheme}
+                    options={{
+                        minimap: {
+                            enabled: false,
+                        },
+                        automaticLayout: true,
+                        mouseWheelZoom: true,
+                        bracketPairColorization: {
+                            enabled: true,
+                            independentColorPoolPerBracketType: true,
+                        },
+                        readOnly: false,
+                        renderSideBySide: !props.isAnalyzeMode,
+                        enableSplitViewResizing: true,
+                        renderOverviewRuler: true,
+                        ignoreTrimWhitespace: false,
+                    }}
+                    onMount={handleDiffEditorDidMount}
+                />) :
+                (
+                    <div className='analyze-mode-layout' style={{ display: 'flex', gap: '10px', height: props.height }}>
+                        <div style={{ flex: 1 }}>
+                            <DiffEditor
+                                height={props.height}
+                                width='100%'
+                                language={language.id}
+                                original={props.originalValue || ''}
+                                modified={props.modifiedValue || editorValue}
+                                theme={props.editorTheme}
+                                options={{
+                                    minimap: {
+                                        enabled: false,
+                                    },
+                                    automaticLayout: true,
+                                    mouseWheelZoom: true,
+                                    bracketPairColorization: {
+                                        enabled: true,
+                                        independentColorPoolPerBracketType: true,
+                                    },
+                                    readOnly: false,
+                                    renderSideBySide: false,
+                                    enableSplitViewResizing: true,
+                                    renderOverviewRuler: true,
+                                    ignoreTrimWhitespace: false,
+                                    diffCodeLens: true,
+                                }}
+                                onMount={handleDiffEditorDidMount}
+                            />
+                        </div>
+                        <div style={{
+                            flex: 1,
+                            borderLeft: `1px solid ${props.editorTheme === 'vs-dark' ? '#464647' : '#e1e4e8'}`,
+                            paddingLeft: '10px',
+                            backgroundColor: props.editorTheme === 'vs-dark' ? '#1e1e1e' : '#ffffff',
+                            border: `1px solid ${props.editorTheme === 'vs-dark' ? '#464647' : '#e1e4e8'}`,
+                            borderRadius: '4px',
+                            overflow: 'auto'
+                        }}>
+                            <div style={{
+                                padding: '10px',
+                                color: props.editorTheme === 'vs-dark' ? '#cccccc' : '#333333',
+                                fontFamily: 'monospace',
+                                fontSize: '14px'
+                            }}>
+                                <h4 style={{ margin: '0 0 10px 0', color: props.editorTheme === 'vs-dark' ? '#ffffff' : '#000000' }}>
+                                    Analysis Output
+                                </h4>
+                                <div>
+                                    Analysis results will appear here when you run the code...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
     );
 };
