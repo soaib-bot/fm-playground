@@ -143,7 +143,7 @@ def get_code():
         .filter_by(permalink=p)
         .first_or_404()
     )
-    response = make_response(jsonify({"code": code_data.code}))
+    response = make_response(jsonify({"code": code_data.code, "code_id": code_data.id}), 200)
     return response
 
 
