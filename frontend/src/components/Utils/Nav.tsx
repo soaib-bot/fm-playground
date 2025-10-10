@@ -18,7 +18,7 @@ import { downloadUserData, deleteProfile } from '@/api/playgroundApi';
 import axiosAuth from '@/api/axiosAuth';
 import SessionExpiredModal from '@/components/Utils/Modals//SessionExpiredModal';
 import Toggle from '@/components/Utils/Toggle';
-import { editorValueAtom, languageAtom, isDiffViewModeAtom, diffComparisonCodeAtom } from '@/atoms';
+import { editorValueAtom, languageAtom, isDiffViewModeAtom, diffComparisonCodeAtom, diffComparisonHistoryIdAtom } from '@/atoms';
 import { fmpConfig } from '@/ToolMaps';
 import '@/assets/style/Nav.css';
 
@@ -32,6 +32,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
     const [, setLanguage] = useAtom(languageAtom);
     const [isDiffViewMode] = useAtom(isDiffViewModeAtom);
     const [, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom);
+    const [, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom);
     const authContext = useContext(AuthContext);
     const isLoggedIn = authContext?.isLoggedIn ?? false;
     const setIsLoggedIn = authContext?.setIsLoggedIn ?? (() => {});
@@ -110,11 +111,16 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
      * @param {*} check  - The short name of the tool.
      * @param {*} permalink - The for the specification.
      * @param {*} code - Specification code.
+     * @param {*} itemId - The history item ID (optional).
      */
-    const handleDrawerItemClick = (check: string, permalink: string, code: string) => {
+    const handleDrawerItemClick = (check: string, permalink: string, code: string, itemId?: number) => {
         if (isDiffViewMode) {
             // In diff mode, load code into comparison side
             setDiffComparisonCode(code);
+            // Store the history item ID for saving purposes
+            if (itemId !== undefined) {
+                setDiffComparisonHistoryId(itemId);
+            }
         } else {
             // In normal mode, load into main editor
             setEditorValue(code);

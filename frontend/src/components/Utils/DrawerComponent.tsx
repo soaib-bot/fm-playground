@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import _debounce from 'lodash/debounce';
 import { PiPushPinFill, PiPushPinSlashFill } from 'react-icons/pi';
 import { MdRefresh, MdOutlineSearch } from 'react-icons/md';
@@ -20,7 +20,7 @@ import '@/assets/style/Playground.css';
 interface DrawerComponentProps {
     isOpen: boolean;
     onClose: () => void;
-    onItemSelect: (check: string, permalink: string, code: string) => void;
+    onItemSelect: (check: string, permalink: string, code: string, itemId?: number) => void;
     isDarkTheme?: boolean;
     isLoggedIn: boolean;
 }
@@ -164,7 +164,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
             await getCodeById(itemId)
                 .then((res: { check: string; permalink: string; code: string }) => {
                     const itemContent = res;
-                    onItemSelect(itemContent.check, itemContent.permalink, itemContent.code);
+                    onItemSelect(itemContent.check, itemContent.permalink, itemContent.code, itemId);
                     onClose();
                     setSelectedItemId(itemId);
                 })
