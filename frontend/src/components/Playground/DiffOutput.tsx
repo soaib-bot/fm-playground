@@ -1,26 +1,37 @@
+import React from 'react';
 import { useAtom } from 'jotai';
-import { outputAtom, outputPreviewHeightAtom } from '@/atoms';
+import { languageAtom } from '@/atoms';
+import { diffToolOutputUIMap } from '@/ToolMaps';
 import '@/assets/style/Playground.css';
 
-const DiffOutput = () => {
-    const [code] = useAtom(outputAtom);
-    const [outputPreviewHeight] = useAtom(outputPreviewHeightAtom);
+interface DiffOutputProps {
+    editorTheme: string;
+    onFullScreenButtonClick?: () => void;
+}
 
-    const containsHTML = /<[^>]*>/.test(code);
+const DiffOutput: React.FC<DiffOutputProps> = ({ editorTheme }) => {
+    const [language] = useAtom(languageAtom);
 
+    const AdditionalUi = diffToolOutputUIMap[language.short];
+
+    const isDark = editorTheme === 'vs-dark';
+    const backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
     return (
-        <pre
-            id='info'
-            className='plain-output-box'
-            contentEditable={false}
-            style={{
-                borderRadius: '8px',
-                height: outputPreviewHeight,
-                whiteSpace: 'pre-wrap',
-            }}
-            {...(containsHTML ? { dangerouslySetInnerHTML: { __html: code } } : { children: code })}
-        />
+        <div style={{
+            flex: 1,
+            backgroundColor,
+            borderRadius: '4px',
+            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column'
+        }}>
+            <div className='col-md-12'>
+                <div>{AdditionalUi && <AdditionalUi />}</div>
+            </div>
+        </div>
     );
 };
 
-export { DiffOutput };
+export default DiffOutput;
+
+

@@ -20,8 +20,10 @@ import FileUploadButton from '@/components/Utils/FileUpload';
 import FileDownload from '@/components/Utils/FileDownload';
 import CopyToClipboardBtn from '@/components/Utils/CopyToClipboardBtn';
 import CodeDiffEditor from './DiffEditor';
+import DiffOutput from './DiffOutput';
 import { getCodeByParmalink } from '@/api/playgroundApi';
 import { saveCode } from '@/api/playgroundApi';
+import { diffToolInputUIMap } from '@/ToolMaps';
 
 interface DiffViewAreaProps {
     editorTheme: string;
@@ -86,7 +88,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     console.error('Failed to save diff comparison code from history:', error);
                 }
             };
-            
+
             saveFromHistory();
             // Clear the history ID after saving to prevent duplicate saves
             setDiffComparisonHistoryId(null);
@@ -98,7 +100,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
         if (isFullScreen) {
             return isMobile ? '70vh' : '80vh';
         }
-        return isMobile ? '50vh' : '70vh'; // Slightly taller since no output area
+        return isMobile ? '40vh' : '55vh';
     };
 
     const openModal = () => setIsNewSpecModalOpen(true);
@@ -186,7 +188,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             const response = await getCodeByParmalink(check, permalink);
             setLoadedPermalinkCode(response.code);
             setPermalinkError('');
-            setPermalinkInput(''); // Clear the input after successful load
+            // setPermalinkInput(''); 
 
             // Save the diff comparison code after successful load
             await saveDiffComparisonCode(check, permalink);
@@ -278,15 +280,29 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                         </Stack>
                     </div>
                 </div>
+                {/* Help text */}
+                <div className='col-12'>
+
+                    <small>
+                        The left side shows code for comparison (read-only), the right side shows your current editable code.
+                        You can edit the right side and see the differences highlighted. Load any saved specification using
+                        the permalink field above or from history. For detailed instructions, please watch the &nbsp;
+                        <a
+                            href='https://www.loom.com/share/1f3f3b1e8f004b6c8a1f3f3b1e8f004b6c8a1'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                        >
+                            <IoLogoYoutube /> video tutorial on YouTube
+                        </a>.
+                    </small>
+
+                </div>
             </div>
 
             {/* Permalink input */}
             <div className='col-12 mb-2'>
                 <div className='row align-items-center g-2'>
                     <div className='col-md-8'>
-                        {/* <label htmlFor='permalink-input' className='form-label mb-1'>
-                  <small><strong>Load code from permalink (for comparison):</strong></small>
-                </label> */}
                         <input
                             id='permalink-input'
                             type='text'
@@ -354,45 +370,62 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     </div>
                 )}
             </div>
+            <hr />
+            {!isAnalyzeMode ? (
+                <CodeDiffEditor
+                    height={getEditorHeight()}
+                    editorTheme={editorTheme}
+                    originalValue={diffComparisonCode || loadedPermalinkCode}
+                    modifiedValue={editorValue}
+                    readOnly={false}
+                    showDiffActions={!!(diffComparisonCode || loadedPermalinkCode)}
+                    isAnalyzeMode={isAnalyzeMode}
+                />
+            ) : (
+                <div className='analyze-mode-layout' style={{ display: 'flex', gap: '10px', height: getEditorHeight() }}>
+                    <div style={{ flex: 1 }}>
+                        <CodeDiffEditor
+                            height={getEditorHeight()}
+                            editorTheme={editorTheme}
+                            originalValue={diffComparisonCode || loadedPermalinkCode}
+                            modifiedValue={editorValue}
+                            readOnly={false}
+                            showDiffActions={!!(diffComparisonCode || loadedPermalinkCode)}
+                            isAnalyzeMode={isAnalyzeMode}
+                        />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <DiffOutput 
+                            editorTheme={editorTheme} 
+                            onFullScreenButtonClick={onFullScreenButtonClick}
+                        />
+                    </div>
+                </div>
+            )}
+            <hr />
+            <div className='row'>
+                <div className='col-md-6'>
+                    <div style={{ paddingRight: '8px' }}>
+                        {/* Additional input UI for the current language (if any) */}
+                        {(() => {
+                            const AdditionalUi = diffToolInputUIMap[language.short];
+                            return <div className='additional-input-ui'>{AdditionalUi && <AdditionalUi />}</div>;
+                        })()}
 
-            {/* Help text */}
-            <div className='col-12 mb-2'>
-                <div className='alert alert-info' role='alert'>
-                    <small>
-                        The left side shows code for comparison (read-only), the right side shows your current editable code.
-                        You can edit the right side and see the differences highlighted. Load any saved specification using
-                        the permalink field above or from history. For detailed instructions, please watch the &nbsp;
-                        <a
-                            href='https://www.loom.com/share/1f3f3b1e8f004b6c8a1f3f3b1e8f004b6c8a1'
-                            target='_blank'
-                            rel='noopener noreferrer'
+                        <MDBBtn
+                            className={`mt-3 ${isMobile ? 'mobile-run-button' : ''}`}
+                            style={{ width: '100%' }}
+                            color='primary'
+                            onClick={handleAnalyzeClick}
                         >
-                            <IoLogoYoutube /> video tutorial on YouTube
-                        </a>.
-                    </small>
+                            {isAnalyzeMode ? 'Close Analysis' : 'Semantic Analysis'}
+                        </MDBBtn>
+                    </div>
+                </div>
+                <div className='col-md-6'>
+                    {/* Right half intentionally left for auxiliary controls or output previews */}
                 </div>
             </div>
-
-            <CodeDiffEditor
-                height={getEditorHeight()}
-                editorTheme={editorTheme}
-                originalValue={diffComparisonCode || loadedPermalinkCode}
-                modifiedValue={editorValue}
-                readOnly={false}
-                showDiffActions={!!(diffComparisonCode || loadedPermalinkCode)}
-                isAnalyzeMode={isAnalyzeMode}
-            />
-            <hr />
-
-            {/* <MDBBtn
-        className={`mx-auto my-3 ${isMobile ? 'mobile-run-button' : ''}`}
-        style={{ width: '95%' }}
-        color='secondary'
-        onClick={onBackToEditingClick}
-      >
-        <VscEdit style={{ marginRight: '8px' }} />
-        Back to Editing Mode
-      </MDBBtn> */}
         </div>
     );
 };

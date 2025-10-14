@@ -47,6 +47,9 @@ export const alloySelectedCmdAtom = atom(0);
 export const alloyInstanceAtom = atom<any[]>([]);
 export const alloyCmdOptionsAtom = atom<{ value: number; label: string }[]>([]);
 
+export const smtDiffOptionsAtom = atom('common-witness');
+
+
 jotaiStore.sub(editorValueAtom, () => {});
 jotaiStore.sub(languageAtom, () => {});
 jotaiStore.sub(lineToHighlightAtom, () => {});

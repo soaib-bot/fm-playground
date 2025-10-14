@@ -24,6 +24,12 @@ import AlloyCmdOptions from '@/../tools/alloy/components/AlloyCmdOptions';
 // Additional output area components for the different tools
 import NuxmvCopyrightNotice from '@/../tools/nuxmv/components/NuxmvCopyrightNotice';
 
+// Diff tool input area components for the different tools
+import SmtDiffOptions from '@/../tools/smt-diff/components/smtDiffOptions';
+
+// Diff tool output area components for the different tools 
+import smtDiffOutput from '@/../tools/smt-diff/components/smtDiffOutput';
+
 import type { FmpConfig } from '@/types';
 
 export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
@@ -50,6 +56,22 @@ export const toolOutputMap: Record<string, React.FC<any>> = {
     XMV: TextualOutput,
     ALS: AlloyOutput,
     SPECTRA: TextualOutput,
+};
+
+export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
+    SAT: null,
+    SMT: SmtDiffOptions,
+    XMV: null,
+    ALS: null,
+    SPECTRA: null,
+};
+
+export const diffToolOutputUIMap: Record<string, React.FC<any> | null> = {
+    SAT: null,
+    SMT: smtDiffOutput,
+    XMV: null,
+    ALS: null,
+    SPECTRA: null,
 };
 
 export const languageConfigMap: Record<string, { tokenProvider: any; configuration: any }> = {
