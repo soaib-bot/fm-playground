@@ -7,7 +7,6 @@ import Guides from '@/components/Utils/Guides';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
 import { getCodeByParmalink } from '@/api/playgroundApi';
 import { fmpConfig, toolExecutionMap } from '@/ToolMaps';
-import Feedback from '@/components/Utils/Feedback';
 import {
     editorValueAtom,
     languageAtom,
@@ -48,11 +47,6 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
     const [, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom); // contains the comparison code for diff view.
     const [errorMessage, setErrorMessage] = useState<string | null>(null); // contains the error messages from the API.
     const [isErrorMessageModalOpen, setIsErrorMessageModalOpen] = useState(false); // contains the state of the message modal.
-    const [showFeedback, setShowFeedback] = useState<boolean>(false);
-
-    const toggleFeedbackForm = () => {
-        setShowFeedback((prev) => !prev);
-    };
 
     /**
      * Load the code and language from the URL.
@@ -251,10 +245,6 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
                     errorMessage={errorMessage}
                 />
             )}
-            <button className='floating-button' onClick={toggleFeedbackForm}>
-                Feedback
-            </button>
-            {showFeedback && <Feedback toggleFeedback={toggleFeedbackForm} />}
         </div>
     );
 };
