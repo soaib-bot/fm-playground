@@ -4,15 +4,15 @@ import { smtDiffOptionsAtom } from '@/atoms';
 
 const SmtDiffOptions = () => {
     const options = [
-        { value: 'common-witness', label: 'Common Witness' },
-        { value: 'preserve-left', label: 'Preserve Left' },
-        { value: 'preserve-right', label: 'Preserve Right' },
+        { value: 'common', label: 'Common' },
+        { value: 'left-vs-current', label: 'Left vs Current' },
+        { value: 'current-vs-left', label: 'Current vs Left' },
     ];
     const [, setSmtDiffOption] = useAtom(smtDiffOptionsAtom);
 
     const handleOptionChange = (selectedOption: SingleValue<{ value: string; label: string }>) => {
         if (selectedOption) {
-            setSmtDiffOption(selectedOption);
+            setSmtDiffOption(selectedOption.value);
         }
     };
 
