@@ -86,6 +86,12 @@ export default defineConfig({
                 secure: false,
                 rewrite: (path) => path.replace(/^\/smt/, ''),
             },
+            '/diff-smt': {
+                target: 'http://localhost:8055',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/diff-smt/, ''),
+            },
             '/alloy': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,

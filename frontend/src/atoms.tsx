@@ -47,7 +47,8 @@ export const alloySelectedCmdAtom = atom(0);
 export const alloyInstanceAtom = atom<any[]>([]);
 export const alloyCmdOptionsAtom = atom<{ value: number; label: string }[]>([]);
 
-export const smtDiffOptionsAtom = atom('common-witness');
+export const smtDiffOptionsAtom = atom('common');
+export const smtDiffWitnessAtom = atom<any>(null);
 
 
 jotaiStore.sub(editorValueAtom, () => {});

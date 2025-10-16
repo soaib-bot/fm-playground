@@ -12,10 +12,13 @@ import {
     permalinkAtom,
     languageAtom,
     isFullScreenAtom,
+    isExecutingAtom,
     diffComparisonCodeAtom,
     diffComparisonHistoryIdAtom,
+    smtDiffWitnessAtom,
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
+import MessageModal from '@/components/Utils/Modals/MessageModal';
 import FileUploadButton from '@/components/Utils/FileUpload';
 import FileDownload from '@/components/Utils/FileDownload';
 import CopyToClipboardBtn from '@/components/Utils/CopyToClipboardBtn';
@@ -23,7 +26,8 @@ import CodeDiffEditor from './DiffEditor';
 import DiffOutput from './DiffOutput';
 import { getCodeByParmalink } from '@/api/playgroundApi';
 import { saveCode } from '@/api/playgroundApi';
-import { diffToolInputUIMap } from '@/ToolMaps';
+import { diffToolInputUIMap, toolExecutionMap } from '@/ToolMaps';
+import { fmpConfig } from '@/ToolMaps';
 
 interface DiffViewAreaProps {
     editorTheme: string;
@@ -44,8 +48,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
     const [permalink, setPermalink] = useAtom(permalinkAtom);
     const [language] = useAtom(languageAtom);
     const [isFullScreen] = useAtom(isFullScreenAtom);
+    const [isExecuting, setIsExecuting] = useAtom(isExecutingAtom);
     const [diffComparisonCode, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom);
     const [diffComparisonHistoryId, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom);
+    const [, setSmtDiffWitness] = useAtom(smtDiffWitnessAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -54,6 +60,8 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
     const [permalinkError, setPermalinkError] = useState('');
     const [loadedPermalinkCode, setLoadedPermalinkCode] = useState('');
     const [isAnalyzeMode, setIsAnalyzeMode] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isErrorMessageModalOpen, setIsErrorMessageModalOpen] = useState(false);
 
     // Check screen size on mount and resize for mobile detection
     useEffect(() => {
@@ -68,32 +76,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             window.removeEventListener('resize', checkScreenSize);
         };
     }, []);
-
-    // Save diff comparison when loaded from history
-    useEffect(() => {
-        if (diffComparisonCode && diffComparisonHistoryId) {
-            const saveFromHistory = async () => {
-                try {
-                    const metadata = {
-                        leftSideCodeId: diffComparisonHistoryId
-                    };
-
-                    await saveCode(
-                        editorValue,
-                        language.short + "SynDiff",
-                        permalink.permalink ?? null,
-                        metadata
-                    );
-                } catch (error) {
-                    console.error('Failed to save diff comparison code from history:', error);
-                }
-            };
-
-            saveFromHistory();
-            // Clear the history ID after saving to prevent duplicate saves
-            setDiffComparisonHistoryId(null);
-        }
-    }, [diffComparisonCode, diffComparisonHistoryId, editorValue, language.short, permalink.permalink, setDiffComparisonHistoryId]);
 
     // Calculate editor height based on screen size and fullscreen state
     const getEditorHeight = () => {
@@ -210,9 +192,55 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
         }
     };
 
-    const handleAnalyzeClick = () => {
-        setIsAnalyzeMode(!isAnalyzeMode);
-        // TODO: Semantic diff analysis will be implemented here
+    const handleAnalyzeClick = async () => {
+        // if diffComparisonCode is empty, show error modal
+        if (!diffComparisonCode) {
+            showErrorModal('No Specification to compare with. Please load a specification using the permalink field above or from history.');
+            return;
+        }
+        if (!isAnalyzeMode) {
+            // Entering analyze mode - run the semantic diff analysis
+            setIsAnalyzeMode(true);
+            setOutput('');
+            
+            try {
+                setIsExecuting(true);
+                const currentTool = toolExecutionMap[language.short + 'Diff'];
+                // if currentTool is not in the map, show error modal
+                if (currentTool) {
+                    currentTool();
+                } else {
+                    showErrorModal('You can not perform semantic analysis with different tools.');
+                    setIsExecuting(false);
+                    return;
+                }
+            } catch (err: any) {
+                if (err.code === 'ERR_NETWORK') {
+                    showErrorModal('Network Error. Please check your internet connection.');
+                } else if (err.response?.status === 413) {
+                    showErrorModal('Code too long. Please reduce the size of the code.');
+                } else {
+                    showErrorModal(
+                        `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+                    );
+                }
+            }
+        } else {
+            // Exiting analyze mode - clear witness data
+            setOutput('');
+            setSmtDiffWitness(null);
+            setIsAnalyzeMode(false);
+        }
+    };
+
+    const showErrorModal = (message: string) => {
+        setErrorMessage(message);
+        setIsErrorMessageModalOpen(true);
+    };
+
+    const hideErrorModal = () => {
+        setErrorMessage(null);
+        setIsErrorMessageModalOpen(!isErrorMessageModalOpen);
     };
 
 
@@ -333,19 +361,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                             >
                                 {isLoadingFromPermalink ? 'Loading...' : 'Load Spec'}
                             </MDBBtn>
-                            {(loadedPermalinkCode || diffComparisonCode) && (
-                                <MDBBtn
-                                    rounded
-                                    outline
-                                    size='sm'
-                                    color='success'
-                                    onClick={() => {
-                                        handleAnalyzeClick();
-                                    }}
-                                >
-                                    {isAnalyzeMode ? 'Compare' : 'Analyze'}
-                                </MDBBtn>
-                            )}
+                            
                             <MDBBtn
                                 // className={`mx-auto my-3 ${isMobile ? 'mobile-run-button' : ''}`}
                                 rounded
@@ -417,8 +433,9 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                             style={{ width: '100%' }}
                             color='primary'
                             onClick={handleAnalyzeClick}
+                            disabled={isExecuting}
                         >
-                            {isAnalyzeMode ? 'Close Analysis' : 'Semantic Analysis'}
+                            {isExecuting ? 'Analyzing...' : isAnalyzeMode ? 'Close Analysis' : 'Semantic Analysis'}
                         </MDBBtn>
                     </div>
                 </div>
@@ -426,6 +443,15 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     {/* Right half intentionally left for auxiliary controls or output previews */}
                 </div>
             </div>
+            {errorMessage && (
+                <MessageModal
+                    isErrorMessageModalOpen={isErrorMessageModalOpen}
+                    setIsErrorMessageModalOpen={hideErrorModal}
+                    toggleErrorMessageModal={hideErrorModal}
+                    title='Error'
+                    errorMessage={errorMessage}
+                />
+            )}
         </div>
     );
 };

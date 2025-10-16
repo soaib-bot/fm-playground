@@ -4,6 +4,7 @@ import { executeZ3Wasm } from '@/../tools/smt/z3Executor';
 import { executeNuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
 import { executeAlloyTool } from '@/../tools/alloy/alloyExecutor';
 import { executeSpectraTool } from '@/../tools/spectra/spectraExecutor';
+import { executeSmtDiffTool } from '@/../tools/smt-diff/smtDiffExecutor';
 
 // Tool output components
 import TextualOutput from '@/components/Playground/TextualOutput';
@@ -28,7 +29,7 @@ import NuxmvCopyrightNotice from '@/../tools/nuxmv/components/NuxmvCopyrightNoti
 import SmtDiffOptions from '@/../tools/smt-diff/components/smtDiffOptions';
 
 // Diff tool output area components for the different tools 
-import smtDiffOutput from '@/../tools/smt-diff/components/smtDiffOutput';
+import SmtDiffOutput from '@/../tools/smt-diff/components/smtDiffOutput';
 
 import type { FmpConfig } from '@/types';
 
@@ -48,6 +49,7 @@ export const toolExecutionMap: Record<string, () => void> = {
     XMV: executeNuxmvTool,
     ALS: executeAlloyTool,
     SPECTRA: executeSpectraTool,
+    SMTDiff: executeSmtDiffTool,
 };
 
 export const toolOutputMap: Record<string, React.FC<any>> = {
@@ -68,7 +70,7 @@ export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
 
 export const diffToolOutputUIMap: Record<string, React.FC<any> | null> = {
     SAT: null,
-    SMT: smtDiffOutput,
+    SMT: SmtDiffOutput,
     XMV: null,
     ALS: null,
     SPECTRA: null,
