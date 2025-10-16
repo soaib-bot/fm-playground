@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
+import { VscArrowLeft, VscArrowRight } from "react-icons/vsc";
 import { isFullScreenAtom, smtDiffWitnessAtom } from '@/atoms';
 import { getNextSmtDiffWitness } from '../smtDiffExecutor';
+import SMTDiffEvaluator from './smtDiffEvaluator';
 
 const SmtDiffOutput = () => {
     const [isFullScreen] = useAtom(isFullScreenAtom);
@@ -100,6 +102,7 @@ const SmtDiffOutput = () => {
         <div>
             {hasWitness ? (
                 <div>
+                    <SMTDiffEvaluator specId={specId} />
                     <pre
                         className='plain-output-box'
                         contentEditable={false}
@@ -121,12 +124,13 @@ const SmtDiffOutput = () => {
 
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
                         <MDBBtn
-                            color='primary'
+                            color='secondary'
+                            rounded
                             onClick={handlePreviousWitness}
                             disabled={currentWitnessIndex === 0}
                             size='sm'
                         >
-                            Previous Witness
+                            <VscArrowLeft size={20} />
                         </MDBBtn>
                         
                         <span style={{ alignSelf: 'center', padding: '0 10px' }}>
@@ -134,27 +138,28 @@ const SmtDiffOutput = () => {
                         </span>
                         
                         <MDBBtn
-                            color='primary'
+                            color='secondary'
+                            rounded
                             onClick={handleNextWitness}
                             disabled={isNextWitnessExecuting || isLastWitness}
                             size='sm'
                         >
-                            {isNextWitnessExecuting ? 'Loading...' : 'Next Witness'}
+                            {isNextWitnessExecuting ? 'Loading...' : <VscArrowRight size={20} />}
                         </MDBBtn>
                     </div>
                 </div>
             ) : (
-                <pre
+                <div
                     className='plain-output-box'
-                    contentEditable={false}
                     style={{
                         borderRadius: '8px',
-                        height: isFullScreen ? '80vh' : '55vh',
+                        height: isFullScreen ? '80vh' : '45vh',
                         whiteSpace: 'pre-wrap',
+                        padding: '15px',
+                        overflowY: 'auto',
                     }}
-                >
-                    {witnessMessage}
-                </pre>
+                    dangerouslySetInnerHTML={{ __html: witnessMessage }}
+                />
             )}
         </div>
     );

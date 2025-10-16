@@ -15,7 +15,7 @@ import { Permalink } from '@/types';
 import axios from 'axios';
 
 async function getSmtDiffWitness(permalink: Permalink, analysis: string) {
-    let url = `/diff-smt/smtDiff/run/?check=${permalink.check}&p=${permalink.permalink}&analysis=${analysis}`;
+    let url = `/diff-smt/run/?check=${permalink.check}&p=${permalink.permalink}&analysis=${analysis}`;
     try {
         const response = await axios.get(url);
         return response.data;
@@ -25,7 +25,7 @@ async function getSmtDiffWitness(permalink: Permalink, analysis: string) {
 }
 
 export async function getNextSmtDiffWitness(specId: string) {
-    let url = `/diff-smt/smtDiff/next/${specId}`;
+    let url = `/diff-smt/next/${specId}`;
     try {
         const response = await axios.get(url);
         return response.data;
@@ -72,15 +72,14 @@ export const executeSmtDiffTool = async () => {
         jotaiStore.set(smtDiffWitnessAtom, res);
     } catch (err: any) {
         if (err.response?.status === 404) {
-            jotaiStore.set(
-                outputAtom,
-                err.response?.data?.detail || 'No witnesses found'
-            );
+            console.error('No witnesses found');
+            jotaiStore.set(smtDiffWitnessAtom, {
+                error: 'No witnesses found'
+            });
         } else {
-            jotaiStore.set(
-                outputAtom,
-                `${err.message}. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
-            );
+            jotaiStore.set(smtDiffWitnessAtom, {
+                error: `${err.message}. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+            });
         }
     }
     jotaiStore.set(isExecutingAtom, false);
