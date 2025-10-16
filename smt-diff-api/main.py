@@ -37,7 +37,7 @@ def get_code_by_permalink(check: str, p: str) -> Union[str, None]:
 def get_metadata_by_permalink(check: str, p: str) -> Union[Dict[str, Any], None]:
     try:
         if check == "SMTSemDiff":
-            url = f"{API_URL}api/metadata/?check={check}&p={p}"
+            url = f"{API_URL}api/metadata?check={check}&p={p}"
             res = requests.get(url)
             return res.json()
     except Exception:
@@ -70,7 +70,7 @@ class SmtDiffResponse(BaseModel):
 # --------------------------------------------------
 
 
-@app.get("/smtDiff/run/", response_model=SmtDiffResponse)
+@app.get("/run/", response_model=SmtDiffResponse)
 async def run_smt_diff(check: str, p: str, analysis: str):
     try:
         s1_spec = get_code_by_permalink(check, p)
@@ -116,7 +116,7 @@ async def run_smt_diff(check: str, p: str, analysis: str):
         )
 
 
-@app.get("/smtDiff/next/{specId}", response_model=SmtDiffResponse)
+@app.get("/next/{specId}", response_model=SmtDiffResponse)
 async def get_next_witness(specId: str):
     try:
         cache_info = smt_diff.get_cache_info(specId)
