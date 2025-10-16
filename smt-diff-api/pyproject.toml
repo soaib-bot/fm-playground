@@ -13,8 +13,6 @@ httpx = "^0.28.1"
 requests = "^2.32.5"
 uvicorn = "^0.37.0"
 python-dotenv = "^1.0.1"
-redis = "^5.0.8"
-python-redis-cache = "^4.0.1"
 z3-solver = "^4.15.3.0"
 
 [tool.poetry.group.dev.dependencies]

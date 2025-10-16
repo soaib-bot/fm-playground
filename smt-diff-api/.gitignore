@@ -1,2 +1,5 @@
+!.vscode/
 lib/
 .env
+MLDiff/
+tmp/
