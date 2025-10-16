@@ -241,10 +241,9 @@ def history_by_permalink(permalink: str):
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
 
 
-@routes.route("/api/metadata/", methods=["GET"])
+@routes.route("/api/metadata", methods=["GET"])
 def get_metadata():
-    print("Metadata request received")
-    c = request.args.get("check")
+    c = request.args.get("check").upper()
     p = request.args.get("p")
     metadata = get_metadata_by_permalink(c, p)
     return jsonify(metadata), 200
