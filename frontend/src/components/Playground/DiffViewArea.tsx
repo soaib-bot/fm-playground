@@ -82,7 +82,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
         if (isFullScreen) {
             return isMobile ? '70vh' : '80vh';
         }
-        return isMobile ? '40vh' : '55vh';
+        return isMobile ? '40vh' : '45vh';
     };
 
     const openModal = () => setIsNewSpecModalOpen(true);
@@ -198,7 +198,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             showErrorModal('No Specification to compare with. Please load a specification using the permalink field above or from history.');
             return;
         }
-        if (!isAnalyzeMode) {
             // Entering analyze mode - run the semantic diff analysis
             setIsAnalyzeMode(true);
             setOutput('');
@@ -225,12 +224,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     );
                 }
             }
-        } else {
-            // Exiting analyze mode - clear witness data
-            setOutput('');
-            setSmtDiffWitness(null);
-            setIsAnalyzeMode(false);
-        }
+            finally {
+                setOutput('');
+                setSmtDiffWitness(null);
+            }
     };
 
     const showErrorModal = (message: string) => {
@@ -243,6 +240,14 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
         setIsErrorMessageModalOpen(!isErrorMessageModalOpen);
     };
 
+    const handleShowDiffViewClick = () => {
+        if (isAnalyzeMode) {
+            setIsAnalyzeMode(false);
+        } else {
+            setIsAnalyzeMode(true);
+        }
+    };
+
 
 
     return (
@@ -250,7 +255,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             <div className='col-md-12 mx-auto mb-2'>
                 <div className='d-flex justify-content-between align-items-center'>
                     <div className='col-md-4'>
-                        <h2>Compare Specifications</h2>
+                        <h4>Compare Specifications</h4>
                     </div>
                     <div>
                         <Stack direction='row' spacing={1}>
@@ -313,7 +318,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
 
                     <small>
                         The left side shows code for comparison (read-only), the right side shows your current editable code.
-                        You can edit the right side and see the differences highlighted. Load any saved specification using
+                        Load any saved specification using
                         the permalink field above or from history. For detailed instructions, please watch the &nbsp;
                         <a
                             href='https://www.loom.com/share/1f3f3b1e8f004b6c8a1f3f3b1e8f004b6c8a1'
@@ -330,12 +335,12 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             {/* Permalink input */}
             <div className='col-12 mb-2'>
                 <div className='row align-items-center g-2'>
-                    <div className='col-md-8'>
+                    <div className='col-md-4'>
                         <input
                             id='permalink-input'
                             type='text'
                             className={`form-control form-control-md ${editorTheme === 'vs-dark' ? 'bg-dark text-light border-secondary' : ''}`}
-                            placeholder='Paste permalink here to load code into right side for comparison'
+                            placeholder='Paste permalink and click Load Spec'
                             value={permalinkInput}
                             onChange={(e) => setPermalinkInput(e.target.value)}
                             onKeyDown={handlePermalinkKeyDown}
@@ -360,6 +365,15 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                                 disabled={!permalinkInput.trim() || isLoadingFromPermalink}
                             >
                                 {isLoadingFromPermalink ? 'Loading...' : 'Load Spec'}
+                            </MDBBtn>
+                            <MDBBtn
+                                rounded
+                                outline
+                                size='sm'
+                                color='success'
+                                onClick={handleShowDiffViewClick}
+                            >
+                                Toggle Diff View
                             </MDBBtn>
                             
                             <MDBBtn
@@ -386,7 +400,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     </div>
                 )}
             </div>
-            <hr />
+
             {!isAnalyzeMode ? (
                 <CodeDiffEditor
                     height={getEditorHeight()}
@@ -418,7 +432,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     </div>
                 </div>
             )}
-            <hr />
             <div className='row'>
                 <div className='col-md-6'>
                     <div style={{ paddingRight: '8px' }}>
@@ -435,7 +448,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                             onClick={handleAnalyzeClick}
                             disabled={isExecuting}
                         >
-                            {isExecuting ? 'Analyzing...' : isAnalyzeMode ? 'Close Analysis' : 'Semantic Analysis'}
+                            {isExecuting ? 'Analyzing...' : 'Semantic Analysis'}
                         </MDBBtn>
                     </div>
                 </div>
