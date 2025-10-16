@@ -14,11 +14,11 @@ import AuthContext from '@/contexts/AuthContext';
 import DrawerComponent from '@/components/Utils/DrawerComponent';
 import CustomSnackbar from '@/components/Utils/Modals/CustomSnackbar';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
-import { downloadUserData, deleteProfile } from '@/api/playgroundApi';
+import { downloadUserData, deleteProfile, saveCode } from '@/api/playgroundApi';
 import axiosAuth from '@/api/axiosAuth';
 import SessionExpiredModal from '@/components/Utils/Modals//SessionExpiredModal';
 import Toggle from '@/components/Utils/Toggle';
-import { editorValueAtom, languageAtom, isDiffViewModeAtom, diffComparisonCodeAtom, diffComparisonHistoryIdAtom } from '@/atoms';
+import { editorValueAtom, languageAtom, isDiffViewModeAtom, diffComparisonCodeAtom, diffComparisonHistoryIdAtom, permalinkAtom } from '@/atoms';
 import { fmpConfig } from '@/ToolMaps';
 import '@/assets/style/Nav.css';
 
@@ -28,11 +28,12 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
-    const [, setEditorValue] = useAtom(editorValueAtom);
-    const [, setLanguage] = useAtom(languageAtom);
+    const [editorValue, setEditorValue] = useAtom(editorValueAtom);
+    const [language, setLanguage] = useAtom(languageAtom);
     const [isDiffViewMode] = useAtom(isDiffViewModeAtom);
     const [, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom);
     const [, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom);
+    const [permalink] = useAtom(permalinkAtom);
     const authContext = useContext(AuthContext);
     const isLoggedIn = authContext?.isLoggedIn ?? false;
     const setIsLoggedIn = authContext?.setIsLoggedIn ?? (() => {});
@@ -113,13 +114,29 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
      * @param {*} code - Specification code.
      * @param {*} itemId - The history item ID (optional).
      */
-    const handleDrawerItemClick = (check: string, permalink: string, code: string, itemId?: number) => {
+    const handleDrawerItemClick = async (check: string, permalinkParam: string, code: string, itemId?: number) => {
         if (isDiffViewMode) {
             // In diff mode, load code into comparison side
             setDiffComparisonCode(code);
             // Store the history item ID for saving purposes
             if (itemId !== undefined) {
                 setDiffComparisonHistoryId(itemId);
+                
+                // Save the diff comparison code immediately
+                try {
+                    const metadata = {
+                        leftSideCodeId: itemId
+                    };
+
+                    await saveCode(
+                        editorValue,
+                        language.short + "SynDiff",
+                        permalink.permalink ?? null,
+                        metadata
+                    );
+                } catch (error) {
+                    console.error('Failed to save diff comparison code from history:', error);
+                }
             }
         } else {
             // In normal mode, load into main editor
@@ -134,7 +151,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
             if (selectedOption) {
                 setLanguage(selectedOption);
             }
-            window.history.pushState(null, '', `/?check=${check}&p=${permalink}`);
+            window.history.pushState(null, '', `/?check=${check}&p=${permalinkParam}`);
             const info = document.getElementById('info');
             if (info) {
                 info.innerText = '';
