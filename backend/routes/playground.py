@@ -180,25 +180,8 @@ def unlink_history_by_id():
 
 @routes.route("/api/code/<int:data_id>", methods=["GET"])
 def get_code_by_id(data_id: int):
-    user_id = session.get("user_id")
-    session_id = session.sid
-    if user_id is None:
-        if session_id:
-            data = get_code_by_data_id(data_id)
-            if data and Data.query.filter_by(id=data_id, session_id=session_id).first():
-                return jsonify(
-                    {
-                        "result": "success",
-                        "code": data.code,
-                        "check": data.check_type,
-                        "permalink": data.permalink,
-                    }
-                )
-            return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
-        # Not logged in and no session id
-        return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     data = get_code_by_data_id(data_id)
-    if data:
+    if data and Data.query.filter_by(id=data_id).first():
         return jsonify(
             {
                 "result": "success",
@@ -208,7 +191,6 @@ def get_code_by_id(data_id: int):
             }
         )
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
-
 
 # Search the history data by query
 @routes.route("/api/search", methods=["GET"])
@@ -259,9 +241,10 @@ def history_by_permalink(permalink: str):
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
 
 
-@routes.route("/api/metadata", methods=["GET"])
+@routes.route("/api/metadata/", methods=["GET"])
 def get_metadata():
-    c = request.args.get("check").upper()
+    print("Metadata request received")
+    c = request.args.get("check")
     p = request.args.get("p")
-    medatada = get_metadata_by_permalink(c, p)
-    return jsonify(medatada), 200
+    metadata = get_metadata_by_permalink(c, p)
+    return jsonify(metadata), 200

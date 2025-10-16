@@ -339,6 +339,6 @@ def get_metadata_by_permalink(
             "meta": meta_data.get("check")
             or meta_data.get("cli_option")
             or meta_data.get("cmd")
-            or None
+            or meta_data
         }
     )
