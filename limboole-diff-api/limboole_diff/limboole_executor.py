@@ -13,8 +13,8 @@ def get_executable_path() -> str:
     system = platform.system().lower()
     if "windows" in system:
         return "lib/limboole.exe"
-    elif "linux" in system:
-        return "lib/limboole-linux-amd64.exe"
+    # elif "linux" in system:
+    #     return "lib/limboole-linux-amd64.exe"
     elif "darwin" in system or "mac" in system:
         return "lib/limbooleAPE.exe"
     else:
@@ -37,12 +37,12 @@ def run_limboole(code: str, check_sat: bool = True) -> str:
         if check_sat:
             # APE has a special polyglot format.
             # Running from shell automatically handles it.
-            if system == "darwin" or system == "mac":
+            if system == "darwin" or system == "mac" or system == "linux":
                 command = ["sh", LIMBOOLE_EXE, "-s", tmp_file.name]
             else:
                 command = [LIMBOOLE_EXE, "-s", tmp_file.name]
         else:
-            if system == "darwin" or system == "mac":
+            if system == "darwin" or system == "mac" or system == "linux":
                 command = ["sh", LIMBOOLE_EXE, tmp_file.name]
             else:
                 command = [LIMBOOLE_EXE, tmp_file.name]
