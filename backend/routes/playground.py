@@ -158,14 +158,12 @@ def get_history():
             data, has_more_data = get_user_history_by_session(
                 user_session_id, page=page, per_page=per_page
             )
-            # FIXME: Do we need the diff entries?
             data = [d for d in data if not d.get("check", "").endswith("Diff")]
             return jsonify({"history": data, "has_more_data": has_more_data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     page = request.args.get("page", 1, type=int)
     per_page = 20
     data, has_more_data = get_user_history(user_id, page=page, per_page=per_page)
-    # FIXME: Do we need the diff entries?
     data = [d for d in data if not d.get("check", "").endswith("Diff")]
     return jsonify({"history": data, "has_more_data": has_more_data})
 
