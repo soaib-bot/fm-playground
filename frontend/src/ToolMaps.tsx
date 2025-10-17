@@ -5,6 +5,7 @@ import { executeNuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
 import { executeAlloyTool } from '@/../tools/alloy/alloyExecutor';
 import { executeSpectraTool } from '@/../tools/spectra/spectraExecutor';
 import { executeSmtDiffTool } from '@/../tools/smt-diff/smtDiffExecutor';
+import { executeLimbooleDiffTool } from '@/../tools/limboole-diff/limbooleDiffExecutor';
 
 // Tool output components
 import TextualOutput from '@/components/Playground/TextualOutput';
@@ -27,9 +28,11 @@ import NuxmvCopyrightNotice from '@/../tools/nuxmv/components/NuxmvCopyrightNoti
 
 // Diff tool input area components for the different tools
 import SmtDiffOptions from '@/../tools/smt-diff/components/smtDiffOptions';
+import LimbooleDiffOptions from '@/../tools/limboole-diff/components/limbooleDiffOptions';
 
 // Diff tool output area components for the different tools 
 import SmtDiffOutput from '@/../tools/smt-diff/components/smtDiffOutput';
+import LimbooleDiffOutput from '@/../tools/limboole-diff/components/limbooleDiffOutput';
 
 import type { FmpConfig } from '@/types';
 
@@ -50,6 +53,7 @@ export const toolExecutionMap: Record<string, () => void> = {
     ALS: executeAlloyTool,
     SPECTRA: executeSpectraTool,
     SMTDiff: executeSmtDiffTool,
+    SATDiff: executeLimbooleDiffTool,
 };
 
 export const toolOutputMap: Record<string, React.FC<any>> = {
@@ -61,7 +65,7 @@ export const toolOutputMap: Record<string, React.FC<any>> = {
 };
 
 export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
-    SAT: null,
+    SAT: LimbooleDiffOptions,
     SMT: SmtDiffOptions,
     XMV: null,
     ALS: null,
@@ -69,7 +73,7 @@ export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
 };
 
 export const diffToolOutputUIMap: Record<string, React.FC<any> | null> = {
-    SAT: null,
+    SAT: LimbooleDiffOutput,
     SMT: SmtDiffOutput,
     XMV: null,
     ALS: null,
