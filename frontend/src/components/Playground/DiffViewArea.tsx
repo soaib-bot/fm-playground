@@ -191,7 +191,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
 
     const handleAnalyzeClick = async () => {
         // if diffComparisonCode is empty, show error modal
-        if (!diffComparisonCode) {
+        if (!diffComparisonCode && !loadedPermalinkCode) {
             showErrorModal('No Specification to compare with. Please load a specification using the permalink field above or from history.');
             return;
         }
