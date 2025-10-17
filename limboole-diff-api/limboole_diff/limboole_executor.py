@@ -15,10 +15,8 @@ def get_executable_path() -> str:
         return "lib/limboole.exe"
     # elif "linux" in system:
     #     return "lib/limboole-linux-amd64.exe"
-    elif "darwin" in system or "mac" in system:
-        return "lib/limbooleAPE.exe"
     else:
-        raise OSError(f"Unsupported OS: {system}")
+        return "lib/limbooleAPE.exe"
 
 
 LIMBOOLE_EXE = get_executable_path()
