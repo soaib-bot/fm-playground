@@ -9,7 +9,7 @@ import SMTDiffEvaluator from './smtDiffEvaluator';
 const SmtDiffOutput = () => {
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [smtDiffWitness, setSmtDiffWitness] = useAtom(smtDiffWitnessAtom);
-    
+
     const [witnesses, setWitnesses] = useState<any[]>([]);
     const [currentWitnessIndex, setCurrentWitnessIndex] = useState(0);
     const [specId, setSpecId] = useState<string | null>(null);
@@ -29,7 +29,7 @@ const SmtDiffOutput = () => {
                 setWitnesses([smtDiffWitness]);
                 setCurrentWitnessIndex(0);
             }
-            
+
             if (smtDiffWitness.specId) {
                 setSpecId(smtDiffWitness.specId);
                 setHasWitness(true);
@@ -53,7 +53,7 @@ const SmtDiffOutput = () => {
 
         // Fetch new witness from API
         if (!specId) return;
-        
+
         setIsNextWitnessExecuting(true);
         getNextSmtDiffWitness(specId)
             .then((data) => {
@@ -63,7 +63,7 @@ const SmtDiffOutput = () => {
                     setIsNextWitnessExecuting(false);
                     return;
                 }
-                
+
                 // Add new witness to the array
                 const updatedWitnesses = [...witnesses, data];
                 const newIndex = updatedWitnesses.length - 1;
@@ -115,37 +115,31 @@ const SmtDiffOutput = () => {
                     >
                         {getCurrentWitness()}
                     </pre>
-                    
+
                     {witnessMessage && (
                         <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>
                             {witnessMessage}
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
-                        <MDBBtn
-                            color='secondary'
-                            rounded
-                            onClick={handlePreviousWitness}
-                            disabled={currentWitnessIndex === 0}
-                            size='sm'
-                        >
-                            <VscArrowLeft size={20} />
-                        </MDBBtn>
-                        
-                        <span style={{ alignSelf: 'center', padding: '0 10px' }}>
-                            Witness {currentWitnessIndex + 1} of {witnesses.length}
-                        </span>
-                        
-                        <MDBBtn
-                            color='secondary'
-                            rounded
-                            onClick={handleNextWitness}
-                            disabled={isNextWitnessExecuting || isLastWitness}
-                            size='sm'
-                        >
-                            {isNextWitnessExecuting ? 'Loading...' : <VscArrowRight size={20} />}
-                        </MDBBtn>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <MDBBtn
+                                color='warning'
+                                onClick={handlePreviousWitness}
+                                disabled={currentWitnessIndex === 0}
+                            >
+                                Previous
+                            </MDBBtn>
+
+                            <MDBBtn
+                                color='success'
+                                onClick={handleNextWitness}
+                                disabled={isNextWitnessExecuting || isLastWitness}
+                            >
+                                {isNextWitnessExecuting ? 'Computing...' : 'Next'}
+                            </MDBBtn>
+                        </div>
                     </div>
                 </div>
             ) : (
