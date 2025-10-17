@@ -1,0 +1,4 @@
+License
+There is no specific license for the Limboole SAT solver front-end software. It is provided "as is" and can be used in any way without warranty of any kind.
+
+However, linking against Lingeling and PicoSAT will produce a binary, which falls under the license restrictions of those tools, which are more restricted.
