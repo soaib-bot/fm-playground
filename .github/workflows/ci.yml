@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        folder: [alloy-api, backend, frontend, limboole-api, nuxmv-api, spectra-api, z3-api] 
+        folder: [alloy-api, backend, frontend, limboole-api, nuxmv-api, spectra-api, z3-api, limboole-diff-api, smt-diff-api] 
         include:
           - folder: alloy-api
             image_name: ghcr.io/${{ github.repository }}-alloy-api
@@ -35,7 +35,10 @@ jobs:
             image_name: ghcr.io/${{ github.repository }}-spectra-api
           - folder: z3-api
             image_name: ghcr.io/${{ github.repository }}-z3-api
-            
+          - folder: limboole-diff-api
+            image_name: ghcr.io/${{ github.repository }}-limboole-diff-api
+          - folder: smt-diff-api
+            image_name: ghcr.io/${{ github.repository }}-smt-diff-api
 
     steps:
       - name: Checkout repository
