@@ -321,7 +321,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                         Load any saved specification using
                         the permalink field above or from history. For detailed instructions, please watch the &nbsp;
                         <a
-                            href='https://www.loom.com/share/1f3f3b1e8f004b6c8a1f3f3b1e8f004b6c8a1'
+                            href='https://www.youtube.com/playlist?list=PLGyeoukah9NYq9ULsIuADG2r2QjX530nf'
                             target='_blank'
                             rel='noopener noreferrer'
                         >
