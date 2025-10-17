@@ -87,6 +87,8 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     detail="No diff witnesses found",
                 )
         elif analysis == "left-vs-current":
+            # s2 previous and s1 current
+            # TODO: FIX the naming convention here to avoid confusion
             specId = smt_diff.store_witness(s2_spec, s1_spec, mode="diff")
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
