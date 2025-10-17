@@ -7,6 +7,7 @@ import tempfile
 from z3 import *
 from generator_cache_manager import cache_manager
 from typing import List, Optional, Dict, Any
+from logics_filter import common_logic
 
 TTL_SECONDS = 3600  # Default cache TTL in seconds
 
@@ -33,6 +34,15 @@ def all_smt(s: Solver, vars: list):
     yield from all_smt_rec(list(vars))
 
 
+def get_logic_from_smt2(spec: str):
+    lines = spec.splitlines()
+    for line in lines:
+        line = line.strip()
+        if line.startswith("(set-logic"):
+            return line.split()[1].rstrip(")")
+    return None
+
+
 def get_all_vars(assertions):
     all_vars = set()
 
@@ -50,8 +60,9 @@ def get_all_vars(assertions):
     return all_vars
 
 
-def diff_witness(assertions1, assertions2):
-    solver_s1_not_s2 = Solver()
+def diff_witness(assertions1, assertions2, logic1=None, logic2=None):
+    logic = common_logic(logic1, logic2)
+    solver_s1_not_s2 = SolverFor(logic) if logic else Solver()
     solver_s1_not_s2.add(And(assertions1), And(Not(And(assertions2))))
     if solver_s1_not_s2.check() == sat:
         vars_s1 = get_all_vars(assertions1)
@@ -68,8 +79,9 @@ def diff_witness(assertions1, assertions2):
     return None
 
 
-def common_witness(assertions1, assertions2):
-    combined_solver = Solver()
+def common_witness(assertions1, assertions2, logic1=None, logic2=None):
+    logic = common_logic(logic1, logic2)
+    combined_solver = SolverFor(logic) if logic else Solver()
     combined_solver.add(assertions1)
     combined_solver.add(assertions2)
     if combined_solver.check() == sat:
@@ -94,11 +106,13 @@ def get_next_witness(specId: str) -> Optional[str]:
 def store_witness(s1: str, s2: str, mode: str):
     assertions1 = parse_smt2_string(s1)
     assertions2 = parse_smt2_string(s2)
+    logic1 = get_logic_from_smt2(s1)
+    logic2 = get_logic_from_smt2(s2)
 
     if mode == "diff":
-        generator = diff_witness(assertions1, assertions2)
+        generator = diff_witness(assertions1, assertions2, logic1, logic2)
     elif mode == "common":
-        generator = common_witness(assertions1, assertions2)
+        generator = common_witness(assertions1, assertions2, logic1, logic2)
 
     if generator:
         specId = cache_manager.create_cache(generator, TTL_SECONDS)
