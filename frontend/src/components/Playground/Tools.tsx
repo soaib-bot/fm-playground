@@ -13,6 +13,7 @@ interface ToolsProps {
     onChange: (selectedOption: any) => void;
     selected: LanguageProps;
     editorTheme: string;
+    isDisabled?: boolean;
 }
 
 const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
@@ -35,7 +36,7 @@ const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
                 className='basic-single react-select-container'
                 classNamePrefix='select'
                 defaultValue={options[0]}
-                isDisabled={false}
+                isDisabled={props.isDisabled || false}
                 isLoading={false}
                 isClearable={false}
                 isRtl={false}

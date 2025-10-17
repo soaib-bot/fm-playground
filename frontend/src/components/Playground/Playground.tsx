@@ -197,7 +197,7 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
 
     return (
         <div className='container-fluid Playground'>
-            <Tools onChange={handleLanguageChange} selected={language} editorTheme={editorTheme} />
+            <Tools onChange={handleLanguageChange} selected={language} editorTheme={editorTheme} isDisabled={isDiffViewMode} />
             <Tooltip id='playground-tooltip' />
             <div className='row Playground'>
                 <div className='col-12'>
