@@ -7,21 +7,16 @@ import tempfile
 
 system = platform.system().lower()
 
-# Get the directory where this script is located
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# Go up one level to the limboole-diff-api directory
-BASE_DIR = os.path.dirname(SCRIPT_DIR)
-
 
 def get_executable_path() -> str:
     """Detect OS and return the correct Limboole executable path."""
     system = platform.system().lower()
     if "windows" in system:
-        return os.path.join(BASE_DIR, "lib", "limboole.exe")
+        return "lib/limboole.exe"
     elif "linux" in system:
-        return os.path.join(BASE_DIR, "lib", "limboole-linux-x86.exe")
+        return "lib/limboole-linux-amd64.exe"
     elif "darwin" in system or "mac" in system:
-        return os.path.join(BASE_DIR, "lib", "limbooleAPE.exe")
+        return "lib/limbooleAPE.exe"
     else:
         raise OSError(f"Unsupported OS: {system}")
 
