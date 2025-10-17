@@ -13,12 +13,14 @@ interface GuidesData {
 
 interface GuidesProps {
     id: keyof GuidesData;
+    editorTheme: string;
 }
 
 const guidesData: GuidesData = data;
 
-const Guides: React.FC<GuidesProps> = ({ id }: GuidesProps) => {
+const Guides: React.FC<GuidesProps> = ({ id, editorTheme }: GuidesProps) => {
     const guideData = guidesData[id];
+    const isDarkTheme = editorTheme === 'vs-dark';
 
     if (!guideData) {
         return (
@@ -34,12 +36,17 @@ const Guides: React.FC<GuidesProps> = ({ id }: GuidesProps) => {
             <h2>Guides</h2>
             <div className='row'>
                 {guideData.map((item, index) => (
-                    <div key={index} className='col-md-4' style={{ marginBottom: '8px' }}>
+                    <div key={index} className='col-md-4' style={{ marginBottom: '12px' }}>
                         <div className='card guide-box'>
                             <div className='card-body'>
                                 <h5 className='card-title'>
                                     {
-                                        <a target='_blank' rel='noopener noreferrer' href={item.link}>
+                                        <a
+                                            target='_blank'
+                                            rel='noopener noreferrer'
+                                            href={item.link}
+                                            className={isDarkTheme ? 'guide-link-dark' : 'guide-link-light'}
+                                        >
                                             {item.title}{' '}
                                         </a>
                                     }

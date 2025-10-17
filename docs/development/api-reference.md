@@ -277,7 +277,7 @@ DELETE /api/delete-profile
 }
 ```
 
-### Metadata and Feedback
+### Metadata
 
 #### Get Metadata
 ```http
@@ -298,29 +298,5 @@ GET /api/metadata?check={check_type}&p={permalink}
 }
 ```
 
-#### Submit Feedback
-```http
-POST /api/feedback
-Content-Type: application/json
-
-{
-  "rating": 5,
-  "comment": "Great tool!"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "result": "success"
-}
-```
-
-**Response (413 Payload Too Large):**
-```json
-{
-  "result": "The comment is too large."
-}
-```
 
 API versioning follows semantic versioning principles with backward compatibility maintained.

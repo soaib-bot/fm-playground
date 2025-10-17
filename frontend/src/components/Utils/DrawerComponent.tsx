@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import _debounce from 'lodash/debounce';
 import { PiPushPinFill, PiPushPinSlashFill } from 'react-icons/pi';
 import { MdRefresh, MdOutlineSearch } from 'react-icons/md';
@@ -20,10 +20,18 @@ import '@/assets/style/Playground.css';
 interface DrawerComponentProps {
     isOpen: boolean;
     onClose: () => void;
-    onItemSelect: (check: string, permalink: string, code: string) => void;
+    onItemSelect: (check: string, permalink: string, code: string, itemId?: number) => void;
+    isDarkTheme?: boolean;
+    isLoggedIn: boolean;
 }
 
-const DrawerComponent: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItemSelect }) => {
+const DrawerComponent: React.FC<DrawerComponentProps> = ({
+    isOpen,
+    onClose,
+    onItemSelect,
+    isDarkTheme = false,
+    isLoggedIn,
+}) => {
     interface HistoryItem {
         id: number;
         time: string;
@@ -156,7 +164,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onIt
             await getCodeById(itemId)
                 .then((res: { check: string; permalink: string; code: string }) => {
                     const itemContent = res;
-                    onItemSelect(itemContent.check, itemContent.permalink, itemContent.code);
+                    onItemSelect(itemContent.check, itemContent.permalink, itemContent.code, itemId);
                     onClose();
                     setSelectedItemId(itemId);
                 })
@@ -306,6 +314,43 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onIt
                             }
                         />
                     </ListItem>
+                    {!isLoggedIn && (
+                        <ListItem>
+                            <div
+                                style={{
+                                    padding: '6px 10px',
+                                    backgroundColor: isDarkTheme ? '#2d2a1f' : '#fff3cd',
+                                    border: isDarkTheme ? '1px solid #4a4318' : '1px solid #ffeaa7',
+                                    borderRadius: '4px',
+                                    width: '100%',
+                                    fontSize: '0.8rem',
+                                    color: isDarkTheme ? '#d4af37' : '#856404',
+                                }}
+                            >
+                                <Typography
+                                    variant='body2'
+                                    sx={{
+                                        fontWeight: 500,
+                                        marginBottom: '4px',
+                                        color: isDarkTheme ? '#d4af37' : '#856404',
+                                    }}
+                                >
+                                    ⚠️ Session History Only
+                                </Typography>
+                                <Typography
+                                    variant='caption'
+                                    sx={{
+                                        display: 'block',
+                                        lineHeight: 1.3,
+                                        color: isDarkTheme ? '#b8a532' : '#856404',
+                                    }}
+                                >
+                                    You're not logged in. Your history is temporary and will be lost after this session.
+                                    Consider logging in to save your work permanently.
+                                </Typography>
+                            </div>
+                        </ListItem>
+                    )}
                     {debouncedSearchQuery
                         ? uniqueSearchData.map((item, index) => (
                               <React.Fragment key={item?.id}>

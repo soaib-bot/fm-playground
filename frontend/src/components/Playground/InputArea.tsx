@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { Stack } from '@mui/material';
 import { MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
-import { FaFileCirclePlus } from 'react-icons/fa6';
+import { VscDiffSingle, VscNewFile } from 'react-icons/vsc';
 import { AiOutlineFullscreen, AiOutlineFullscreenExit } from 'react-icons/ai';
 import Toggle from 'react-toggle';
 import {
@@ -15,6 +15,8 @@ import {
     isExecutingAtom,
     isFullScreenAtom,
     lineToHighlightAtom,
+    isDiffViewModeAtom,
+    originalCodeAtom,
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
 import FileUploadButton from '@/components/Utils/FileUpload';
@@ -40,6 +42,8 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
     const [isExecuting] = useAtom(isExecutingAtom);
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
+    const [, setIsDiffViewMode] = useAtom(isDiffViewModeAtom);
+    const [, setOriginalCode] = useAtom(originalCodeAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false); // state to control the new spec modal
     const [isMobile, setIsMobile] = useState(false);
@@ -107,6 +111,13 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
         return <FileDownload content={content} fileName={fileName} fileExtension={fileExtension} />;
     };
 
+    const handleEnterDiffView = () => {
+        // Store current code as original
+        setOriginalCode(editorValue);
+        // Enter diff view mode
+        setIsDiffViewMode(true);
+    };
+
     return (
         <div className='row'>
             <div className='col-md-12 mx-auto mb-2'>
@@ -141,7 +152,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                 data-tooltip-id='playground-tooltip'
                                 data-tooltip-content='New Spec'
                             >
-                                <FaFileCirclePlus className='playground-icon' role='button' />
+                                <VscNewFile className='playground-icon' role='button' />
                             </MDBIcon>
                             <ConfirmModal
                                 isOpen={isNewSpecModalOpen}
@@ -170,6 +181,15 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                     <CopyToClipboardBtn />
                                 </MDBIcon>
                             )}
+                            <MDBIcon
+                                size='lg'
+                                className='playground-icon'
+                                data-tooltip-id='playground-tooltip'
+                                data-tooltip-content='Compare Specs'
+                                onClick={handleEnterDiffView}
+                            >
+                                <VscDiffSingle />
+                            </MDBIcon>
                             <MDBIcon size='lg' className='playground-icon' onClick={() => onFullScreenButtonClick()}>
                                 {isFullScreen ? (
                                     <AiOutlineFullscreenExit

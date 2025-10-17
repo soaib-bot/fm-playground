@@ -7,7 +7,6 @@ import Guides from '@/components/Utils/Guides';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
 import { getCodeByParmalink } from '@/api/playgroundApi';
 import { fmpConfig, toolExecutionMap } from '@/ToolMaps';
-import Feedback from '@/components/Utils/Feedback';
 import {
     editorValueAtom,
     languageAtom,
@@ -16,9 +15,13 @@ import {
     outputAtom,
     isFullScreenAtom,
     isLoadingPermalinkAtom,
+    isDiffViewModeAtom,
+    originalCodeAtom,
+    diffComparisonCodeAtom,
 } from '@/atoms';
 import InputArea from '@/components/Playground/InputArea';
 import OutputArea from '@/components/Playground//OutputArea';
+import DiffViewArea from '@/components/Playground/DiffViewArea';
 import ResizableSplitter from '@/components/Utils/ResizableSplitter';
 import '@/assets/style/Playground.css';
 
@@ -39,13 +42,11 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
     const [, setIsExecuting] = useAtom(isExecutingAtom); // contains the state of the tool execution.
     const [, setIsFullScreen] = useAtom(isFullScreenAtom); // contains the state of the full screen mode.
     const [, setIsLoadingPermalink] = useAtom(isLoadingPermalinkAtom); // contains the state of loading permalink.
+    const [isDiffViewMode, setIsDiffViewMode] = useAtom(isDiffViewModeAtom); // contains the state of diff view mode.
+    const [originalCode] = useAtom(originalCodeAtom); // contains the original code for diff view.
+    const [, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom); // contains the comparison code for diff view.
     const [errorMessage, setErrorMessage] = useState<string | null>(null); // contains the error messages from the API.
     const [isErrorMessageModalOpen, setIsErrorMessageModalOpen] = useState(false); // contains the state of the message modal.
-    const [showFeedback, setShowFeedback] = useState<boolean>(false);
-
-    const toggleFeedbackForm = () => {
-        setShowFeedback((prev) => !prev);
-    };
 
     /**
      * Load the code and language from the URL.
@@ -188,36 +189,53 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
         setIsErrorMessageModalOpen(!isErrorMessageModalOpen);
     };
 
+    const handleBackToEditing = () => {
+        setIsDiffViewMode(false);
+        // Clear comparison code when exiting diff mode
+        setDiffComparisonCode('');
+    };
+
     return (
         <div className='container-fluid Playground'>
-            <Tools onChange={handleLanguageChange} selected={language} />
+            <Tools onChange={handleLanguageChange} selected={language} editorTheme={editorTheme} isDisabled={isDiffViewMode} />
             <Tooltip id='playground-tooltip' />
             <div className='row Playground'>
                 <div className='col-12'>
-                    <ResizableSplitter
-                        leftChild={
-                            <div ref={inputDivRef}>
-                                <InputArea
-                                    editorTheme={editorTheme}
-                                    onRunButtonClick={handleToolExecution}
-                                    onFullScreenButtonClick={() => toggleFullScreen('input')}
-                                />
-                            </div>
-                        }
-                        rightChild={
-                            <div ref={outputDivRef}>
-                                <OutputArea onFullScreenButtonClick={() => toggleFullScreen('output')} />
-                            </div>
-                        }
-                        initialLeftWidth={50}
-                        minLeftWidth={25}
-                        maxLeftWidth={75}
-                        resizerWidth={12}
-                        breakpoint={768}
-                    />
+                    {isDiffViewMode ? (
+                        <div ref={inputDivRef}>
+                            <DiffViewArea
+                                editorTheme={editorTheme}
+                                onBackToEditingClick={handleBackToEditing}
+                                onFullScreenButtonClick={() => toggleFullScreen('input')}
+                                originalValue={originalCode}
+                            />
+                        </div>
+                    ) : (
+                        <ResizableSplitter
+                            leftChild={
+                                <div ref={inputDivRef}>
+                                    <InputArea
+                                        editorTheme={editorTheme}
+                                        onRunButtonClick={handleToolExecution}
+                                        onFullScreenButtonClick={() => toggleFullScreen('input')}
+                                    />
+                                </div>
+                            }
+                            rightChild={
+                                <div ref={outputDivRef}>
+                                    <OutputArea onFullScreenButtonClick={() => toggleFullScreen('output')} />
+                                </div>
+                            }
+                            initialLeftWidth={50}
+                            minLeftWidth={25}
+                            maxLeftWidth={75}
+                            resizerWidth={12}
+                            breakpoint={768}
+                        />
+                    )}
                 </div>
             </div>
-            <Guides id={language.id} />
+            <Guides id={language.id} editorTheme={editorTheme} />
             {errorMessage && (
                 <MessageModal
                     isErrorMessageModalOpen={isErrorMessageModalOpen}
@@ -227,10 +245,6 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
                     errorMessage={errorMessage}
                 />
             )}
-            <button className='floating-button' onClick={toggleFeedbackForm}>
-                Feedback
-            </button>
-            {showFeedback && <Feedback toggleFeedback={toggleFeedbackForm} />}
         </div>
     );
 };

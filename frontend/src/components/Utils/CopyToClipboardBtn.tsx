@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAtom } from 'jotai';
 import { Snackbar } from '@mui/material';
-import { FaShareNodes } from 'react-icons/fa6';
+import { VscShare } from 'react-icons/vsc';
 import { permalinkAtom } from '@/atoms';
 import '@/assets/style/Playground.css';
 
@@ -31,7 +31,7 @@ const CopyToClipboardBtn = () => {
 
     return (
         <>
-            <FaShareNodes role='button' className='playground-icon' onClick={handleCopyClick} />
+            <VscShare role='button' className='playground-icon' onClick={handleCopyClick} />
 
             <Snackbar
                 anchorOrigin={snackbarPosition}

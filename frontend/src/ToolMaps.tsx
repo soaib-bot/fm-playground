@@ -4,6 +4,8 @@ import { executeZ3Wasm } from '@/../tools/smt/z3Executor';
 import { executeNuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
 import { executeAlloyTool } from '@/../tools/alloy/alloyExecutor';
 import { executeSpectraTool } from '@/../tools/spectra/spectraExecutor';
+import { executeSmtDiffTool } from '@/../tools/smt-diff/smtDiffExecutor';
+import { executeLimbooleDiffTool } from '@/../tools/limboole-diff/limbooleDiffExecutor';
 
 // Tool output components
 import TextualOutput from '@/components/Playground/TextualOutput';
@@ -24,6 +26,14 @@ import AlloyCmdOptions from '@/../tools/alloy/components/AlloyCmdOptions';
 // Additional output area components for the different tools
 import NuxmvCopyrightNotice from '@/../tools/nuxmv/components/NuxmvCopyrightNotice';
 
+// Diff tool input area components for the different tools
+import SmtDiffOptions from '@/../tools/smt-diff/components/smtDiffOptions';
+import LimbooleDiffOptions from '@/../tools/limboole-diff/components/limbooleDiffOptions';
+
+// Diff tool output area components for the different tools 
+import SmtDiffOutput from '@/../tools/smt-diff/components/smtDiffOutput';
+import LimbooleDiffOutput from '@/../tools/limboole-diff/components/limbooleDiffOutput';
+
 import type { FmpConfig } from '@/types';
 
 export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
@@ -42,6 +52,8 @@ export const toolExecutionMap: Record<string, () => void> = {
     XMV: executeNuxmvTool,
     ALS: executeAlloyTool,
     SPECTRA: executeSpectraTool,
+    SMTDiff: executeSmtDiffTool,
+    SATDiff: executeLimbooleDiffTool,
 };
 
 export const toolOutputMap: Record<string, React.FC<any>> = {
@@ -50,6 +62,22 @@ export const toolOutputMap: Record<string, React.FC<any>> = {
     XMV: TextualOutput,
     ALS: AlloyOutput,
     SPECTRA: TextualOutput,
+};
+
+export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
+    SAT: LimbooleDiffOptions,
+    SMT: SmtDiffOptions,
+    XMV: null,
+    ALS: null,
+    SPECTRA: null,
+};
+
+export const diffToolOutputUIMap: Record<string, React.FC<any> | null> = {
+    SAT: LimbooleDiffOutput,
+    SMT: SmtDiffOutput,
+    XMV: null,
+    ALS: null,
+    SPECTRA: null,
 };
 
 export const languageConfigMap: Record<string, { tokenProvider: any; configuration: any }> = {

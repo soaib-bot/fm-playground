@@ -91,6 +91,7 @@
 
 .playground-icon {
     color: var(--primary-text-color);
+    cursor: pointer;
 }
 
 .custom-code-editor {
@@ -260,4 +261,49 @@
     font-size: 0.9rem;
     margin-right: 0.15rem;
     text-align: center;
+}
+
+/* Dark theme input styling */
+.form-control.bg-dark::placeholder {
+    color: #6c757d !important;
+    opacity: 1;
+}
+
+.form-control.bg-dark:focus {
+    background-color: #1e1e1e !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+    color: #d4d4d4 !important;
+}
+
+/* Dark theme guide links */
+.guide-link-dark {
+    color: #58a6ff !important;
+    text-decoration: none !important;
+}
+
+.guide-link-dark:hover {
+    color: #79c0ff !important;
+    text-decoration: underline !important;
+}
+
+/* Light theme guide links */
+.guide-link-light {
+    color: #0d6efd !important;
+    text-decoration: none !important;
+}
+
+.guide-link-light:hover {
+    color: #0a58ca !important;
+    text-decoration: underline !important;
+}
+
+/* Compact guide card styling */
+.guide-box .card-body {
+    padding: 0.1rem 1rem !important; /* Reduced from default 1.5rem */
+}
+
+.guide-box .card-title {
+    margin-bottom: 0.25rem !important; /* Reduced from default 0.5rem */
+    font-size: 1rem !important; /* Slightly smaller font */
 }

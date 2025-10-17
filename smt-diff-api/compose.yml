@@ -1,0 +1,10 @@
+services:
+  smt-diff:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smt-diff
+    ports:
+      - "8080:8080"
+    environment:
+      API_URL: http://localhost:8000

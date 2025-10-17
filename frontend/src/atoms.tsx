@@ -35,6 +35,10 @@ export const isFullScreenAtom = atom(false);
 export const enableLspAtom = atom(true);
 export const outputPreviewHeightAtom = atom<string | number>((get) => (get(isFullScreenAtom) ? '80vh' : '60vh'));
 export const isLoadingPermalinkAtom = atom(false);
+export const isDiffViewModeAtom = atom(false);
+export const originalCodeAtom = atomWithStorage('originalCode', '', rawStringStorage);
+export const diffComparisonCodeAtom = atom('');
+export const diffComparisonHistoryIdAtom = atom<number | null>(null);
 
 export const spectraCliOptionsAtom = atom('check-realizability');
 export const limbooleCliOptionsAtom = atom({ value: '1', label: 'satisfiability' });
@@ -43,11 +47,21 @@ export const alloySelectedCmdAtom = atom(0);
 export const alloyInstanceAtom = atom<any[]>([]);
 export const alloyCmdOptionsAtom = atom<{ value: number; label: string }[]>([]);
 
+export const smtDiffOptionsAtom = atom('common');
+export const smtDiffWitnessAtom = atom<any>(null);
+
+export const limbooleDiffOptionsAtom = atom('common-witness');
+export const limbooleDiffWitnessAtom = atom<any>(null);
+
+
 jotaiStore.sub(editorValueAtom, () => {});
 jotaiStore.sub(languageAtom, () => {});
 jotaiStore.sub(lineToHighlightAtom, () => {});
 jotaiStore.sub(enableLspAtom, () => {});
 jotaiStore.sub(isLoadingPermalinkAtom, () => {});
+jotaiStore.sub(isDiffViewModeAtom, () => {});
+jotaiStore.sub(originalCodeAtom, () => {});
+jotaiStore.sub(diffComparisonCodeAtom, () => {});
 jotaiStore.sub(spectraCliOptionsAtom, () => {});
 jotaiStore.sub(limbooleCliOptionsAtom, () => {});
 jotaiStore.sub(alloySelectedCmdAtom, () => {});

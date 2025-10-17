@@ -1,0 +1,45 @@
+import Select, { SingleValue } from 'react-select';
+import { useAtom } from 'jotai';
+import { smtDiffOptionsAtom } from '@/atoms';
+
+const SmtDiffOptions = () => {
+    const options = [
+        { value: 'common', label: 'Common Witness' },
+        { value: 'left-vs-current', label: 'Not Current But Previous' },
+        { value: 'current-vs-left', label: 'Not Previous But Current' },
+        { value: 'sem-relation', label: 'Semantic Relation' }, // TODO: implement this option
+    ];
+    const [, setSmtDiffOption] = useAtom(smtDiffOptionsAtom);
+
+    const handleOptionChange = (selectedOption: SingleValue<{ value: string; label: string }>) => {
+        if (selectedOption) {
+            setSmtDiffOption(selectedOption.value);
+        }
+    };
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '5px' }}>
+            <p style={{ marginRight: '10px', marginTop: '5px' }}>Analysis:</p>
+            <div style={{ width: '70%' }}>
+                <Select
+                    className='basic-single react-select-container'
+                    classNamePrefix='select'
+                    defaultValue={options[0] || null}
+                    isDisabled={false}
+                    isLoading={false}
+                    isClearable={false}
+                    isRtl={false}
+                    isSearchable={true}
+                    options={options}
+                    onChange={handleOptionChange}
+                    menuPortalTarget={document.body}
+                    styles={{
+                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                    }}
+                />
+            </div>
+        </div>
+    );
+};
+
+export default SmtDiffOptions;

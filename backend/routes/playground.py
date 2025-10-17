@@ -16,7 +16,9 @@ from db.db_query import (  # noqa: E402
     get_metadata_by_permalink,
     get_user_data,
     get_user_history,
+    get_user_history_by_session,
     search_by_query,
+    search_by_query_and_session,
     update_user_history_by_id,
 )
 from db.models import Code, Data, db  # noqa: E402
@@ -141,18 +143,28 @@ def get_code():
         .filter_by(permalink=p)
         .first_or_404()
     )
-    response = make_response(jsonify({"code": code_data.code}))
+    response = make_response(jsonify({"code": code_data.code, "code_id": code_data.id}), 200)
     return response
 
 
 @routes.route("/api/histories", methods=["GET"])
 def get_history():
     user_id = session.get("user_id")
+    user_session_id = session.sid
     if user_id is None:
+        if user_session_id:
+            page = request.args.get("page", 1, type=int)
+            per_page = 20
+            data, has_more_data = get_user_history_by_session(
+                user_session_id, page=page, per_page=per_page
+            )
+            data = [d for d in data if not d.get("check", "").endswith("Diff")]
+            return jsonify({"history": data, "has_more_data": has_more_data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     page = request.args.get("page", 1, type=int)
     per_page = 20
     data, has_more_data = get_user_history(user_id, page=page, per_page=per_page)
+    data = [d for d in data if not d.get("check", "").endswith("Diff")]
     return jsonify({"history": data, "has_more_data": has_more_data})
 
 
@@ -170,11 +182,8 @@ def unlink_history_by_id():
 
 @routes.route("/api/code/<int:data_id>", methods=["GET"])
 def get_code_by_id(data_id: int):
-    user_id = session.get("user_id")
-    if user_id is None:
-        return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     data = get_code_by_data_id(data_id)
-    if data:
+    if data and Data.query.filter_by(id=data_id).first():
         return jsonify(
             {
                 "result": "success",
@@ -185,12 +194,16 @@ def get_code_by_id(data_id: int):
         )
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
 
-
 # Search the history data by query
 @routes.route("/api/search", methods=["GET"])
 def search():
     user_id = session.get("user_id")
+    session_id = session.sid
     if user_id is None:
+        if session_id:
+            query = request.args.get("q")
+            data = search_by_query_and_session(query, session_id=session_id)
+            return jsonify({"history": data, "has_more_data": False})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
     query = request.args.get("q")
     data = search_by_query(query, user_id=user_id)
@@ -232,24 +245,7 @@ def history_by_permalink(permalink: str):
 
 @routes.route("/api/metadata", methods=["GET"])
 def get_metadata():
-    c = request.args.get("check").upper()
+    c = request.args.get("check")
     p = request.args.get("p")
-    medatada = get_metadata_by_permalink(c, p)
-    return jsonify(medatada), 200
-
-
-@routes.route("/api/feedback", methods=["POST"])
-def feedback():
-    data = request.get_json()
-    rating = data["rating"]
-    comment = data["comment"]
-    if not is_valid_size(comment):
-        response = make_response(jsonify({"result": COMMENT_TOO_LARGE_MESSAGE}), 413)
-        return response
-    try:
-        app.logger.info(f"FEEDBACK - Rating: {rating} Comment: {comment}")
-        return jsonify({"result": "success"}), 200
-    except Exception:
-        app.logger.error("FEEDBACK: Error saving the feedback.")
-        response = make_response(jsonify({"result": TRY_AGAIN_MESSAGE}), 500)
-        return response
+    metadata = get_metadata_by_permalink(c, p)
+    return jsonify(metadata), 200

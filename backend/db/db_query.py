@@ -72,6 +72,55 @@ def get_user_history(user_id: int, page: int = 1, per_page: int = 20):
     return result, has_more_data
 
 
+def get_user_history_by_session(
+    user_session_id: str, page: int = 1, per_page: int = 20
+):
+    """
+    Get the user history of a user if the user is not logged in. The data is sorted by time in descending order.
+
+    Parameters:
+      user_session_id (str): The session id of the user
+      page (int): The page number
+      per_page (int): The number of items per page
+
+    Returns:
+      list: The list of the data
+      bool: True if there are more data, False otherwise
+    """
+    # Calculate start and end indices for pagination
+    start_index = (page - 1) * per_page
+    end_index = page * per_page
+
+    # Query data with pagination
+    query_result = (
+        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
+        .join(Code, Data.code_id == Code.id)
+        .order_by(Data.time.desc())
+        .filter(Data.session_id == user_session_id)
+        .slice(start_index, end_index)
+        .all()
+    )
+
+    # Extract the data from the query result
+    data = query_result
+
+    result = []
+    for d in data:
+        p_time = d.time.strftime(DATE_FORMAT)
+        p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        result.append(
+            {
+                "id": d.id,
+                "time": p_time,
+                "check": d.check_type,
+                "permalink": d.permalink,
+                "code": p_code,
+            }
+        )
+    has_more_data = True if len(result) == per_page else False
+    return result, has_more_data
+
+
 def update_user_history_by_id(data_id: int):
     """
     Unlink the user history by id.
@@ -128,6 +177,43 @@ def search_by_query(query, user_id: int = None):
         .order_by(Data.time.desc())
         .filter(
             Data.user_id == user_id,
+            func.lower(Code.code).ilike(func.lower(f"%{query}%")),
+        )
+        .all()
+    )
+
+    data = search_result
+    result = []
+    for d in data:
+        p_time = d.time.strftime(DATE_FORMAT)
+        p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        result.append(
+            {
+                "id": d.id,
+                "time": p_time,
+                "check": d.check_type,
+                "permalink": d.permalink,
+                "code": p_code,
+            }
+        )
+    return result
+
+
+def search_by_query_and_session(query, session_id: str = None):
+    """
+    Search the ``code`` history of a user by query and session id; used when user is not logged in.
+    Parameters:
+        query (str): The query to search
+        session_id (str): The session id of the user
+    Returns:
+        list: The list of the data matching the query
+    """
+    search_result = (
+        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
+        .join(Code, Data.code_id == Code.id)
+        .order_by(Data.time.desc())
+        .filter(
+            Data.session_id == session_id,
             func.lower(Code.code).ilike(func.lower(f"%{query}%")),
         )
         .all()
@@ -253,6 +339,6 @@ def get_metadata_by_permalink(
             "meta": meta_data.get("check")
             or meta_data.get("cli_option")
             or meta_data.get("cmd")
-            or None
+            or meta_data
         }
     )

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { FaUpload } from 'react-icons/fa';
+import { VscArrowUp } from 'react-icons/vsc';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
 import { fmpConfig } from '@/ToolMaps';
 import '@/assets/style/Playground.css';
@@ -65,7 +65,7 @@ const FileUploadButton: React.FC<FileUploadButtonProps> = ({ onFileSelect }) => 
     return (
         <div>
             <div onClick={handleButtonClick}>
-                <FaUpload className='playground-icon' />
+                <VscArrowUp className='playground-icon' />
             </div>
             <input type='file' ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} />
             {errorMessage && (

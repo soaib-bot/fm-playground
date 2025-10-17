@@ -13,7 +13,6 @@ import { isDarkThemeAtom } from '@/atoms';
 import { jotaiStore } from '@/atoms';
 import '@/assets/style/index.css';
 import '@/assets/style/App.css';
-import '@/assets/style/Feedback.css';
 
 const App = () => {
     const [isDarkTheme, setIsDarkTheme] = useAtom(isDarkThemeAtom);

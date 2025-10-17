@@ -1,0 +1,7 @@
+.smt-lib-assertion-input {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+.form-label {
+    color: var(--bs-body-color) !important;
+}

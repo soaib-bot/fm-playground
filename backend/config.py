@@ -33,13 +33,36 @@ limiter = Limiter(
 )
 # ------------------ Rate Limit ------------------
 
+# ------------------ Session/Cookie Config ------------------
+# Secret key (fix env var name typo); this must be stable across restarts to keep sessions valid
+app.secret_key = os.getenv("APP_SECRET_KEY")
 
-app.secret_key = os.getenv("APP_SECKET_KEY")
+# Session cookie settings tuned for local dev and containerized deployments.
+# You can override these via environment variables when running behind a reverse proxy/HTTPS.
+app.config.setdefault("SESSION_COOKIE_NAME", os.getenv("SESSION_COOKIE_NAME", "fmp_session"))
+app.config.setdefault(
+    "SESSION_COOKIE_SAMESITE",
+    os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),  # set to "None" when frontend is on a different site
+)
+app.config.setdefault(
+    "SESSION_COOKIE_SECURE",
+    os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",  # must be true if SAMESITE=None
+)
+app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
+
+# Flask-Session: ensure server-side session storage directory exists when using filesystem backend
+app.config.setdefault("SESSION_TYPE", os.getenv("SESSION_TYPE", "filesystem"))
+session_dir = os.getenv("SESSION_FILE_DIR") or os.path.join(os.getcwd(), "flask_session")
+os.makedirs(session_dir, exist_ok=True)
+app.config.setdefault("SESSION_FILE_DIR", session_dir)
+app.config.setdefault("SESSION_PERMANENT", True)
+app.config.setdefault("PERMANENT_SESSION_LIFETIME", int(os.getenv("PERMANENT_SESSION_LIFETIME", 3600)))
+# ------------------ Session/Cookie Config ------------------
 
 # ------------------ App Config ------------------
 if os.getenv("FLASK_ENV") == "development":
     app.config["DEBUG"] = True
-    use_sqlite = os.getenv("USE_SQLITE", False)
+    use_sqlite = os.getenv("USE_SQLITE", "false").lower() == "true"
     if use_sqlite:
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///fmp.db"
     else:
@@ -53,9 +76,6 @@ else:
     )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["CACHE_TYPE"] = "simple"
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = 3600  # 1 hour
 app.config["GOOGLE_CLIENT_ID"] = os.getenv("GOOGLE_CLIENT_ID", None)
 app.config["GOOGLE_CLIENT_SECRET"] = os.getenv("GOOGLE_CLIENT_SECRET", None)
 app.config["GOOGLE_DISCOVERY_URL"] = (

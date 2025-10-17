@@ -39,6 +39,12 @@ export default defineConfig({
         host: '0.0.0.0',
         allowedHosts: true,
         proxy: {
+            '/diff-limboole': {
+                target: 'http://fmp-limboole-diff-api:8080',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/diff-limboole/, ''),
+            },
             '/nuxmv': {
                 target: 'http://fmp-nuxmv-api:8080',
                 changeOrigin: true,
@@ -50,6 +56,12 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/smt/, ''),
+            },
+            '/diff-smt': {
+                target: 'http://fmp-diff-smt-api:8080',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/diff-smt/, ''),
             },
             '/alloy': {
                 target: 'http://fmp-alloy-api:8080',
@@ -74,6 +86,12 @@ export default defineConfig({
         host: '0.0.0.0',
         allowedHosts: true,
         proxy: {
+            '/diff-limboole': {
+                target: 'http://localhost:8055',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/diff-limboole/, ''),
+            },
             '/nuxmv': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,
@@ -85,6 +103,12 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/smt/, ''),
+            },
+            '/diff-smt': {
+                target: 'http://localhost:8055',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/diff-smt/, ''),
             },
             '/alloy': {
                 target: 'http://localhost:8080',
