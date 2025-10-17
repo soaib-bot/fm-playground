@@ -14,7 +14,6 @@ import {
     isFullScreenAtom,
     isExecutingAtom,
     diffComparisonCodeAtom,
-    diffComparisonHistoryIdAtom,
     smtDiffWitnessAtom,
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
@@ -40,7 +39,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
     editorTheme,
     onBackToEditingClick,
     onFullScreenButtonClick,
-    originalValue
 }) => {
     const location = useLocation();
     const [editorValue, setEditorValue] = useAtom(editorValueAtom);
@@ -49,8 +47,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
     const [language] = useAtom(languageAtom);
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [isExecuting, setIsExecuting] = useAtom(isExecutingAtom);
-    const [diffComparisonCode, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom);
-    const [diffComparisonHistoryId, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom);
+    const [diffComparisonCode] = useAtom(diffComparisonCodeAtom);
     const [, setSmtDiffWitness] = useAtom(smtDiffWitnessAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false);

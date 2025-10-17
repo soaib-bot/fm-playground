@@ -1,4 +1,3 @@
-import React from 'react'
 import { MDBInput } from 'mdb-react-ui-kit';
 import './SMTDiff.css';
 interface SMTDiffEvaluatorProps {
