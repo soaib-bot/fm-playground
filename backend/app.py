@@ -1,3 +1,4 @@
+import os
 from config import app, db
 from db.models import User
 from flask_caching import Cache
@@ -10,7 +11,13 @@ from routes.playground import routes
 
 Session(app)
 app.app_context().push()
-CORS(app, supports_credentials=True)
+# Configure CORS to allow frontend origin(s) to send/receive cookies
+allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+if allowed_origins == "*":
+    CORS(app, supports_credentials=True)
+else:
+    origins = [o.strip() for o in allowed_origins.split(",") if o.strip()]
+    CORS(app, resources={r"/api/*": {"origins": origins}}, supports_credentials=True)
 cache = Cache(app)
 Compress(app)
 db.create_all()
