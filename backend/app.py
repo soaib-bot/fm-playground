@@ -1,4 +1,5 @@
 import os
+
 from config import app, db
 from db.models import User
 from flask_caching import Cache

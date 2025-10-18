@@ -103,7 +103,7 @@ def get_supersets(logic, contains):
     return supersets
 
 
-def common_logic(logic1, logic2, contains = z3_contains):
+def common_logic(logic1, logic2, contains=z3_contains):
     # include the logics themselves
     anc1 = get_supersets(logic1, contains) | {logic1}
     anc2 = get_supersets(logic2, contains) | {logic2}

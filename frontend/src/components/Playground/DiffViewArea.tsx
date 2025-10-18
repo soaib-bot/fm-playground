@@ -3,8 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { Stack } from '@mui/material';
 import { MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
-import { VscNewFile } from "react-icons/vsc";
-import { IoLogoYoutube } from "react-icons/io5";
+import { VscNewFile } from 'react-icons/vsc';
+import { IoLogoYoutube } from 'react-icons/io5';
 import { AiOutlineFullscreen, AiOutlineFullscreenExit } from 'react-icons/ai';
 import {
     editorValueAtom,
@@ -35,11 +35,7 @@ interface DiffViewAreaProps {
     originalValue?: string;
 }
 
-const DiffViewArea: React.FC<DiffViewAreaProps> = ({
-    editorTheme,
-    onBackToEditingClick,
-    onFullScreenButtonClick,
-}) => {
+const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditingClick, onFullScreenButtonClick }) => {
     const location = useLocation();
     const [editorValue, setEditorValue] = useAtom(editorValueAtom);
     const [, setOutput] = useAtom(outputAtom);
@@ -137,19 +133,14 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
         const res = await getCodeByParmalink(loadedCheck, loadedPermalink);
         try {
             const metadata = {
-                leftSideCodeId: res.code_id
+                leftSideCodeId: res.code_id,
             };
 
-            await saveCode(
-                editorValue,
-                language.short + "SynDiff",
-                permalink.permalink ?? null,
-                metadata
-            );
+            await saveCode(editorValue, language.short + 'SynDiff', permalink.permalink ?? null, metadata);
         } catch (error) {
             console.error('Failed to save diff comparison code:', error);
         }
-    }
+    };
 
     const handleLoadSpecButton = async () => {
         if (!permalinkInput.trim()) return;
@@ -167,7 +158,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             const response = await getCodeByParmalink(check, permalink);
             setLoadedPermalinkCode(response.code);
             setPermalinkError('');
-            // setPermalinkInput(''); 
+            // setPermalinkInput('');
 
             // Save the diff comparison code after successful load
             await saveDiffComparisonCode(check, permalink);
@@ -175,7 +166,9 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             if (error.response && error.response.status === 404) {
                 setPermalinkError('Code not found. Please check the permalink and try again.');
             } else {
-                setPermalinkError(error.message || 'Failed to load code from permalink. Please check the URL and try again.');
+                setPermalinkError(
+                    error.message || 'Failed to load code from permalink. Please check the URL and try again.'
+                );
             }
             setLoadedPermalinkCode('');
         } finally {
@@ -192,39 +185,40 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
     const handleAnalyzeClick = async () => {
         // if diffComparisonCode is empty, show error modal
         if (!diffComparisonCode && !loadedPermalinkCode) {
-            showErrorModal('No Specification to compare with. Please load a specification using the permalink field above or from history.');
+            showErrorModal(
+                'No Specification to compare with. Please load a specification using the permalink field above or from history.'
+            );
             return;
         }
-            // Entering analyze mode - run the semantic diff analysis
-            setIsAnalyzeMode(true);
+        // Entering analyze mode - run the semantic diff analysis
+        setIsAnalyzeMode(true);
+        setOutput('');
+
+        try {
+            setIsExecuting(true);
+            const currentTool = toolExecutionMap[language.short + 'Diff'];
+            // if currentTool is not in the map, show error modal
+            if (currentTool) {
+                currentTool();
+            } else {
+                showErrorModal('You can not perform semantic analysis with different tools.');
+                setIsExecuting(false);
+                return;
+            }
+        } catch (err: any) {
+            if (err.code === 'ERR_NETWORK') {
+                showErrorModal('Network Error. Please check your internet connection.');
+            } else if (err.response?.status === 413) {
+                showErrorModal('Code too long. Please reduce the size of the code.');
+            } else {
+                showErrorModal(
+                    `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+                );
+            }
+        } finally {
             setOutput('');
-            
-            try {
-                setIsExecuting(true);
-                const currentTool = toolExecutionMap[language.short + 'Diff'];
-                // if currentTool is not in the map, show error modal
-                if (currentTool) {
-                    currentTool();
-                } else {
-                    showErrorModal('You can not perform semantic analysis with different tools.');
-                    setIsExecuting(false);
-                    return;
-                }
-            } catch (err: any) {
-                if (err.code === 'ERR_NETWORK') {
-                    showErrorModal('Network Error. Please check your internet connection.');
-                } else if (err.response?.status === 413) {
-                    showErrorModal('Code too long. Please reduce the size of the code.');
-                } else {
-                    showErrorModal(
-                        `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
-                    );
-                }
-            }
-            finally {
-                setOutput('');
-                setSmtDiffWitness(null);
-            }
+            setSmtDiffWitness(null);
+        }
     };
 
     const showErrorModal = (message: string) => {
@@ -244,8 +238,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
             setIsAnalyzeMode(true);
         }
     };
-
-
 
     return (
         <div className='row'>
@@ -312,20 +304,19 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                 </div>
                 {/* Help text */}
                 <div className='col-12'>
-
                     <small>
-                        The left side shows code for comparison (read-only), the right side shows your current editable code.
-                        Load any saved specification using
-                        the permalink field above or from history. For detailed instructions, please watch the &nbsp;
+                        The left side shows code for comparison (read-only), the right side shows your current editable
+                        code. Load any saved specification using the permalink field above or from history. For detailed
+                        instructions, please watch the &nbsp;
                         <a
                             href='https://www.youtube.com/playlist?list=PLGyeoukah9NYq9ULsIuADG2r2QjX530nf'
                             target='_blank'
                             rel='noopener noreferrer'
                         >
                             <IoLogoYoutube /> video tutorial on YouTube
-                        </a>.
+                        </a>
+                        .
                     </small>
-
                 </div>
             </div>
 
@@ -341,13 +332,17 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                             value={permalinkInput}
                             onChange={(e) => setPermalinkInput(e.target.value)}
                             onKeyDown={handlePermalinkKeyDown}
-                            style={editorTheme === 'vs-dark' ? {
-                                backgroundColor: '#1e1e1e',
-                                color: '#d4d4d4',
-                                borderColor: '#464647'
-                            } : {}}
+                            style={
+                                editorTheme === 'vs-dark'
+                                    ? {
+                                          backgroundColor: '#1e1e1e',
+                                          color: '#d4d4d4',
+                                          borderColor: '#464647',
+                                      }
+                                    : {}
+                            }
                             {...(editorTheme === 'vs-dark' && {
-                                'data-bs-theme': 'dark'
+                                'data-bs-theme': 'dark',
                             })}
                         />
                     </div>
@@ -363,16 +358,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                             >
                                 {isLoadingFromPermalink ? 'Loading...' : 'Load Spec'}
                             </MDBBtn>
-                            <MDBBtn
-                                rounded
-                                outline
-                                size='sm'
-                                color='success'
-                                onClick={handleShowDiffViewClick}
-                            >
+                            <MDBBtn rounded outline size='sm' color='success' onClick={handleShowDiffViewClick}>
                                 Toggle Diff View
                             </MDBBtn>
-                            
+
                             <MDBBtn
                                 // className={`mx-auto my-3 ${isMobile ? 'mobile-run-button' : ''}`}
                                 rounded
@@ -393,7 +382,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                 )}
                 {(loadedPermalinkCode || diffComparisonCode) && !permalinkError && (
                     <div role='alert' style={{ marginTop: '8px', color: 'green' }}>
-                        <small>✓ Code loaded successfully for comparison {diffComparisonCode ? '(from history)' : '(from permalink)'}</small>
+                        <small>
+                            ✓ Code loaded successfully for comparison{' '}
+                            {diffComparisonCode ? '(from history)' : '(from permalink)'}
+                        </small>
                     </div>
                 )}
             </div>
@@ -409,7 +401,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                     isAnalyzeMode={isAnalyzeMode}
                 />
             ) : (
-                <div className='analyze-mode-layout' style={{ display: 'flex', gap: '10px', height: getEditorHeight() }}>
+                <div
+                    className='analyze-mode-layout'
+                    style={{ display: 'flex', gap: '10px', height: getEditorHeight() }}
+                >
                     <div style={{ flex: 1 }}>
                         <CodeDiffEditor
                             height={getEditorHeight()}
@@ -422,10 +417,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({
                         />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <DiffOutput 
-                            editorTheme={editorTheme} 
-                            onFullScreenButtonClick={onFullScreenButtonClick}
-                        />
+                        <DiffOutput editorTheme={editorTheme} onFullScreenButtonClick={onFullScreenButtonClick} />
                     </div>
                 </div>
             )}

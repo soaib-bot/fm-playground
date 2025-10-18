@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
-import { VscArrowLeft, VscArrowRight } from "react-icons/vsc";
+import { VscArrowLeft, VscArrowRight } from 'react-icons/vsc';
 import { isFullScreenAtom, smtDiffWitnessAtom } from '@/atoms';
 import { getNextSmtDiffWitness } from '../smtDiffExecutor';
 import SMTDiffEvaluator from './smtDiffEvaluator';
@@ -117,9 +117,7 @@ const SmtDiffOutput = () => {
                     </pre>
 
                     {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>
-                            {witnessMessage}
-                        </div>
+                        <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>{witnessMessage}</div>
                     )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -171,7 +171,7 @@ assert NoQuantumObjects {
 }
 
 check NoQuantumObjects for 8 State expect 0
-      """);
+""");
 
   String code;
 

@@ -1,7 +1,7 @@
-import os
-import re
-import platform
 import concurrent.futures
+import os
+import platform
+import re
 import subprocess
 import tempfile
 

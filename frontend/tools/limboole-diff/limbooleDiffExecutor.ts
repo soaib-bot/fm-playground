@@ -16,7 +16,7 @@ import axios from 'axios';
 
 async function getLimbooleDiffWitness(permalink: Permalink, analysis: string) {
     let url = `/diff-limboole/run/?check=${permalink.check}&p=${permalink.permalink}&analysis=${analysis}`;
-    console.log("Fetching Limboole Diff Witness from URL:", url);
+    console.log('Fetching Limboole Diff Witness from URL:', url);
     try {
         const response = await axios.get(url);
         return response.data;
@@ -35,16 +35,11 @@ export const executeLimbooleDiffTool = async () => {
     // Create metadata with leftSideCodeId
     const metadata = {
         leftSideCodeId: diffComparisonHistoryId,
-        diff_option: limbooleDiffOption
+        diff_option: limbooleDiffOption,
     };
 
     // Save the code with SemDiff check type
-    const response = await saveCode(
-        editorValue, 
-        language.short + "SemDiff", 
-        permalink.permalink || null, 
-        metadata
-    );
+    const response = await saveCode(editorValue, language.short + 'SemDiff', permalink.permalink || null, metadata);
 
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
@@ -65,11 +60,11 @@ export const executeLimbooleDiffTool = async () => {
         if (err.response?.status === 404) {
             console.error('No witnesses found');
             jotaiStore.set(limbooleDiffWitnessAtom, {
-                error: 'No witnesses found'
+                error: 'No witnesses found',
             });
         } else {
             jotaiStore.set(limbooleDiffWitnessAtom, {
-                error: `${err.message}. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+                error: `${err.message}. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`,
             });
         }
     }

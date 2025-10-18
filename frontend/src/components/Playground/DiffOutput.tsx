@@ -17,14 +17,16 @@ const DiffOutput: React.FC<DiffOutputProps> = ({ editorTheme }) => {
     const isDark = editorTheme === 'vs-dark';
     const backgroundColor = isDark ? '#1e1e1e' : '#ffffff';
     return (
-        <div style={{
-            flex: 1,
-            backgroundColor,
-            borderRadius: '4px',
-            overflow: 'auto',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
+        <div
+            style={{
+                flex: 1,
+                backgroundColor,
+                borderRadius: '4px',
+                overflow: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
             <div className='col-md-12'>
                 <div>{AdditionalUi && <AdditionalUi />}</div>
             </div>
@@ -33,5 +35,3 @@ const DiffOutput: React.FC<DiffOutputProps> = ({ editorTheme }) => {
 };
 
 export default DiffOutput;
-
-

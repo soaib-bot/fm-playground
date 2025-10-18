@@ -6,25 +6,25 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*
+        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*
         exclude: ^.*(node_modules|dist|build|tools/.*/generated|frontend/public)/.*
       - id: end-of-file-fixer
-        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*
+        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*
         exclude: ^.*(node_modules|dist|build|tools/.*/generated|frontend/public)/.*
       - id: check-merge-conflict
-        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*
+        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*
         exclude: ^.*(node_modules|dist|build|tools/.*/generated|frontend/public)/.*
       - id: check-added-large-files
         args: ['--maxkb=1000']
-        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*
+        files: ^(alloy-api|frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*
         exclude: ^.*(node_modules|dist|build|tools/.*/generated|frontend/public)/.*
       - id: check-json
-        files: ^(frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*\.json$
+        files: ^(frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*\.json$
         exclude: ^.*(frontend/public|language-configuration\.json|tsconfig\.json).*
       - id: check-yaml
-        files: ^(frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*\.ya?ml$
+        files: ^(frontend|backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*\.ya?ml$
       - id: check-toml
-        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*\.toml$
+        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*\.toml$
 
   # Java formatting with Google Java Format
   - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
@@ -40,21 +40,23 @@ repos:
     hooks:
       - id: black
         language_version: python3
-        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*\.py$
+        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*\.py$
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         args: ["--profile", "black"]
-        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*\.py$
+        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*\.py$
 
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.0
     hooks:
       - id: flake8
         args: ['--max-line-length=100', '--extend-ignore=E203,W503,E501,E402']
-        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api)/.*\.py$
+        files: ^(backend|z3-api|spectra-api|limboole-api|nuxmv-api|limboole-diff-api|smt-diff-api)/.*\.py$
+
+  
 
   # TypeScript/JavaScript formatting with Prettier (using frontend config)
   - repo: local

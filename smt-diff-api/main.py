@@ -1,13 +1,13 @@
 import json
 import os
+from typing import Any, Dict, Union
+
 import requests
+import smt_diff
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import HTTPException
 from pydantic import BaseModel
-from typing import Dict, Any, Union
-import smt_diff
 
 load_dotenv()
 
@@ -43,6 +43,7 @@ def get_metadata_by_permalink(check: str, p: str) -> Union[Dict[str, Any], None]
     except Exception:
         raise HTTPException(status_code=404, detail="Permalink not found")
 
+
 def get_code_by_id(code_id) -> Union[Dict[str, Any], None]:
     try:
         url = f"{API_URL}api/code/{code_id}"
@@ -75,7 +76,9 @@ async def run_smt_diff(check: str, p: str, analysis: str):
     try:
         s1_spec = get_code_by_permalink(check, p)
         s2_metadata = get_metadata_by_permalink(check, p)
-        left_side_code_id = json.loads(s2_metadata).get("meta", {}).get("leftSideCodeId")
+        left_side_code_id = (
+            json.loads(s2_metadata).get("meta", {}).get("leftSideCodeId")
+        )
         s2_spec = get_code_by_id(left_side_code_id).get("code")
 
         if analysis == "current-vs-left":

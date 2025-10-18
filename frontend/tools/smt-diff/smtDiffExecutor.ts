@@ -44,16 +44,11 @@ export const executeSmtDiffTool = async () => {
     // Create metadata with leftSideCodeId
     const metadata = {
         leftSideCodeId: diffComparisonHistoryId,
-        diff_option: smtDiffOption
+        diff_option: smtDiffOption,
     };
 
     // Save the code with SemDiff check type
-    const response = await saveCode(
-        editorValue, 
-        language.short + "SemDiff", 
-        permalink.permalink || null, 
-        metadata
-    );
+    const response = await saveCode(editorValue, language.short + 'SemDiff', permalink.permalink || null, metadata);
 
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
@@ -74,11 +69,11 @@ export const executeSmtDiffTool = async () => {
         if (err.response?.status === 404) {
             console.error('No witnesses found');
             jotaiStore.set(smtDiffWitnessAtom, {
-                error: 'No witnesses found'
+                error: 'No witnesses found',
             });
         } else {
             jotaiStore.set(smtDiffWitnessAtom, {
-                error: `${err.message}. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+                error: `${err.message}. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`,
             });
         }
     }

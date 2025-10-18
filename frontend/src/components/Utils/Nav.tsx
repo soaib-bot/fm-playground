@@ -18,7 +18,14 @@ import { downloadUserData, deleteProfile, saveCode } from '@/api/playgroundApi';
 import axiosAuth from '@/api/axiosAuth';
 import SessionExpiredModal from '@/components/Utils/Modals//SessionExpiredModal';
 import Toggle from '@/components/Utils/Toggle';
-import { editorValueAtom, languageAtom, isDiffViewModeAtom, diffComparisonCodeAtom, diffComparisonHistoryIdAtom, permalinkAtom } from '@/atoms';
+import {
+    editorValueAtom,
+    languageAtom,
+    isDiffViewModeAtom,
+    diffComparisonCodeAtom,
+    diffComparisonHistoryIdAtom,
+    permalinkAtom,
+} from '@/atoms';
 import { fmpConfig } from '@/ToolMaps';
 import '@/assets/style/Nav.css';
 
@@ -121,19 +128,14 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
             // Store the history item ID for saving purposes
             if (itemId !== undefined) {
                 setDiffComparisonHistoryId(itemId);
-                
+
                 // Save the diff comparison code immediately
                 try {
                     const metadata = {
-                        leftSideCodeId: itemId
+                        leftSideCodeId: itemId,
                     };
 
-                    await saveCode(
-                        editorValue,
-                        language.short + "SynDiff",
-                        permalink.permalink ?? null,
-                        metadata
-                    );
+                    await saveCode(editorValue, language.short + 'SynDiff', permalink.permalink ?? null, metadata);
                 } catch (error) {
                     console.error('Failed to save diff comparison code from history:', error);
                 }

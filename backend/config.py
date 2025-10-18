@@ -39,24 +39,33 @@ app.secret_key = os.getenv("APP_SECRET_KEY")
 
 # Session cookie settings tuned for local dev and containerized deployments.
 # You can override these via environment variables when running behind a reverse proxy/HTTPS.
-app.config.setdefault("SESSION_COOKIE_NAME", os.getenv("SESSION_COOKIE_NAME", "fmp_session"))
+app.config.setdefault(
+    "SESSION_COOKIE_NAME", os.getenv("SESSION_COOKIE_NAME", "fmp_session")
+)
 app.config.setdefault(
     "SESSION_COOKIE_SAMESITE",
-    os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),  # set to "None" when frontend is on a different site
+    os.getenv(
+        "SESSION_COOKIE_SAMESITE", "Lax"
+    ),  # set to "None" when frontend is on a different site
 )
 app.config.setdefault(
     "SESSION_COOKIE_SECURE",
-    os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",  # must be true if SAMESITE=None
+    os.getenv("SESSION_COOKIE_SECURE", "false").lower()
+    == "true",  # must be true if SAMESITE=None
 )
 app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
 
 # Flask-Session: ensure server-side session storage directory exists when using filesystem backend
 app.config.setdefault("SESSION_TYPE", os.getenv("SESSION_TYPE", "filesystem"))
-session_dir = os.getenv("SESSION_FILE_DIR") or os.path.join(os.getcwd(), "flask_session")
+session_dir = os.getenv("SESSION_FILE_DIR") or os.path.join(
+    os.getcwd(), "flask_session"
+)
 os.makedirs(session_dir, exist_ok=True)
 app.config.setdefault("SESSION_FILE_DIR", session_dir)
 app.config.setdefault("SESSION_PERMANENT", True)
-app.config.setdefault("PERMANENT_SESSION_LIFETIME", int(os.getenv("PERMANENT_SESSION_LIFETIME", 3600)))
+app.config.setdefault(
+    "PERMANENT_SESSION_LIFETIME", int(os.getenv("PERMANENT_SESSION_LIFETIME", 3600))
+)
 # ------------------ Session/Cookie Config ------------------
 
 # ------------------ App Config ------------------

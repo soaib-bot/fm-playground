@@ -30,7 +30,7 @@ import NuxmvCopyrightNotice from '@/../tools/nuxmv/components/NuxmvCopyrightNoti
 import SmtDiffOptions from '@/../tools/smt-diff/components/smtDiffOptions';
 import LimbooleDiffOptions from '@/../tools/limboole-diff/components/limbooleDiffOptions';
 
-// Diff tool output area components for the different tools 
+// Diff tool output area components for the different tools
 import SmtDiffOutput from '@/../tools/smt-diff/components/smtDiffOutput';
 import LimbooleDiffOutput from '@/../tools/limboole-diff/components/limbooleDiffOutput';
 

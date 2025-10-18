@@ -1,13 +1,8 @@
-import concurrent.futures
-import os
-import queue
-import re
-import subprocess
-import tempfile
-from z3 import *
+from typing import Any, Dict, List, Optional
+
 from generator_cache_manager import cache_manager
-from typing import List, Optional, Dict, Any
 from logics_filter import common_logic
+from z3 import *
 
 TTL_SECONDS = 3600  # Default cache TTL in seconds
 

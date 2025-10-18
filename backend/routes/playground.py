@@ -143,7 +143,9 @@ def get_code():
         .filter_by(permalink=p)
         .first_or_404()
     )
-    response = make_response(jsonify({"code": code_data.code, "code_id": code_data.id}), 200)
+    response = make_response(
+        jsonify({"code": code_data.code, "code_id": code_data.id}), 200
+    )
     return response
 
 
@@ -193,6 +195,7 @@ def get_code_by_id(data_id: int):
             }
         )
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
+
 
 # Search the history data by query
 @routes.route("/api/search", methods=["GET"])

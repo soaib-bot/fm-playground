@@ -53,7 +53,6 @@ export const smtDiffWitnessAtom = atom<any>(null);
 export const limbooleDiffOptionsAtom = atom('common-witness');
 export const limbooleDiffWitnessAtom = atom<any>(null);
 
-
 jotaiStore.sub(editorValueAtom, () => {});
 jotaiStore.sub(languageAtom, () => {});
 jotaiStore.sub(lineToHighlightAtom, () => {});

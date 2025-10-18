@@ -1,13 +1,13 @@
 import json
 import os
+from typing import Any, Dict, Union
+
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Union
 from limboole_diff import limboole_diff
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -63,6 +63,7 @@ class SATDiffRequest(BaseModel):
 
 class SATDiffResponse(BaseModel):
     """Response model for starting enumeration."""
+
     witness: str
 
 
@@ -101,9 +102,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str):
                     detail="No common witnesses found",
                 )
         elif analysis == "semantic-relation":
-            witness = limboole_diff.semantic_relation(
-                current_formula, previous_formula
-            )
+            witness = limboole_diff.semantic_relation(current_formula, previous_formula)
             if witness is None:
                 raise HTTPException(
                     status_code=404,

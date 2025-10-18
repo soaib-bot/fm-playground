@@ -6,8 +6,8 @@ interface SMTDiffEvaluatorProps {
 
 const SMTDiffEvaluator = ({ specId }: SMTDiffEvaluatorProps) => {
     const handleEvaluate = (expr: string) => {
-        console.log("Evaluating smt-diff expression: ", expr, " for specId: ", specId);
-    }
+        console.log('Evaluating smt-diff expression: ', expr, ' for specId: ', specId);
+    };
     return (
         <MDBInput
             label='SMT-LIB Assertion'
@@ -20,7 +20,7 @@ const SMTDiffEvaluator = ({ specId }: SMTDiffEvaluatorProps) => {
                 }
             }}
         />
-    )
-}
+    );
+};
 
-export default SMTDiffEvaluator
+export default SMTDiffEvaluator;
