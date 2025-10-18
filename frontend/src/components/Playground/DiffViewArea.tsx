@@ -19,8 +19,6 @@ import {
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
-import FileUploadButton from '@/components/Utils/FileUpload';
-import FileDownload from '@/components/Utils/FileDownload';
 import CopyToClipboardBtn from '@/components/Utils/CopyToClipboardBtn';
 import CodeDiffEditor from './DiffEditor';
 import DiffOutput from './DiffOutput';
@@ -92,27 +90,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
         }
         setPermalink({ check: null, permalink: null });
         closeModal();
-    };
-
-    const handleFileUpload = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target) {
-                const content = e.target.result as string;
-                setEditorValue(content);
-                setPermalink((prev) => ({ ...prev, permalink: null }));
-            }
-        };
-        reader.readAsText(file);
-    };
-
-    const handleDownload = () => {
-        const content = editorValue;
-        const queryParams = new URLSearchParams(location.search);
-        const p = queryParams.get('p');
-        const fileName = p ? p : 'code';
-        const fileExtension = language.id ?? 'txt';
-        return <FileDownload content={content} fileName={fileName} fileExtension={fileExtension} />;
     };
 
     const extractPermalinkParams = (url: string) => {
@@ -268,15 +245,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
                               This will reset the editor and the output areas`}
                                 onConfirm={handleReset}
                             />
-                            <MDBIcon
-                                size='lg'
-                                className='playground-icon'
-                                data-tooltip-id='playground-tooltip'
-                                data-tooltip-content='Upload file'
-                            >
-                                <FileUploadButton onFileSelect={handleFileUpload} />
-                            </MDBIcon>
-                            <>{handleDownload()}</>
                             {permalink.check && permalink.permalink && (
                                 <MDBIcon
                                     size='lg'
