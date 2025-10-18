@@ -123,9 +123,8 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
             if (check.endsWith('Diff')) {
                 try {
                     const metadataResponse = await getMetadataByPermalink(check, permalink);
-                    const parsed = typeof metadataResponse === 'string'
-                        ? JSON.parse(metadataResponse)
-                        : metadataResponse;
+                    const parsed =
+                        typeof metadataResponse === 'string' ? JSON.parse(metadataResponse) : metadataResponse;
 
                     const leftSideCodeId = parsed.meta.leftSideCodeId;
                     const originalRes = await getCodeById(leftSideCodeId);
@@ -134,7 +133,6 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
                     } else {
                         console.warn('Could not load left side code by code_id.');
                     }
-
                 } catch (err) {
                     console.error('Failed to load comparison code:', err);
                     showErrorModal('Failed to load the original specification for comparison.');

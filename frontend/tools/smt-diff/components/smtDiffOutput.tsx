@@ -101,9 +101,7 @@ const SmtDiffOutput = () => {
         <div>
             {hasWitness ? (
                 <div>
-                    {specId !== 'semantic-relation' && (
-                        <SMTDiffEvaluator specId={specId} />
-                    )}
+                    {specId !== 'semantic-relation' && <SMTDiffEvaluator specId={specId} />}
                     <pre
                         className='plain-output-box'
                         contentEditable={false}
