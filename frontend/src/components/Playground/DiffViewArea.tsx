@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAtom } from 'jotai';
 import { Stack } from '@mui/material';
 import { MDBBtn, MDBIcon } from 'mdb-react-ui-kit';
@@ -35,7 +34,6 @@ interface DiffViewAreaProps {
 }
 
 const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditingClick, onFullScreenButtonClick }) => {
-    const location = useLocation();
     const [editorValue, setEditorValue] = useAtom(editorValueAtom);
     const [, setOutput] = useAtom(outputAtom);
     const [permalink, setPermalink] = useAtom(permalinkAtom);

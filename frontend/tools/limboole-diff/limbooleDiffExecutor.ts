@@ -16,7 +16,6 @@ import axios from 'axios';
 
 async function getLimbooleDiffWitness(permalink: Permalink, analysis: string) {
     let url = `/diff-limboole/run/?check=${permalink.check}&p=${permalink.permalink}&analysis=${analysis}`;
-    console.log('Fetching Limboole Diff Witness from URL:', url);
     try {
         const response = await axios.get(url);
         return response.data;

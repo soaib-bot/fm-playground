@@ -5,7 +5,7 @@ import { Tooltip } from 'react-tooltip';
 import Tools from '@/components/Playground/Tools';
 import Guides from '@/components/Utils/Guides';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
-import { getCodeByParmalink } from '@/api/playgroundApi';
+import { getCodeByParmalink, getMetadataByPermalink, getCodeById } from '@/api/playgroundApi';
 import { fmpConfig, toolExecutionMap } from '@/ToolMaps';
 import {
     editorValueAtom,
@@ -67,7 +67,19 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
             short: tool.shortName,
         }));
 
-        const selectedOption = options.find((option) => option.short === checkParam);
+        const isDiffMode = checkParam?.endsWith('Diff');
+        let baseCheckParam = checkParam;
+
+        if (isDiffMode && checkParam) {
+            baseCheckParam = checkParam
+                .replace(/SynDiff$/, '')
+                .replace(/SemDiff$/, '')
+                .replace(/Diff$/, '');
+
+            setIsDiffViewMode(true);
+        }
+
+        const selectedOption = options.find((option) => option.short === baseCheckParam);
 
         // Update the selected language if 'check' parameter is present firstAdd commentMore actions
         if (selectedOption) {
@@ -103,16 +115,38 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
     };
 
     const loadCode = async (check: string, permalink: string) => {
-        await getCodeByParmalink(check, permalink)
-            .then((res) => {
-                setEditorValue(res.code);
-                setIsLoadingPermalink(false);
-            })
-            .catch((_err) => {
-                alert('Permaling not found. Redirecting...');
-                window.open(`/?check=SAT`, '_self');
-                setIsLoadingPermalink(false);
-            });
+        try {
+            const res = await getCodeByParmalink(check, permalink);
+            setEditorValue(res.code);
+
+            // If this is a diff mode URL, also load the comparison code
+            if (check.endsWith('Diff')) {
+                try {
+                    const metadataResponse = await getMetadataByPermalink(check, permalink);
+                    const parsed = typeof metadataResponse === 'string'
+                        ? JSON.parse(metadataResponse)
+                        : metadataResponse;
+
+                    const leftSideCodeId = parsed.meta.leftSideCodeId;
+                    const originalRes = await getCodeById(leftSideCodeId);
+                    if (originalRes?.code) {
+                        setDiffComparisonCode(originalRes.code);
+                    } else {
+                        console.warn('Could not load left side code by code_id.');
+                    }
+
+                } catch (err) {
+                    console.error('Failed to load comparison code:', err);
+                    showErrorModal('Failed to load the original specification for comparison.');
+                }
+            }
+
+            setIsLoadingPermalink(false);
+        } catch (_err) {
+            alert('Permalink not found. Redirecting...');
+            window.open(`/?check=SAT`, '_self');
+            setIsLoadingPermalink(false);
+        }
     };
 
     const handleToolExecution = async () => {
