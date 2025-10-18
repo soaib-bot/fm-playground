@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
-import { VscArrowLeft, VscArrowRight } from 'react-icons/vsc';
 import { isFullScreenAtom, smtDiffWitnessAtom } from '@/atoms';
 import { getNextSmtDiffWitness } from '../smtDiffExecutor';
 import SMTDiffEvaluator from './smtDiffEvaluator';
