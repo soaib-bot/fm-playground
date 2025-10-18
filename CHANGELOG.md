@@ -1,5 +1,12 @@
 # Change Log
 
+## v2.7.0 [2025-10-18]
+
+- ✨ Added Syntactic and Semantic Diff for limboole and smt
+- ✨ Added History based on session without login
+- ✨ Added documentation for playground usage and development setup (in progress)
+
+
 ## v2.6.14 [2025-08-06]
 
 - ⚡️ Updated smt grammar
