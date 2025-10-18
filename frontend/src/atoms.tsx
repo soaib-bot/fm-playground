@@ -47,7 +47,7 @@ export const alloySelectedCmdAtom = atom(0);
 export const alloyInstanceAtom = atom<any[]>([]);
 export const alloyCmdOptionsAtom = atom<{ value: number; label: string }[]>([]);
 
-export const smtDiffOptionsAtom = atom('common');
+export const smtDiffOptionsAtom = atom('common-witness');
 export const smtDiffWitnessAtom = atom<any>(null);
 
 export const limbooleDiffOptionsAtom = atom('common-witness');

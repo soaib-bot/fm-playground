@@ -4,10 +4,10 @@ import { smtDiffOptionsAtom } from '@/atoms';
 
 const SmtDiffOptions = () => {
     const options = [
-        { value: 'common', label: 'Common Witness' },
-        { value: 'left-vs-current', label: 'Not Current But Previous' },
-        { value: 'current-vs-left', label: 'Not Previous But Current' },
-        { value: 'sem-relation', label: 'Semantic Relation' }, // TODO: implement this option
+        { value: 'common-witness', label: 'Common Witness' },
+        { value: 'not-current-but-previous', label: 'Not Current But Previous' },
+        { value: 'not-previous-but-current', label: 'Not Previous But Current' },
+        { value: 'semantic-relation', label: 'Semantic Relation' },
     ];
     const [, setSmtDiffOption] = useAtom(smtDiffOptionsAtom);
 

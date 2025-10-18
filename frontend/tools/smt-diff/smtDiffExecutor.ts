@@ -67,7 +67,6 @@ export const executeSmtDiffTool = async () => {
         jotaiStore.set(smtDiffWitnessAtom, res);
     } catch (err: any) {
         if (err.response?.status === 404) {
-            console.error('No witnesses found');
             jotaiStore.set(smtDiffWitnessAtom, {
                 error: 'No witnesses found',
             });
