@@ -1,11 +1,18 @@
 # Change Log
 
-## v2.7.0 [2025-10-18]
+## v2.7.2 [2025-10-18]
+
+- ✨ Added sem relation for smt diff
+- ✨ Added permalink feature for diff view
+- 🐛 Fixed sem diff not working from permalink
+- 🐛 Fixed toggling full screen makes the background dark
+
+
+## v2.7.0-2.7.1 [2025-10-18]
 
 - ✨ Added Syntactic and Semantic Diff for limboole and smt
 - ✨ Added History based on session without login
 - ✨ Added documentation for playground usage and development setup (in progress)
-
 
 ## v2.6.14 [2025-08-06]
 
@@ -29,7 +36,6 @@
 - 🐛 Fixed Spectra Syntax Highlighting is not working while LSP is enabled #19
 - 🐛 Fixed Line Highlighting is not working in the lsp editor #20
 
-
 ## v2.6.7 [2025-06-02]
 
 - 🐛 Fixed language support is not working from permalink
@@ -38,9 +44,8 @@
 
 - ⬆️ Updated python dependencies
 - ⬆️ Upgrade flask cors from 5.0.1 to 6.0.0
-- ✨ Added script to automatically update the versions 
+- ✨ Added script to automatically update the versions
 - 🐛 Fixed poetry install in docker with --no-root
-
 
 ## v2.6.1-3 [2025-05-10]
 
@@ -48,11 +53,9 @@
 - ✨ Added scope provider for spectra workspace
 - 🗃️ Storing lsp metadata of spectra in the database.
 
-
 ## v2.6.0 [2025-05-05]
 
 - ✨ Added Spectra language server support
-
 
 ## v2.5.4 [2025-04-27]
 
@@ -87,7 +90,6 @@
 - 🐛 Alloy- fixed tabular output
 - 🐛 Alloy- fixed alloy instance is not updating immediately
 - 🐛 Alloy- fixed evaluator cleared up when switching tabs
-
 
 ## v2.3.0 [2024-12-04]
 
@@ -137,8 +139,8 @@
 
 **Added**
 
- - ✨ SMT in editor language support (browser worker)
- - ✨ Feedback form
+- ✨ SMT in editor language support (browser worker)
+- ✨ Feedback form
 
 ## v2.0.0 [2024-10-20]
 
@@ -159,18 +161,18 @@
 - ♻️ Fixed wasm fallback api
 - 🎨 Added issue link on error modals
 - 🐛Fixed-creating new spec not reseting the editor
-  
+
 ## v1.5.0 [2024-10-07]
 
 **Added**
 
- - ✨ Limboole in editor language support (browser worker)
- - ✨ Store playground version for future reference
+- ✨ Limboole in editor language support (browser worker)
+- ✨ Store playground version for future reference
 
 **Changed**
 
-  - ⚡Migrated from JavaScript to TypeScript
-  - ♻️Merged some duplicate API endpoints
+- ⚡Migrated from JavaScript to TypeScript
+- ♻️Merged some duplicate API endpoints
 
 ## v1.4.2 [2024-09-28]
 
@@ -193,7 +195,7 @@
 
 **What's changed?**
 
-- Added alloy tabular and text output 
+- Added alloy tabular and text output
 - Bug Fixed- can't parse alloy integer label
 - Fixed- Unicode handling
 - Fixed- Alloy timeout
@@ -201,7 +203,6 @@
 - Added rate limiter for alloy
 - Added download ext for spectra
 - Add SQLite option for local development
-
 
 ## v1.3.0 [2024-07-09]
 
@@ -211,11 +212,10 @@
 - Added new Alloy API with Spring Boot
 - Integrated Alloy UI into the main playground
 - Fixed #6 Limboole syntax error reporting blocks running
-- Removed DB migration on docker 
+- Removed DB migration on docker
 - Fixed spectra line highlighting error
 - nuXmv tutorial URL changed
 - Updated workflow for docker build
-
 
 ## v1.2.1 [2024-06-09]
 
@@ -226,7 +226,6 @@
 - Introduced dark mode
 - Compressing large response body
 - Migrated Z3 to the browser
-
 
 ## v1.1.2 [2024-01-10]
 
@@ -249,7 +248,6 @@
 - Keep the selected history highlighted
 - The search results reset to all specs after loading a spec
 
-
 ## v1.1.0 [2023-12-28]
 
 **What's changed?**
@@ -267,7 +265,6 @@
 - API response error
 - nuXmv copyright notice
 
-
 ## v1.0.0 [2023-12-21]
 
 **What's changed?**
@@ -276,6 +273,6 @@
 - Added login functionality with Google and GitHub
 - Added ability to save specifications
 - Added ability to download history as JSON
-- Search saved history 
+- Search saved history
 
 ## v0.1 [2023-12-14]
