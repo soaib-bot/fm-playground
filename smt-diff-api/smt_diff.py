@@ -90,6 +90,37 @@ def common_witness(assertions1, assertions2, logic1=None, logic2=None):
         return generator
     return None
 
+def get_semantic_relation(s1: str, s2: str) -> Optional[str]:
+    """
+    s1: current spec
+    s2: previous spec
+    """
+    spec_1 = parse_smt2_string(s1)
+    spec_2 = parse_smt2_string(s2)
+    logic1 = get_logic_from_smt2(s1)
+    logic2 = get_logic_from_smt2(s2)
+    
+    cm_logic = common_logic(logic1, logic2)
+    s1_not_s2_solver = SolverFor(cm_logic) if cm_logic else Solver()
+    s1_not_s2_solver.add(spec_1)
+    s1_not_s2_solver.add(Not(And(spec_2)))
+    res_s1_not_s2 = s1_not_s2_solver.check()
+    
+    s2_not_s1_solver = SolverFor(cm_logic) if cm_logic else Solver()
+    s2_not_s1_solver.add(spec_2)
+    s2_not_s1_solver.add(Not(And(spec_1)))
+    res_s2_not_s1 = s2_not_s1_solver.check()
+
+    if res_s1_not_s2 == unsat and res_s2_not_s1 == unsat:
+        return "Scripts are equivalent."
+    elif res_s1_not_s2 == sat and res_s2_not_s1 == sat:
+        return "Scripts are incomparable."
+    elif res_s1_not_s2 == unsat and res_s2_not_s1 == sat:
+        return "Current Script refines Previous Script."
+    elif res_s1_not_s2 == sat and res_s2_not_s1 == unsat:
+        return "Previous Script refines Current Script."
+    else:
+        return "unknown"
 
 def get_next_witness(specId: str) -> Optional[str]:
     model = cache_manager.get_next(specId)

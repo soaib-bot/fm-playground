@@ -101,7 +101,9 @@ const SmtDiffOutput = () => {
         <div>
             {hasWitness ? (
                 <div>
-                    <SMTDiffEvaluator specId={specId} />
+                    {specId !== 'semantic-relation' && (
+                        <SMTDiffEvaluator specId={specId} />
+                    )}
                     <pre
                         className='plain-output-box'
                         contentEditable={false}
@@ -119,25 +121,27 @@ const SmtDiffOutput = () => {
                         <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>{witnessMessage}</div>
                     )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <MDBBtn
-                                color='warning'
-                                onClick={handlePreviousWitness}
-                                disabled={currentWitnessIndex === 0}
-                            >
-                                Previous
-                            </MDBBtn>
+                    {specId !== 'semantic-relation' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <MDBBtn
+                                    color='warning'
+                                    onClick={handlePreviousWitness}
+                                    disabled={currentWitnessIndex === 0}
+                                >
+                                    Previous
+                                </MDBBtn>
 
-                            <MDBBtn
-                                color='success'
-                                onClick={handleNextWitness}
-                                disabled={isNextWitnessExecuting || isLastWitness}
-                            >
-                                {isNextWitnessExecuting ? 'Computing...' : 'Next'}
-                            </MDBBtn>
+                                <MDBBtn
+                                    color='success'
+                                    onClick={handleNextWitness}
+                                    disabled={isNextWitnessExecuting || isLastWitness}
+                                >
+                                    {isNextWitnessExecuting ? 'Computing...' : 'Next'}
+                                </MDBBtn>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             ) : (
                 <div

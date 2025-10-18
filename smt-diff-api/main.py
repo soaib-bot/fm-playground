@@ -81,7 +81,7 @@ async def run_smt_diff(check: str, p: str, analysis: str):
         )
         s2_spec = get_code_by_id(left_side_code_id).get("code")
 
-        if analysis == "current-vs-left":
+        if analysis == "not-previous-but-current":
             specId = smt_diff.store_witness(s1_spec, s2_spec, mode="diff")
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
@@ -89,9 +89,8 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     status_code=404,
                     detail="No diff witnesses found",
                 )
-        elif analysis == "left-vs-current":
+        elif analysis == "not-current-but-previous":
             # s2 previous and s1 current
-            # TODO: FIX the naming convention here to avoid confusion
             specId = smt_diff.store_witness(s2_spec, s1_spec, mode="diff")
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
@@ -99,7 +98,7 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     status_code=404,
                     detail="No diff witnesses found",
                 )
-        elif analysis == "common":
+        elif analysis == "common-witness":
             specId = smt_diff.store_witness(s1_spec, s2_spec, mode="common")
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
@@ -107,6 +106,15 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     status_code=404,
                     detail="No common witnesses found",
                 )
+        elif analysis == "semantic-relation":
+            sem_relation = smt_diff.get_semantic_relation(s1_spec, s2_spec)
+            specId = None
+            if sem_relation is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No semantic relation witnesses found",
+                )
+            return SmtDiffResponse(specId="semantic-relation", witness=sem_relation)
         else:
             raise HTTPException(
                 status_code=400,
