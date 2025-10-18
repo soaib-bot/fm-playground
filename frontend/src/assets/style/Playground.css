@@ -307,3 +307,15 @@
     margin-bottom: 0.25rem !important; /* Reduced from default 0.5rem */
     font-size: 1rem !important; /* Slightly smaller font */
 }
+
+/* Fullscreen mode styling */
+:fullscreen {
+    background-color: var(--background-color);
+    color: var(--primary-text-color);
+    padding: 1rem;
+}
+
+:fullscreen,
+::backdrop {
+    background-color: var(--background-color);
+}
