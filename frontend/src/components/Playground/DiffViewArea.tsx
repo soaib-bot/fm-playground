@@ -14,6 +14,7 @@ import {
     isFullScreenAtom,
     isExecutingAtom,
     diffComparisonCodeAtom,
+    diffComparisonHistoryIdAtom,
     smtDiffWitnessAtom,
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
@@ -44,6 +45,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [isExecuting, setIsExecuting] = useAtom(isExecutingAtom);
     const [diffComparisonCode] = useAtom(diffComparisonCodeAtom);
+    const [, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom);
     const [, setSmtDiffWitness] = useAtom(smtDiffWitnessAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false);
@@ -157,6 +159,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
 
             const response = await getCodeByParmalink(check, permalink);
             setLoadedPermalinkCode(response.code);
+            setDiffComparisonHistoryId(response.data_id);
             setPermalinkError('');
             // setPermalinkInput('');
 
