@@ -30,7 +30,12 @@ export const executeAlloyTool = async () => {
     const alloySelectedCmd = jotaiStore.get(alloySelectedCmdAtom);
 
     const metadata = { cmd: alloySelectedCmd + 1 };
-    const response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
+    const response = await saveCodeAndRefreshHistory(
+        editorValue,
+        language.short,
+        permalink.permalink || null,
+        metadata
+    );
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
     } else {

@@ -23,7 +23,12 @@ export const executeLimboole = async () => {
     const limbooleCheckOption = jotaiStore.get(limbooleCliOptionsAtom);
 
     const metadata = { check: limbooleCheckOption.label, ls: enableLsp };
-    const response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink ?? null, metadata);
+    const response = await saveCodeAndRefreshHistory(
+        editorValue,
+        language.short,
+        permalink.permalink ?? null,
+        metadata
+    );
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
     } else {

@@ -42,7 +42,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     isLoggedIn,
 }) => {
     const [historyRefreshTrigger] = useAtom(historyRefreshTriggerAtom); // Get the history refresh trigger atom
-    const [shouldRefreshOnOpen, setShouldRefreshOnOpen] = useState(false); // 
+    const [shouldRefreshOnOpen, setShouldRefreshOnOpen] = useState(false); //
     const [data, setData] = useState<HistoryItem[]>([]); // contains the user history
     const [page, setPage] = useState(1); // contains the current page number for history pagination
     const [loading, setLoading] = useState(false); // contains the loading state for history pagination
@@ -232,8 +232,8 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     const uniqueData =
         (data ?? []).length > 0
             ? Array.from(new Set(data.map((item) => item.id))).map((id) => {
-                return data.find((item) => item.id === id);
-            })
+                  return data.find((item) => item.id === id);
+              })
             : [];
 
     /**
@@ -244,8 +244,8 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     const uniqueSearchData =
         (searchData ?? []).length > 0
             ? Array.from(new Set(searchData.map((item) => item.id))).map((id) => {
-                return searchData.find((item) => item.id === id);
-            })
+                  return searchData.find((item) => item.id === id);
+              })
             : [];
 
     useEffect(() => {
@@ -400,51 +400,51 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
                     )}
                     {debouncedSearchQuery
                         ? uniqueSearchData.map((item, index) => (
-                            <React.Fragment key={item?.id}>
-                                <ListItem disablePadding>
-                                    <ListItemButton
-                                        selected={item && selectedItemId === item.id}
-                                        onClick={() => item && handleItemClick(item.id, item.check)}
-                                    >
-                                        <div>
-                                            <Typography variant='subtitle1'>
-                                                {item && `${item.time} -`}{' '}
-                                                <span style={{ color: 'gray' }}>{item?.check}</span>
-                                            </Typography>
-                                            {item && (
-                                                <Typography variant='subtitle1'>
-                                                    {' '}
-                                                    <code>{item.code}</code>
-                                                </Typography>
-                                            )}
-                                        </div>
-                                    </ListItemButton>
-                                </ListItem>
-                                {index < data.length - 1 && <Divider />}
-                            </React.Fragment>
-                        ))
+                              <React.Fragment key={item?.id}>
+                                  <ListItem disablePadding>
+                                      <ListItemButton
+                                          selected={item && selectedItemId === item.id}
+                                          onClick={() => item && handleItemClick(item.id, item.check)}
+                                      >
+                                          <div>
+                                              <Typography variant='subtitle1'>
+                                                  {item && `${item.time} -`}{' '}
+                                                  <span style={{ color: 'gray' }}>{item?.check}</span>
+                                              </Typography>
+                                              {item && (
+                                                  <Typography variant='subtitle1'>
+                                                      {' '}
+                                                      <code>{item.code}</code>
+                                                  </Typography>
+                                              )}
+                                          </div>
+                                      </ListItemButton>
+                                  </ListItem>
+                                  {index < data.length - 1 && <Divider />}
+                              </React.Fragment>
+                          ))
                         : uniqueData.map((item, index) => (
-                            <React.Fragment key={item?.id}>
-                                <ListItem disablePadding>
-                                    <ListItemButton
-                                        selected={selectedItemId === item?.id}
-                                        onClick={() => item && handleItemClick(item.id, item.check)}
-                                    >
-                                        <div>
-                                            <Typography variant='subtitle1'>
-                                                {item?.time} - <span style={{ color: 'gray' }}>{item?.check}</span>
-                                            </Typography>
+                              <React.Fragment key={item?.id}>
+                                  <ListItem disablePadding>
+                                      <ListItemButton
+                                          selected={selectedItemId === item?.id}
+                                          onClick={() => item && handleItemClick(item.id, item.check)}
+                                      >
+                                          <div>
+                                              <Typography variant='subtitle1'>
+                                                  {item?.time} - <span style={{ color: 'gray' }}>{item?.check}</span>
+                                              </Typography>
 
-                                            <Typography variant='subtitle1'>
-                                                {' '}
-                                                <code>{item?.code}</code>
-                                            </Typography>
-                                        </div>
-                                    </ListItemButton>
-                                </ListItem>
-                                {index < data.length - 1 && <Divider />}
-                            </React.Fragment>
-                        ))}
+                                              <Typography variant='subtitle1'>
+                                                  {' '}
+                                                  <code>{item?.code}</code>
+                                              </Typography>
+                                          </div>
+                                      </ListItemButton>
+                                  </ListItem>
+                                  {index < data.length - 1 && <Divider />}
+                              </React.Fragment>
+                          ))}
                 </List>
             </div>
         </Drawer>
