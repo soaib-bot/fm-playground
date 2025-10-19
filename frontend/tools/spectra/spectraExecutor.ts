@@ -1,5 +1,5 @@
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
-import { saveCode } from '@/api/playgroundApi';
+import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
 import { fmpConfig } from '@/ToolMaps';
 import {
     editorValueAtom,
@@ -32,7 +32,7 @@ export const executeSpectraTool = async () => {
     const enableLsp = jotaiStore.get(enableLspAtom);
     const spectraCliOption = jotaiStore.get(spectraCliOptionsAtom);
     const metadata = { ls: enableLsp, cli_option: spectraCliOption };
-    const response = await saveCode(editorValue, language.short, permalink.permalink || null, metadata);
+    const response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
     } else {

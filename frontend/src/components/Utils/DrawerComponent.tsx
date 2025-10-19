@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import _debounce from 'lodash/debounce';
+import { useAtom } from 'jotai';
 import { PiPushPinFill, PiPushPinSlashFill } from 'react-icons/pi';
 import { MdRefresh, MdOutlineSearch } from 'react-icons/md';
 import {
@@ -14,6 +15,7 @@ import {
     Input,
 } from '@mui/material';
 import { getHistoryByPage, searchUserHistory, getCodeById } from '@/api/playgroundApi';
+import { historyRefreshTriggerAtom } from '@/atoms';
 import '@/assets/style/Drawer.css';
 import '@/assets/style/Playground.css';
 
@@ -25,6 +27,13 @@ interface DrawerComponentProps {
     isLoggedIn: boolean;
 }
 
+interface HistoryItem {
+    id: number;
+    time: string;
+    check: string;
+    code: string;
+}
+
 const DrawerComponent: React.FC<DrawerComponentProps> = ({
     isOpen,
     onClose,
@@ -32,13 +41,8 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     isDarkTheme = false,
     isLoggedIn,
 }) => {
-    interface HistoryItem {
-        id: number;
-        time: string;
-        check: string;
-        code: string;
-    }
-
+    const [historyRefreshTrigger] = useAtom(historyRefreshTriggerAtom); // Get the history refresh trigger atom
+    const [shouldRefreshOnOpen, setShouldRefreshOnOpen] = useState(false); // 
     const [data, setData] = useState<HistoryItem[]>([]); // contains the user history
     const [page, setPage] = useState(1); // contains the current page number for history pagination
     const [loading, setLoading] = useState(false); // contains the loading state for history pagination
@@ -187,42 +191,61 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     /**
      * Handles the refresh event. When the user clicks on the refresh icon,
      * it will fetch the first page of the user history and update the data.
+     * This is used both for manual refresh (button click) and auto-refresh (after code execution).
+     * @param {boolean} isAutoRefresh - Whether this is an auto-refresh after code execution
      * @returns {void}
      */
-    const handleRefresh = async () => {
-        await getHistoryByPage(1)
-            .then((res) => {
-                setData((prevData) => [...res.history, ...prevData]);
-            })
-            .catch((err) => {
-                console.log(err);
-            });
+    const handleRefresh = useCallback(async (isAutoRefresh: boolean = false) => {
+        try {
+            const res = await getHistoryByPage(1);
+            if (isAutoRefresh) {
+                // For auto-refresh after code execution, replace entire data to ensure latest is shown
+                setData(res.history);
+                // Reset page to 1
+                setPage(1);
+            } else {
+                // For manual refresh via button, prepend new items to existing data
+                setData((prevData) => {
+                    // Remove duplicates: if items exist in new data, don't add them again
+                    const newIds = new Set(res.history.map((item: HistoryItem) => item.id));
+                    const prevWithoutDuplicates = prevData.filter((item: HistoryItem) => !newIds.has(item.id));
+                    return [...res.history, ...prevWithoutDuplicates];
+                });
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    }, []);
+
+    /**
+     * Handles the manual refresh button click (wrapper to call handleRefresh with isAutoRefresh=false)
+     */
+    const handleRefreshButtonClick = () => {
+        handleRefresh(false);
     };
 
     /**
      * Remove duplicates from data array
      * Technically, this is not needed since the API already returns unique data.
-     * But because of async nature of the API, it's possible to get duplicate data someetimes.
-     * @todo Remove this if the API is updated to return unique data.
+     * But because of async nature of the API, it's possible to get duplicate data sometimes.
      */
     const uniqueData =
         (data ?? []).length > 0
             ? Array.from(new Set(data.map((item) => item.id))).map((id) => {
-                  return data.find((item) => item.id === id);
-              })
+                return data.find((item) => item.id === id);
+            })
             : [];
 
     /**
      * Remove duplicates from search data array
      * Technically, this is not needed since the API already returns unique data.
-     * But because of async nature of the API, it's possible to get duplicate data someetimes.
-     * @todo Remove this if the API is updated to return unique data.
+     * But because of async nature of the API, it's possible to get duplicate data sometimes.
      */
     const uniqueSearchData =
         (searchData ?? []).length > 0
             ? Array.from(new Set(searchData.map((item) => item.id))).map((id) => {
-                  return searchData.find((item) => item.id === id);
-              })
+                return searchData.find((item) => item.id === id);
+            })
             : [];
 
     useEffect(() => {
@@ -232,9 +255,35 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     }, [page]);
 
     /**
-     * Adds an event listener to the window object to listen for scroll events.
-     * Handle scroll event is called when the user scrolls to the bottom of the page.
+     * Auto-refresh history when new items are added (triggered by historyRefreshTrigger).
+     * This effect runs whenever historyRefreshTrigger changes, which happens when code is saved.
+     * It refreshes immediately if drawer is open, or marks for refresh when drawer opens next time.
      */
+    useEffect(() => {
+        if (!debouncedSearchQuery) {
+            if (isOpen) {
+                // Drawer is open, refresh immediately
+                console.log('Auto-refreshing history (drawer open)');
+                handleRefresh(true);
+            } else {
+                // Drawer is closed, mark that we should refresh when it opens
+                console.log('Marking history for refresh on next open');
+                setShouldRefreshOnOpen(true);
+            }
+        }
+    }, [historyRefreshTrigger, isOpen, debouncedSearchQuery, handleRefresh]);
+
+    // When drawer opens, check if we need to refresh (e.g., after loading a history item)
+    useEffect(() => {
+        if (isOpen && shouldRefreshOnOpen && !debouncedSearchQuery) {
+            console.log('Refreshing history on drawer open');
+            handleRefresh(true);
+            setShouldRefreshOnOpen(false);
+        }
+    }, [isOpen, shouldRefreshOnOpen, debouncedSearchQuery, handleRefresh]);
+
+    // Adds an event listener to the window object to listen for scroll events.
+    // Handle scroll event is called when the user scrolls to the bottom of the page.
     useEffect(() => {
         window.addEventListener('scroll', handleScroll);
         return () => {
@@ -248,9 +297,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
         }
     }, [isOpen]);
 
-    /**
-     * Fetches the user history from the API when the search query changes.
-     */
+    // Fetches the user history from the API when the search query changes.
     useEffect(() => {
         searchDataFetch(page);
     }, [debouncedSearchQuery, page]);
@@ -286,7 +333,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
                             {debouncedSearchQuery ? (
                                 ''
                             ) : (
-                                <IconButton onClick={handleRefresh}>
+                                <IconButton onClick={handleRefreshButtonClick}>
                                     <MdRefresh className='playground-icon' />
                                 </IconButton>
                             )}
@@ -353,51 +400,51 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
                     )}
                     {debouncedSearchQuery
                         ? uniqueSearchData.map((item, index) => (
-                              <React.Fragment key={item?.id}>
-                                  <ListItem disablePadding>
-                                      <ListItemButton
-                                          selected={item && selectedItemId === item.id}
-                                          onClick={() => item && handleItemClick(item.id, item.check)}
-                                      >
-                                          <div>
-                                              <Typography variant='subtitle1'>
-                                                  {item && `${item.time} -`}{' '}
-                                                  <span style={{ color: 'gray' }}>{item?.check}</span>
-                                              </Typography>
-                                              {item && (
-                                                  <Typography variant='subtitle1'>
-                                                      {' '}
-                                                      <code>{item.code}</code>
-                                                  </Typography>
-                                              )}
-                                          </div>
-                                      </ListItemButton>
-                                  </ListItem>
-                                  {index < data.length - 1 && <Divider />}
-                              </React.Fragment>
-                          ))
+                            <React.Fragment key={item?.id}>
+                                <ListItem disablePadding>
+                                    <ListItemButton
+                                        selected={item && selectedItemId === item.id}
+                                        onClick={() => item && handleItemClick(item.id, item.check)}
+                                    >
+                                        <div>
+                                            <Typography variant='subtitle1'>
+                                                {item && `${item.time} -`}{' '}
+                                                <span style={{ color: 'gray' }}>{item?.check}</span>
+                                            </Typography>
+                                            {item && (
+                                                <Typography variant='subtitle1'>
+                                                    {' '}
+                                                    <code>{item.code}</code>
+                                                </Typography>
+                                            )}
+                                        </div>
+                                    </ListItemButton>
+                                </ListItem>
+                                {index < data.length - 1 && <Divider />}
+                            </React.Fragment>
+                        ))
                         : uniqueData.map((item, index) => (
-                              <React.Fragment key={item?.id}>
-                                  <ListItem disablePadding>
-                                      <ListItemButton
-                                          selected={selectedItemId === item?.id}
-                                          onClick={() => item && handleItemClick(item.id, item.check)}
-                                      >
-                                          <div>
-                                              <Typography variant='subtitle1'>
-                                                  {item?.time} - <span style={{ color: 'gray' }}>{item?.check}</span>
-                                              </Typography>
+                            <React.Fragment key={item?.id}>
+                                <ListItem disablePadding>
+                                    <ListItemButton
+                                        selected={selectedItemId === item?.id}
+                                        onClick={() => item && handleItemClick(item.id, item.check)}
+                                    >
+                                        <div>
+                                            <Typography variant='subtitle1'>
+                                                {item?.time} - <span style={{ color: 'gray' }}>{item?.check}</span>
+                                            </Typography>
 
-                                              <Typography variant='subtitle1'>
-                                                  {' '}
-                                                  <code>{item?.code}</code>
-                                              </Typography>
-                                          </div>
-                                      </ListItemButton>
-                                  </ListItem>
-                                  {index < data.length - 1 && <Divider />}
-                              </React.Fragment>
-                          ))}
+                                            <Typography variant='subtitle1'>
+                                                {' '}
+                                                <code>{item?.code}</code>
+                                            </Typography>
+                                        </div>
+                                    </ListItemButton>
+                                </ListItem>
+                                {index < data.length - 1 && <Divider />}
+                            </React.Fragment>
+                        ))}
                 </List>
             </div>
         </Drawer>

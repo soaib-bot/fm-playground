@@ -1,4 +1,4 @@
-import { saveCode } from '@/api/playgroundApi';
+import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
 import { fmpConfig } from '@/ToolMaps';
 import {
     editorValueAtom,
@@ -48,7 +48,7 @@ export const executeSmtDiffTool = async () => {
     };
 
     // Save the code with SemDiff check type
-    const response = await saveCode(editorValue, language.short + 'SemDiff', permalink.permalink || null, metadata);
+    const response = await saveCodeAndRefreshHistory(editorValue, language.short + 'SemDiff', permalink.permalink || null, metadata);
 
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);

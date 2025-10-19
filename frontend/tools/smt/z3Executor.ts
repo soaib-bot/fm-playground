@@ -1,7 +1,7 @@
 import runZ3WASM from '@/../tools/smt/runZ3WASM';
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
 
-import { saveCode } from '@/api/playgroundApi';
+import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
 import { fmpConfig } from '@/ToolMaps';
 import {
     editorValueAtom,
@@ -34,7 +34,7 @@ export const executeZ3Wasm = async () => {
     let response: any = null;
     const metadata = { ls: enableLsp };
     try {
-        response = await saveCode(editorValue, language.short, permalink.permalink || null, metadata);
+        response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
         if (response) {
             jotaiStore.set(permalinkAtom, response.data);
         }

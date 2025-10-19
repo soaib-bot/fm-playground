@@ -1,6 +1,6 @@
 import run_limboole from '@/../tools/limboole/limboole';
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
-import { saveCode } from '@/api/playgroundApi';
+import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
 import { Permalink } from '@/types';
 import { fmpConfig } from '@/ToolMaps';
 import {
@@ -23,7 +23,7 @@ export const executeLimboole = async () => {
     const limbooleCheckOption = jotaiStore.get(limbooleCliOptionsAtom);
 
     const metadata = { check: limbooleCheckOption.label, ls: enableLsp };
-    const response = await saveCode(editorValue, language.short, permalink.permalink ?? null, metadata);
+    const response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink ?? null, metadata);
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
     } else {
