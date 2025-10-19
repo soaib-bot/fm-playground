@@ -1,5 +1,8 @@
 # Change Log
 
+## v2.7.3 [2025-10-19]
+- 🐛 Fixed auto refresh not working on tool execution
+
 ## v2.7.2 [2025-10-18]
 
 - ✨ Added sem relation for smt diff
