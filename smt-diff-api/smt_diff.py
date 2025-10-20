@@ -113,13 +113,13 @@ def get_semantic_relation(s1: str, s2: str) -> Optional[str]:
     res_s2_not_s1 = s2_not_s1_solver.check()
 
     if res_s1_not_s2 == unsat and res_s2_not_s1 == unsat:
-        return "Scripts are equivalent."
+        return "Current ≡ Previous\nAll models that satisfy the current script also satisfy the previous script, and vice versa."
     elif res_s1_not_s2 == sat and res_s2_not_s1 == sat:
-        return "Scripts are incomparable."
+        return "Scripts are incomparable\nThere exist models that satisfy the current script but not the previous script, and vice versa."
     elif res_s1_not_s2 == unsat and res_s2_not_s1 == sat:
-        return "Current Script refines Previous Script."
+        return "Current ⊨ Previous \nAll models that satisfy the current script also satisfy the previous script. Some models that satisfy the previous script do not satisfy the current script."
     elif res_s1_not_s2 == sat and res_s2_not_s1 == unsat:
-        return "Previous Script refines Current Script."
+        return "Previous ⊨ Current\nAll models that satisfy the previous script also satisfy the current script. Some models that satisfy the current script do not satisfy the previous script."
     else:
         return "unknown"
 
