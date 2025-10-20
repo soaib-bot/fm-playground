@@ -233,7 +233,8 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
                 onChange={handleLanguageChange}
                 selected={language}
                 editorTheme={editorTheme}
-                isDisabled={isDiffViewMode}
+                isDiffViewMode={isDiffViewMode}
+                onExitDiffMode={handleBackToEditing}
             />
             <Tooltip id='playground-tooltip' />
             <div className='row Playground'>

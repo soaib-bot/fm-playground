@@ -14,6 +14,8 @@ interface ToolsProps {
     selected: LanguageProps;
     editorTheme: string;
     isDisabled?: boolean;
+    isDiffViewMode?: boolean;
+    onExitDiffMode?: () => void;
 }
 
 const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
@@ -30,6 +32,30 @@ const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
         setOptions(generatedOptions);
     }, []);
 
+    // Create a temporary diff option when in diff view mode
+    const displayValue = props.isDiffViewMode
+        ? {
+              id: props.selected.id + '-diff',
+              value: props.selected.value,
+              label: props.selected.label + ' Diff',
+              short: props.selected.short + 'Diff',
+          }
+        : props.selected;
+
+    const handleChange = (selectedOption: any) => {
+        // If in diff mode and user selects a different tool, exit diff mode
+        if (props.isDiffViewMode && selectedOption.short !== displayValue.short) {
+            if (props.onExitDiffMode) {
+                props.onExitDiffMode();
+            }
+            // Then apply the tool change
+            props.onChange(selectedOption);
+        } else if (!props.isDiffViewMode) {
+            // Normal mode - just change the tool
+            props.onChange(selectedOption);
+        }
+    };
+
     return (
         <div className='tools'>
             <Select
@@ -43,8 +69,8 @@ const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
                 isSearchable={true}
                 name='color'
                 options={options}
-                onChange={props.onChange}
-                value={props.selected}
+                onChange={handleChange}
+                value={displayValue}
                 menuPortalTarget={document.body}
                 styles={{
                     menuPortal: (base) => ({ ...base, zIndex: 9999 }),
