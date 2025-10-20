@@ -27,6 +27,7 @@ const SmtDiffOutput = () => {
             if (!isNavigationUpdate) {
                 setWitnesses([smtDiffWitness]);
                 setCurrentWitnessIndex(0);
+                setIsLastWitness(false); // Reset the last witness flag for new analysis
             }
 
             if (smtDiffWitness.specId) {

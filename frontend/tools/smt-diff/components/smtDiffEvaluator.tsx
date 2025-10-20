@@ -10,7 +10,7 @@ const SMTDiffEvaluator = ({ specId }: SMTDiffEvaluatorProps) => {
     };
     return (
         <MDBInput
-            label='SMT-LIB Assertion'
+            label='Witness Filter (SMT-LIB Assertion)'
             id='smtLibAssertionForm'
             type='text'
             className='smt-lib-assertion-input'
