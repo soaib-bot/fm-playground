@@ -1,6 +1,14 @@
 # Change Log
 
+## v2.7.4 [2025-10-20]
+
+- ✨ Added caching and witness iteration for limboole diff
+- ✨ Added evaluator for limboole diff
+- 🐛 Reset output on new semantic analysis execution
+- 💄 Fixed some UI styling issues
+
 ## v2.7.3 [2025-10-19]
+
 - 🐛 Fixed auto refresh not working on tool execution
 
 ## v2.7.2 [2025-10-18]
@@ -9,7 +17,6 @@
 - ✨ Added permalink feature for diff view
 - 🐛 Fixed sem diff not working from permalink
 - 🐛 Fixed toggling full screen makes the background dark
-
 
 ## v2.7.0-2.7.1 [2025-10-18]
 
