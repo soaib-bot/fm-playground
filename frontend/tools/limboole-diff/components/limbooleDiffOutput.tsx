@@ -37,6 +37,15 @@ const LimbooleDiffOutput = () => {
                 setHasWitness(false);
                 setWitnessMessage(limbooleDiffWitness.error);
             }
+        } else {
+            // Clear all state when witness is set to null
+            setWitnesses([]);
+            setCurrentWitnessIndex(0);
+            setSpecId(null);
+            setIsNextWitnessExecuting(false);
+            setIsLastWitness(false);
+            setWitnessMessage('');
+            setHasWitness(false);
         }
     }, [limbooleDiffWitness]);
 

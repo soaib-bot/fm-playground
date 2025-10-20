@@ -38,6 +38,15 @@ const SmtDiffOutput = () => {
                 setHasWitness(false);
                 setWitnessMessage(smtDiffWitness.error);
             }
+        } else {
+            // Clear all state when witness is set to null
+            setWitnesses([]);
+            setCurrentWitnessIndex(0);
+            setSpecId(null);
+            setIsNextWitnessExecuting(false);
+            setIsLastWitness(false);
+            setWitnessMessage('');
+            setHasWitness(false);
         }
     }, [smtDiffWitness]);
 

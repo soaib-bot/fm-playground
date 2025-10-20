@@ -185,7 +185,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
             } else {
                 showErrorModal('You can not perform semantic analysis with different tools.');
                 setIsExecuting(false);
-                return;
             }
         } catch (err: any) {
             if (err.code === 'ERR_NETWORK') {
@@ -197,10 +196,6 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
                     `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
                 );
             }
-        } finally {
-            setOutput('');
-            setSmtDiffWitness(null);
-            setLimbooleDiffWitness(null);
         }
     };
 
