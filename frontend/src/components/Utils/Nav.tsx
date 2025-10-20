@@ -176,7 +176,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
             />
             <SessionExpiredModal />
             <header className='header'>
-                <MDBNavbarBrand className='d-flex align-items-center gap-2'>
+                <MDBNavbarBrand href='/' className='d-flex align-items-center gap-2' style={{ cursor: 'pointer' }}>
                     <span>
                         <img className='nav-se-logo img-fluid' src='/logo_se.png' alt='SE Logo' />
                     </span>
