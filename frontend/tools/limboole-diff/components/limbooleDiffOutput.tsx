@@ -1,47 +1,151 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
+import { MDBBtn } from 'mdb-react-ui-kit';
 import { isFullScreenAtom, limbooleDiffWitnessAtom } from '@/atoms';
+import { getNextLimbooleDiffWitness } from '../limbooleDiffExecutor';
 
 const LimbooleDiffOutput = () => {
     const [isFullScreen] = useAtom(isFullScreenAtom);
-    const [limbooleDiffWitness] = useAtom(limbooleDiffWitnessAtom);
+    const [limbooleDiffWitness, setLimbooleDiffWitness] = useAtom(limbooleDiffWitnessAtom);
 
+    const [witnesses, setWitnesses] = useState<any[]>([]);
+    const [currentWitnessIndex, setCurrentWitnessIndex] = useState(0);
+    const [specId, setSpecId] = useState<string | null>(null);
+    const [isNextWitnessExecuting, setIsNextWitnessExecuting] = useState(false);
+    const [isLastWitness, setIsLastWitness] = useState(false);
     const [witnessMessage, setWitnessMessage] = useState('');
     const [hasWitness, setHasWitness] = useState(false);
-    const [witnessContent, setWitnessContent] = useState('');
 
     /**
      * Update the witness in the state when the API response is received
      */
     useEffect(() => {
         if (limbooleDiffWitness) {
-            if (limbooleDiffWitness.witness) {
+            // Reset witnesses array when we get a completely new witness (e.g., new specification run)
+            const isNavigationUpdate = witnesses.some((witness) => witness === limbooleDiffWitness);
+            if (!isNavigationUpdate) {
+                setWitnesses([limbooleDiffWitness]);
+                setCurrentWitnessIndex(0);
+                setIsLastWitness(false); // Reset the last witness flag for new analysis
+            }
+
+            if (limbooleDiffWitness.specId) {
+                setSpecId(limbooleDiffWitness.specId);
                 setHasWitness(true);
-                setWitnessContent(limbooleDiffWitness.witness);
                 setWitnessMessage('');
             } else if (limbooleDiffWitness.error) {
                 setHasWitness(false);
                 setWitnessMessage(limbooleDiffWitness.error);
-                setWitnessContent('');
             }
         }
     }, [limbooleDiffWitness]);
 
+    const handleNextWitness = () => {
+        // Check if we already have a next witness cached
+        if (currentWitnessIndex < witnesses.length - 1) {
+            // Move to next cached witness
+            const nextIndex = currentWitnessIndex + 1;
+            setCurrentWitnessIndex(nextIndex);
+            setLimbooleDiffWitness(witnesses[nextIndex]);
+            return;
+        }
+
+        // Fetch new witness from API
+        if (!specId) return;
+
+        setIsNextWitnessExecuting(true);
+        getNextLimbooleDiffWitness(specId)
+            .then((data) => {
+                if (data.error) {
+                    setIsLastWitness(true);
+                    setWitnessMessage('No more witnesses');
+                    setIsNextWitnessExecuting(false);
+                    return;
+                }
+
+                // Add new witness to the array
+                const updatedWitnesses = [...witnesses, data];
+                const newIndex = updatedWitnesses.length - 1;
+                setWitnesses(updatedWitnesses);
+                setCurrentWitnessIndex(newIndex);
+                setLimbooleDiffWitness(data);
+                setIsNextWitnessExecuting(false);
+            })
+            .catch((error) => {
+                console.error('Error fetching next witness:', error);
+                if (error.response?.status === 404) {
+                    setIsLastWitness(true);
+                    setWitnessMessage('No more witnesses');
+                }
+                setIsNextWitnessExecuting(false);
+            });
+    };
+
+    const handlePreviousWitness = () => {
+        if (currentWitnessIndex > 0) {
+            const prevIndex = currentWitnessIndex - 1;
+            setCurrentWitnessIndex(prevIndex);
+            setLimbooleDiffWitness(witnesses[prevIndex]);
+            setIsLastWitness(false);
+        }
+    };
+
+    const getCurrentWitness = () => {
+        if (witnesses.length > 0 && witnesses[currentWitnessIndex]) {
+            return witnesses[currentWitnessIndex].witness || '';
+        }
+        return '';
+    };
+
+    // Check if current witness is UNSATISFIABLE
+    const isUnsatisfiable = () => {
+        const currentWitness = getCurrentWitness();
+        return currentWitness.startsWith('% UNSATISFIABLE formula');
+    };
+
     return (
         <div>
             {hasWitness ? (
-                <pre
-                    className='plain-output-box'
-                    contentEditable={false}
-                    style={{
-                        borderRadius: '8px',
-                        height: isFullScreen ? '80vh' : '45vh',
-                        whiteSpace: 'pre-wrap',
-                        overflowY: 'auto',
-                    }}
-                >
-                    {witnessContent}
-                </pre>
+                <div>
+                    <pre
+                        className='plain-output-box'
+                        contentEditable={false}
+                        style={{
+                            borderRadius: '8px',
+                            height: isFullScreen ? '70vh' : '45vh',
+                            whiteSpace: 'pre-wrap',
+                            marginBottom: '10px',
+                        }}
+                    >
+                        {getCurrentWitness()}
+                    </pre>
+
+                    {witnessMessage && (
+                        <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>{witnessMessage}</div>
+                    )}
+
+                    {specId !== 'semantic-relation' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <MDBBtn
+                                    color='warning'
+                                    onClick={handlePreviousWitness}
+                                    disabled={currentWitnessIndex === 0 || isUnsatisfiable()}
+                                >
+                                    Previous
+                                </MDBBtn>
+
+                                <MDBBtn
+                                    color='success'
+                                    onClick={handleNextWitness}
+                                    disabled={isNextWitnessExecuting || isLastWitness || isUnsatisfiable()}
+                                >
+                                    {isNextWitnessExecuting ? 'Computing...' : 'Next'}
+                                </MDBBtn>
+                            </div>
+                        </div>
+                    )}
+                </div>
             ) : (
                 <div
                     className='plain-output-box'

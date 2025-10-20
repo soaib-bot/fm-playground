@@ -24,6 +24,16 @@ async function getLimbooleDiffWitness(permalink: Permalink, analysis: string) {
     }
 }
 
+export async function getNextLimbooleDiffWitness(specId: string) {
+    let url = `/diff-limboole/next/${specId}`;
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 export const executeLimbooleDiffTool = async () => {
     const editorValue = jotaiStore.get(editorValueAtom);
     const language = jotaiStore.get(languageAtom);
@@ -62,7 +72,6 @@ export const executeLimbooleDiffTool = async () => {
         jotaiStore.set(limbooleDiffWitnessAtom, res);
     } catch (err: any) {
         if (err.response?.status === 404) {
-            console.error('No witnesses found');
             jotaiStore.set(limbooleDiffWitnessAtom, {
                 error: 'No witnesses found',
             });
