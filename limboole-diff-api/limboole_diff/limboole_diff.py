@@ -11,17 +11,17 @@ def get_sat_unsat(output: str):
         return "unsat"
     return "unknown"
 
-
-def process_diff_witness_output(output: str):
-    return output.replace(
-        "% SATISFIABLE formula (satisfying assignment follows)", ""
-    ).strip()
+def sanitize_formula(formula: str) -> str:
+    lines = formula.splitlines()
+    sanitized_lines = [line.split("%")[0] for line in lines if line.strip()]
+    sanitize_formula = " ".join(sanitized_lines)
+    sanitize_formula = re.sub(r'\s+', ' ', sanitize_formula).strip()
+    return sanitize_formula
 
 
 def diff_witness(f1: str, f2: str):
     f1_not_f2 = f"({f1}) & (!({f2}))"
-    output = process_commands(f1_not_f2)
-    return f1_not_f2, process_diff_witness_output(output)
+    return f1_not_f2,  process_commands(f1_not_f2)
 
 
 def common_witness(f1: str, f2: str):
@@ -34,6 +34,8 @@ def semantic_relation(f1: str, f2: str):
     f1: current formula
     f2: previous formula
     """
+    f1 = sanitize_formula(f1)
+    f2 = sanitize_formula(f2)
     f1_not_f2 = process_commands(f"({f1}) & (!({f2}))")
     not_f1_but_f2 = process_commands(f"(!({f1})) & ({f2})")
     res_f1_not_f2 = get_sat_unsat(f1_not_f2)
@@ -70,6 +72,8 @@ def get_formula_from_valuation(valuation: str) -> str:
 
 
 def store_witness(f1: str, f2: str, mode: str):
+    f1 = sanitize_formula(f1)
+    f2 = sanitize_formula(f2)
     if mode == "diff":
         formula, res = diff_witness(f1, f2)
     elif mode == "common":
@@ -97,6 +101,7 @@ def get_next_witness(specId: str):
     return None
 
 def evaluate_formula(specId: str, formula: str) -> Any:
+    formula = sanitize_formula(formula)
     cache_info = cache_manager.get_cache_info(specId)
     if cache_info is None:
         return None
