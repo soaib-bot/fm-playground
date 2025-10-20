@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from limboole_diff import limboole_diff
 from pydantic import BaseModel
 
+
 load_dotenv()
 
 API_URL = os.getenv("API_URL")
@@ -63,7 +64,7 @@ class SATDiffRequest(BaseModel):
 
 class SATDiffResponse(BaseModel):
     """Response model for starting enumeration."""
-
+    specId: str 
     witness: str
 
 
@@ -81,39 +82,41 @@ async def run_sem_analysis(check: str, p: str, analysis: str):
         previous_formula = get_code_by_id(left_side_code_id).get("code")
 
         if analysis == "not-previous-but-current":
-            witness = limboole_diff.diff_witness(current_formula, previous_formula)
+            specId, witness = limboole_diff.store_witness(current_formula, previous_formula, mode="diff")
             if witness is None:
                 raise HTTPException(
                     status_code=404,
                     detail="No diff witnesses found",
                 )
+            # witness = limboole_diff.diff_witness(current_formula, previous_formula)
         elif analysis == "not-current-but-previous":
-            witness = limboole_diff.diff_witness(previous_formula, current_formula)
+            specId, witness = limboole_diff.store_witness(previous_formula, current_formula, mode="diff")
             if witness is None:
                 raise HTTPException(
                     status_code=404,
                     detail="No diff witnesses found",
                 )
         elif analysis == "common-witness":
-            witness = limboole_diff.common_witness(current_formula, previous_formula)
+            specId, witness = limboole_diff.store_witness(current_formula, previous_formula, mode="common")
             if witness is None:
                 raise HTTPException(
                     status_code=404,
                     detail="No common witnesses found",
                 )
         elif analysis == "semantic-relation":
-            witness = limboole_diff.semantic_relation(current_formula, previous_formula)
-            if witness is None:
+            semantic_relation = limboole_diff.semantic_relation(current_formula, previous_formula)
+            if semantic_relation is None:
                 raise HTTPException(
                     status_code=404,
                     detail="Could not determine semantic relation",
                 )
+            return SATDiffResponse(specId="semantic-relation", witness=semantic_relation)
         else:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid mode: {analysis}. Supported modes: current-vs-left, left-vs-current, common",
             )
-        return SATDiffResponse(witness=witness)
+        return SATDiffResponse(specId=specId, witness=witness)
     except HTTPException:
         raise
     except Exception as e:
@@ -121,5 +124,49 @@ async def run_sem_analysis(check: str, p: str, analysis: str):
             status_code=500, detail=f"Error starting enumeration: {str(e)}"
         )
 
+@app.get("/next/{specId}", response_model=SATDiffResponse)
+async def get_next_witness(specId: str):
+    try:
+        cache_info = limboole_diff.cache_manager.get_cache_info(specId)
+        if cache_info is None:
+            raise HTTPException(
+                status_code=404, detail=f"Cache not found or expired: {specId}"
+            )
+        next_witness = limboole_diff.get_next_witness(specId)
+
+        if next_witness is None:
+            raise HTTPException(
+                status_code=404, detail="No more witnesses or cache exhausted"
+            )
+
+        return SATDiffResponse(specId=specId, witness=next_witness)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving next witness: {str(e)}"
+        )
+
+@app.get("/eval/{specId}", response_model=Dict[str, str])
+def eval_formula(specId: str, formula: str = None):
+    try:
+        cache_info = limboole_diff.cache_manager.get_cache_info(specId)
+        if cache_info is None:
+            raise HTTPException(
+                status_code=404, detail=f"Cache not found or expired: {specId}"
+            )
+        evaluation = limboole_diff.evaluate_formula(specId, formula)
+        if evaluation is None:
+            raise HTTPException(
+                status_code=404, detail="Error evaluating formula"
+            )
+        return {"evaluation": evaluation}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error evaluating formula: {str(e)}"
+        )
+        
 
 # --------------------------------------------------
