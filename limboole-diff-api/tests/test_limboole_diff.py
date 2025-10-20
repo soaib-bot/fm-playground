@@ -1,31 +1,32 @@
-from limboole_diff.limboole_diff import common_witness, diff_witness, semantic_relation
+from limboole_diff.limboole_diff import common_witness, diff_witness, semantic_relation, sanitize_formula
 
 
 def test_semantic_relation_equivalent():
     f1 = "a & b"
     f2 = "a & b"
     relation = semantic_relation(f1, f2)
-    assert relation == "The formulas are equivalent."
+    assert "Current ≡ Previous" in relation
 
 
 def test_semantic_relation_previous_implies_current():
     f1 = "a & b"  # current
     f2 = "a"  # previous
     relation = semantic_relation(f1, f2)
-    assert relation == "Current ⊨ Previous"
+    assert "Current ⊨ Previous" in relation
 
 
 def test_semantic_relation_incomparable():
     f1 = "a & b"
     f2 = "b & c"
     relation = semantic_relation(f1, f2)
-    assert relation == "The formulas are incomparable."
+    assert "The formulas are incomparable" in relation
 
 
 def test_common_witness():
     f1 = "a & b & d"
     f2 = "a & b & c"
-    witness = common_witness(f1, f2)
+    specId, witness = common_witness(f1, f2)
+    assert specId is not None
     assert "a = 1" in witness
     assert "b = 1" in witness
 
@@ -33,6 +34,32 @@ def test_common_witness():
 def test_diff_witness():
     f1 = "a & b & d"
     f2 = "a & b & c"
-    witness = diff_witness(f1, f2)
+    specId, witness = diff_witness(f1, f2)
+    assert specId is not None
     assert "d = 1" in witness
     assert "c = 0" in witness
+
+def test_sanitize_formula():
+    formula = """
+    a & b % this is a comment
+    & c   % another comment
+    & d
+    """
+    sanitized = sanitize_formula(formula)
+    expected = "a & b & c & d"
+    assert sanitized == expected
+    
+    formula = "a & b    &    c"
+    sanitized = sanitize_formula(formula)
+    expected = "a & b & c"
+    assert sanitized == expected
+    
+    formula = """
+    a %& b  this is a comment
+    % another comment
+    & c   % another comment
+    & d
+    """
+    sanitized = sanitize_formula(formula)
+    expected = "a & c & d"
+    assert sanitized == expected
