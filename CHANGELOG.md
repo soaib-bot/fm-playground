@@ -1,5 +1,10 @@
 # Change Log
 
+## v2.7.6 [2025-10-21]
+
+- 🐛 Fixed limboole diff formula error (formula sanitize)
+- 💄 Highlighting the compare spec feature
+
 ## v2.7.4 [2025-10-20]
 
 - ✨ Added caching and witness iteration for limboole diff
