@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 
 
-
 class LimbooleCache:
     """Represents a single string cache with TTL support."""
 

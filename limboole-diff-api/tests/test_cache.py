@@ -1,7 +1,12 @@
-from limboole_diff.limboole_diff import store_witness, get_next_witness, evaluate_formula
+from limboole_diff.limboole_diff import (
+    evaluate_formula,
+    get_next_witness,
+    store_witness,
+)
+
 
 def test_store_witness_diff():
-    
+
     f1 = "(a | b)"
     f2 = "(a | b | c)"
     specId, res = store_witness(f1, f2, mode="common")
@@ -20,6 +25,7 @@ def test_store_witness_diff():
     witness = get_next_witness(specId)
     assert witness.startswith("% UNSATISFIABLE formula")
 
+
 def test_evaluate_formula():
     f1 = "(a | b)"
     f2 = "(a | b | c)"
@@ -27,4 +33,3 @@ def test_evaluate_formula():
     assert specId is not None
     eval = evaluate_formula(specId, "(a & b & c)")
     assert eval.startswith("% SATISFIABLE formula")
-    

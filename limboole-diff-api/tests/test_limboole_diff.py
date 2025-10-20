@@ -1,4 +1,9 @@
-from limboole_diff.limboole_diff import common_witness, diff_witness, semantic_relation, sanitize_formula
+from limboole_diff.limboole_diff import (
+    common_witness,
+    diff_witness,
+    sanitize_formula,
+    semantic_relation,
+)
 
 
 def test_semantic_relation_equivalent():
@@ -39,6 +44,7 @@ def test_diff_witness():
     assert "d = 1" in witness
     assert "c = 0" in witness
 
+
 def test_sanitize_formula():
     formula = """
     a & b % this is a comment
@@ -48,12 +54,12 @@ def test_sanitize_formula():
     sanitized = sanitize_formula(formula)
     expected = "a & b & c & d"
     assert sanitized == expected
-    
+
     formula = "a & b    &    c"
     sanitized = sanitize_formula(formula)
     expected = "a & b & c"
     assert sanitized == expected
-    
+
     formula = """
     a %& b  this is a comment
     % another comment

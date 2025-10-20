@@ -16,7 +16,7 @@ const LimbooleDiffOptions = () => {
     const [selectedOption, setSelectedOption] = useState(options[0].value);
     const [, setLimbooleDiffOption] = useAtom(limbooleDiffOptionsAtom);
     const [limbooleDiffWitness, setLimbooleDiffWitness] = useAtom(limbooleDiffWitnessAtom);
-    
+
     const [isEvaluating, setIsEvaluating] = useState(false);
 
     const handleOptionChange = (selectedOption: SingleValue<{ value: string; label: string }>) => {
@@ -103,7 +103,7 @@ const LimbooleDiffOptions = () => {
                     />
                 </div>
             </div>
-            
+
             {showEvaluator && (
                 <div style={{ marginTop: '15px', paddingLeft: '15px', paddingRight: '15px' }}>
                     <MDBInput

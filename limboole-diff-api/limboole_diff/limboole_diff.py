@@ -1,7 +1,8 @@
 import re
 from typing import Any
-from .limboole_executor import process_commands
+
 from .cache_manager import cache_manager
+from .limboole_executor import process_commands
 
 
 def get_sat_unsat(output: str):
@@ -11,17 +12,18 @@ def get_sat_unsat(output: str):
         return "unsat"
     return "unknown"
 
+
 def sanitize_formula(formula: str) -> str:
     lines = formula.splitlines()
     sanitized_lines = [line.split("%")[0] for line in lines if line.strip()]
     sanitize_formula = " ".join(sanitized_lines)
-    sanitize_formula = re.sub(r'\s+', ' ', sanitize_formula).strip()
+    sanitize_formula = re.sub(r"\s+", " ", sanitize_formula).strip()
     return sanitize_formula
 
 
 def diff_witness(f1: str, f2: str):
     f1_not_f2 = f"({f1}) & (!({f2}))"
-    return f1_not_f2,  process_commands(f1_not_f2)
+    return f1_not_f2, process_commands(f1_not_f2)
 
 
 def common_witness(f1: str, f2: str):
@@ -100,6 +102,7 @@ def get_next_witness(specId: str):
         return res
     return None
 
+
 def evaluate_formula(specId: str, formula: str) -> Any:
     formula = sanitize_formula(formula)
     cache_info = cache_manager.get_cache_info(specId)
@@ -108,7 +111,7 @@ def evaluate_formula(specId: str, formula: str) -> Any:
     stored_formula = cache_manager.get_value(specId)
     if stored_formula is None:
         return None
-    conjuncted_formula = re.sub(r'\(', f'({formula} & ', stored_formula, count=1)
+    conjuncted_formula = re.sub(r"\(", f"({formula} & ", stored_formula, count=1)
     # TODO: Should we update the cache with the new conjuncted formula?
     return process_commands(conjuncted_formula)
 
@@ -119,4 +122,3 @@ def get_cache_info(specId: str):
 
 def delete_cache(specId: str) -> bool:
     return cache_manager.delete_cache(specId)
-
