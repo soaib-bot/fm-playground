@@ -181,15 +181,30 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                     <CopyToClipboardBtn />
                                 </MDBIcon>
                             )}
-                            <MDBIcon
-                                size='lg'
-                                className='playground-icon'
-                                data-tooltip-id='playground-tooltip'
-                                data-tooltip-content='Compare Specs'
-                                onClick={handleEnterDiffView}
+                            <div
+                                style={{
+                                    padding: '3px',
+                                    borderRadius: '6px',
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+                                    boxShadow: '0 0 15px rgba(102, 126, 234, 0.5)',
+                                }}
                             >
-                                <VscDiffSingle />
-                            </MDBIcon>
+                                {/* TODO: Temporary highlight for new feature. Remove when no longer needed */}
+                                <MDBIcon
+                                    size='lg'
+                                    className='playground-icon'
+                                    data-tooltip-id='playground-tooltip'
+                                    data-tooltip-content='Compare Specs (New Feature!)'
+                                    onClick={handleEnterDiffView}
+                                    style={{
+                                        backgroundColor: editorTheme === 'vs-dark' ? '#1e1e1e' : '#ffffff',
+                                        borderRadius: '4px',
+                                        padding: '4px',
+                                    }}
+                                >
+                                    <VscDiffSingle />
+                                </MDBIcon>
+                            </div>
                             <MDBIcon size='lg' className='playground-icon' onClick={() => onFullScreenButtonClick()}>
                                 {isFullScreen ? (
                                     <AiOutlineFullscreenExit
