@@ -15,6 +15,7 @@ import {
     diffComparisonCodeAtom,
     diffComparisonHistoryIdAtom,
     smtDiffWitnessAtom,
+    limbooleDiffWitnessAtom,
 } from '@/atoms';
 import ConfirmModal from '@/components/Utils/Modals/ConfirmModal';
 import MessageModal from '@/components/Utils/Modals/MessageModal';
@@ -43,6 +44,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
     const [diffComparisonCode] = useAtom(diffComparisonCodeAtom);
     const [, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom);
     const [, setSmtDiffWitness] = useAtom(smtDiffWitnessAtom);
+    const [, setLimbooleDiffWitness] = useAtom(limbooleDiffWitnessAtom);
 
     const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -171,6 +173,8 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
         // Entering analyze mode - run the semantic diff analysis
         setIsAnalyzeMode(true);
         setOutput('');
+        setSmtDiffWitness(null);
+        setLimbooleDiffWitness(null);
 
         try {
             setIsExecuting(true);
@@ -196,6 +200,7 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
         } finally {
             setOutput('');
             setSmtDiffWitness(null);
+            setLimbooleDiffWitness(null);
         }
     };
 
