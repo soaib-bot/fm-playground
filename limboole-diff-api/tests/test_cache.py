@@ -23,7 +23,7 @@ def test_store_witness_diff():
     witness = get_next_witness(specId)
     assert witness.startswith("% SATISFIABLE formula (satisfying assignment follows)")
     witness = get_next_witness(specId)
-    assert witness.startswith("% UNSATISFIABLE formula")
+    assert witness == None
 
 
 def test_evaluate_formula():
