@@ -10,12 +10,16 @@ import {
     limbooleDiffOptionsAtom,
     diffComparisonHistoryIdAtom,
     limbooleDiffWitnessAtom,
+    limbooleDiffFilterAtom,
 } from '@/atoms';
 import { Permalink } from '@/types';
 import axios from 'axios';
 
-async function getLimbooleDiffWitness(permalink: Permalink, analysis: string) {
+async function getLimbooleDiffWitness(permalink: Permalink, analysis: string, filter?: string) {
     let url = `/diff-limboole/run/?check=${permalink.check}&p=${permalink.permalink}&analysis=${analysis}`;
+    if (filter && filter.trim()) {
+        url += `&filter=${encodeURIComponent(filter)}`;
+    }
     try {
         const response = await axios.get(url);
         return response.data;
@@ -40,6 +44,7 @@ export const executeLimbooleDiffTool = async () => {
     const permalink = jotaiStore.get(permalinkAtom);
     const limbooleDiffOption = jotaiStore.get(limbooleDiffOptionsAtom);
     const diffComparisonHistoryId = jotaiStore.get(diffComparisonHistoryIdAtom);
+    const filterExpression = jotaiStore.get(limbooleDiffFilterAtom);
 
     // Create metadata with leftSideCodeId
     const metadata = {
@@ -67,8 +72,8 @@ export const executeLimbooleDiffTool = async () => {
     }
 
     try {
-        // Call the backend to get the first witness
-        const res = await getLimbooleDiffWitness(response.data, limbooleDiffOption);
+        // Call the backend to get the first witness with the filter parameter
+        const res = await getLimbooleDiffWitness(response.data, limbooleDiffOption, filterExpression);
         jotaiStore.set(limbooleDiffWitnessAtom, res);
     } catch (err: any) {
         if (err.response?.status === 404) {

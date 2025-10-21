@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import Select, { SingleValue } from 'react-select';
 import { useAtom } from 'jotai';
-import { limbooleDiffOptionsAtom, limbooleDiffWitnessAtom, isDarkThemeAtom } from '@/atoms';
+import { limbooleDiffOptionsAtom, limbooleDiffFilterAtom, isDarkThemeAtom } from '@/atoms';
 import { MDBInput } from 'mdb-react-ui-kit';
-import axios from 'axios';
 
 const LimbooleDiffOptions = () => {
     // current-vs-left (Not Previous But Current), left-vs-current (Not Current But Previous)
@@ -15,9 +14,8 @@ const LimbooleDiffOptions = () => {
     ];
     const [selectedOption, setSelectedOption] = useState(options[0].value);
     const [, setLimbooleDiffOption] = useAtom(limbooleDiffOptionsAtom);
-    const [limbooleDiffWitness, setLimbooleDiffWitness] = useAtom(limbooleDiffWitnessAtom);
+    const [filterExpression, setFilterExpression] = useAtom(limbooleDiffFilterAtom);
 
-    const [isEvaluating, setIsEvaluating] = useState(false);
     const [isDarkTheme] = useAtom(isDarkThemeAtom);
 
     const handleOptionChange = (selectedOption: SingleValue<{ value: string; label: string }>) => {
@@ -27,59 +25,12 @@ const LimbooleDiffOptions = () => {
         }
     };
 
-    const handleEvaluate = async (expr: string) => {
-        if (!expr.trim()) {
-            // Show error in the witness output area
-            setLimbooleDiffWitness({
-                ...limbooleDiffWitness,
-                witness: 'Please enter a formula to evaluate',
-                error: 'Please enter a formula to evaluate',
-            });
-            return;
-        }
-
-        const specId = limbooleDiffWitness?.specId;
-        if (!specId || specId === 'semantic-relation') {
-            setLimbooleDiffWitness({
-                ...limbooleDiffWitness,
-                witness: 'Evaluation not available for this analysis type',
-                error: 'Evaluation not available for this analysis type',
-            });
-            return;
-        }
-
-        setIsEvaluating(true);
-
-        try {
-            const url = `/diff-limboole/eval/${specId}?formula=${encodeURIComponent(expr)}`;
-            const response = await axios.get(url);
-            // Update witness with evaluation result - replace the witness content
-            setLimbooleDiffWitness({
-                ...limbooleDiffWitness,
-                witness: response.data.evaluation,
-            });
-        } catch (error: any) {
-            let errorMsg = 'Error evaluating formula. Please check the syntax.';
-            if (error.response?.status === 404) {
-                errorMsg = 'Cache expired or formula evaluation failed';
-            }
-            setLimbooleDiffWitness({
-                ...limbooleDiffWitness,
-                witness: errorMsg,
-                error: errorMsg,
-            });
-            console.error('Error evaluating formula:', error);
-        } finally {
-            setIsEvaluating(false);
-        }
+    const handleFilterChange = (value: string) => {
+        setFilterExpression(value);
     };
 
-    // Show evaluator only if:
-    // 1. Analysis type is not semantic-relation
-    // 2. We have a witness (analysis has been run at least once)
-    // 3. The witness is not UNSATISFIABLE
-    const isUnsatisfiable = limbooleDiffWitness?.witness?.startsWith('% UNSATISFIABLE formula');
-    const showEvaluator = selectedOption !== 'semantic-relation' && limbooleDiffWitness?.specId && !isUnsatisfiable;
+    // Show filter input for all analyses except semantic-relation
+    const showFilter = selectedOption !== 'semantic-relation';
 
     return (
         <div>
@@ -154,18 +105,14 @@ const LimbooleDiffOptions = () => {
                 </div>
             </div>
 
-            {showEvaluator && (
+            {showFilter && (
                 <div style={{ marginTop: '15px', paddingLeft: '15px', paddingRight: '15px' }}>
                     <MDBInput
                         label='Witness Filter (Limboole Expression)'
-                        id='limbooleExpressionForm'
+                        id='limbooleFilterForm'
                         type='text'
-                        disabled={isEvaluating}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                handleEvaluate(e.currentTarget.value);
-                            }
-                        }}
+                        value={filterExpression}
+                        onChange={(e) => handleFilterChange(e.target.value)}
                     />
                 </div>
             )}
