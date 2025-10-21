@@ -69,3 +69,12 @@ def test_sanitize_formula():
     sanitized = sanitize_formula(formula)
     expected = "a & c & d"
     assert sanitized == expected
+
+def test_common_filtered():
+    f1 = "a & b & d"
+    f2 = "a & b & c"
+    filter = "!a"
+    specId, witness = common_witness(f1, f2, filter)
+    assert "UNSATISFIABLE" in witness
+    specId, witness = common_witness(f1, f2)
+    assert "a = 1" in witness

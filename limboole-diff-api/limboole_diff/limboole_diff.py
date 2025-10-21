@@ -21,13 +21,17 @@ def sanitize_formula(formula: str) -> str:
     return sanitize_formula
 
 
-def diff_witness(f1: str, f2: str):
+def diff_witness(f1: str, f2: str, filter: str = ""):
     f1_not_f2 = f"({f1}) & (!({f2}))"
+    if filter:
+        f1_not_f2 = f"({f1_not_f2}) & ({filter})"
     return f1_not_f2, process_commands(f1_not_f2)
 
 
-def common_witness(f1: str, f2: str):
+def common_witness(f1: str, f2: str, filter: str = ""):
     conjuncted = f"({f1}) & ({f2})"
+    if filter:
+        conjuncted = f"({conjuncted}) & ({filter})"
     return conjuncted, process_commands(conjuncted)
 
 
@@ -73,13 +77,13 @@ def get_formula_from_valuation(valuation: str) -> str:
     return formula
 
 
-def store_witness(f1: str, f2: str, mode: str):
+def store_witness(f1: str, f2: str, mode: str, filter: str = ""):
     f1 = sanitize_formula(f1)
     f2 = sanitize_formula(f2)
     if mode == "diff":
-        formula, res = diff_witness(f1, f2)
+        formula, res = diff_witness(f1, f2, filter)
     elif mode == "common":
-        formula, res = common_witness(f1, f2)
+        formula, res = common_witness(f1, f2, filter)
 
     if res:
         valuation_formula = get_formula_from_valuation(res)

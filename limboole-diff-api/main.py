@@ -80,7 +80,7 @@ class SATDiffResponse(BaseModel):
 
 
 @app.get("/run/", response_model=SATDiffResponse)
-async def run_sem_analysis(check: str, p: str, analysis: str):
+async def run_sem_analysis(check: str, p: str, analysis: str, filter: str = ""):
     try:
 
         current_formula = get_code_by_permalink(check, p)
@@ -92,7 +92,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str):
 
         if analysis == "not-previous-but-current":
             specId, witness = limboole_diff.store_witness(
-                current_formula, previous_formula, mode="diff"
+                current_formula, previous_formula, mode="diff", filter=filter
             )
             if witness is None:
                 raise HTTPException(
@@ -102,7 +102,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str):
             # witness = limboole_diff.diff_witness(current_formula, previous_formula)
         elif analysis == "not-current-but-previous":
             specId, witness = limboole_diff.store_witness(
-                previous_formula, current_formula, mode="diff"
+                previous_formula, current_formula, mode="diff", filter=filter
             )
             if witness is None:
                 raise HTTPException(
@@ -111,7 +111,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str):
                 )
         elif analysis == "common-witness":
             specId, witness = limboole_diff.store_witness(
-                current_formula, previous_formula, mode="common"
+                current_formula, previous_formula, mode="common", filter=filter
             )
             if witness is None:
                 raise HTTPException(
@@ -175,30 +175,6 @@ async def get_next_witness(specId: str):
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error retrieving next witness: {str(e)}"
-        )
-
-
-@app.get("/eval/{specId}", response_model=Dict[str, str])
-def eval_formula(specId: str, formula: str = None):
-    try:
-        logger.info("/eval called - specId=%s formula=%s", specId, formula)
-        cache_info = limboole_diff.cache_manager.get_cache_info(specId)
-        if cache_info is None:
-            raise HTTPException(
-                status_code=404, detail=f"Cache not found or expired: {specId}"
-            )
-        evaluation = limboole_diff.evaluate_formula(specId, formula)
-        if evaluation is None:
-            raise HTTPException(status_code=404, detail="Error evaluating formula")
-        logger.info(
-            "EVAL: specId=%s formula=%s evaluation=%s", specId, formula, evaluation
-        )
-        return {"evaluation": evaluation}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error evaluating formula: {str(e)}"
         )
 
 
