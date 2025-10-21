@@ -304,10 +304,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
                             style={
                                 editorTheme === 'vs-dark'
                                     ? {
-                                          backgroundColor: '#1e1e1e',
-                                          color: '#d4d4d4',
-                                          borderColor: '#464647',
-                                      }
+                                        backgroundColor: '#1e1e1e',
+                                        color: '#d4d4d4',
+                                        borderColor: '#464647',
+                                    }
                                     : {}
                             }
                             {...(editorTheme === 'vs-dark' && {
@@ -390,30 +390,33 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
                     </div>
                 </div>
             )}
-            <div className='row'>
-                <div className='col-md-6'>
-                    <div style={{ paddingRight: '8px' }}>
-                        {/* Additional input UI for the current language (if any) */}
-                        {(() => {
-                            const AdditionalUi = diffToolInputUIMap[language.short];
-                            return <div className='additional-input-ui'>{AdditionalUi && <AdditionalUi />}</div>;
-                        })()}
+            {/* Show only if language.short is SAT or SMT */}
+            {(language.short === 'SAT' || language.short === 'SMT') && (
+                <div className='row'>
+                    <div className='col-md-6'>
+                        <div style={{ paddingRight: '8px' }}>
+                            {/* Additional input UI for the current language (if any) */}
+                            {(() => {
+                                const AdditionalUi = diffToolInputUIMap[language.short];
+                                return <div className='additional-input-ui'>{AdditionalUi && <AdditionalUi />}</div>;
+                            })()}
 
-                        <MDBBtn
-                            className={`mt-3 ${isMobile ? 'mobile-run-button' : ''}`}
-                            style={{ width: '100%' }}
-                            color='primary'
-                            onClick={handleAnalyzeClick}
-                            disabled={isExecuting}
-                        >
-                            {isExecuting ? 'Analyzing...' : 'Semantic Analysis'}
-                        </MDBBtn>
+                            <MDBBtn
+                                className={`mt-3 ${isMobile ? 'mobile-run-button' : ''}`}
+                                style={{ width: '100%' }}
+                                color='primary'
+                                onClick={handleAnalyzeClick}
+                                disabled={isExecuting}
+                            >
+                                {isExecuting ? 'Analyzing...' : 'Semantic Analysis'}
+                            </MDBBtn>
+                        </div>
+                    </div>
+                    <div className='col-md-6'>
+                        {/* Right half intentionally left for auxiliary controls or output previews */}
                     </div>
                 </div>
-                <div className='col-md-6'>
-                    {/* Right half intentionally left for auxiliary controls or output previews */}
-                </div>
-            </div>
+            )}
             {errorMessage && (
                 <MessageModal
                     isErrorMessageModalOpen={isErrorMessageModalOpen}
