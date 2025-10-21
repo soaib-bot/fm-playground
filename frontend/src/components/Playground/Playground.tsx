@@ -18,6 +18,7 @@ import {
     isDiffViewModeAtom,
     originalCodeAtom,
     diffComparisonCodeAtom,
+    diffComparisonHistoryIdAtom,
 } from '@/atoms';
 import InputArea from '@/components/Playground/InputArea';
 import OutputArea from '@/components/Playground//OutputArea';
@@ -45,6 +46,7 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
     const [isDiffViewMode, setIsDiffViewMode] = useAtom(isDiffViewModeAtom); // contains the state of diff view mode.
     const [originalCode] = useAtom(originalCodeAtom); // contains the original code for diff view.
     const [, setDiffComparisonCode] = useAtom(diffComparisonCodeAtom); // contains the comparison code for diff view.
+    const [, setDiffComparisonHistoryId] = useAtom(diffComparisonHistoryIdAtom); // contains the history ID of the comparison code.
     const [errorMessage, setErrorMessage] = useState<string | null>(null); // contains the error messages from the API.
     const [isErrorMessageModalOpen, setIsErrorMessageModalOpen] = useState(false); // contains the state of the message modal.
 
@@ -130,6 +132,7 @@ const Playground: React.FC<PlaygroundProps> = ({ editorTheme }) => {
                     const originalRes = await getCodeById(leftSideCodeId);
                     if (originalRes?.code) {
                         setDiffComparisonCode(originalRes.code);
+                        setDiffComparisonHistoryId(leftSideCodeId); // Set the history ID for the comparison code
                     } else {
                         console.warn('Could not load left side code by code_id.');
                     }
