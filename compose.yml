@@ -8,6 +8,7 @@ services:
       context: ./frontend
       args:
         VITE_FMP_API_URL: http://127.0.0.1:8000/api
+        VITE_FMP_VERSION: dev
     container_name: fmp-frontend
     env_file:
       - .env
@@ -94,6 +95,45 @@ services:
       context: ./spectra-api
       dockerfile: Dockerfile
     container_name: fmp-spectra-api
+    environment:
+      API_URL: http://fmp-backend:8000/
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - my_network
+
+  limboole:
+    build:
+      context: ./limboole-api
+      dockerfile: Dockerfile
+    container_name: fmp-limboole-api
+    environment:
+      API_URL: http://fmp-backend:8000/
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - my_network
+
+  limboole-diff:
+    build:
+      context: ./limboole-diff-api
+      dockerfile: Dockerfile
+    container_name: fmp-limboole-diff-api
+    environment:
+      API_URL: http://fmp-backend:8000/
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - my_network
+
+  smt-diff:
+    build:
+      context: ./smt-diff-api
+      dockerfile: Dockerfile
+    container_name: fmp-smt-diff-api
     environment:
       API_URL: http://fmp-backend:8000/
       REDIS_URL: redis://redis:6379/0
