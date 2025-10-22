@@ -6,9 +6,13 @@ from typing import Dict, Optional
 class LimbooleCache:
     """Represents a single string cache with TTL support."""
 
-    def __init__(self, value: str, ttl_seconds: int = 3600):
+    def __init__(
+        self, value: str, previous: str, current: str, ttl_seconds: int = 3600
+    ):
         self.cache_id = str(uuid.uuid4())
         self.value = value
+        self.previous = previous
+        self.current = current
         self.created_at = datetime.now()
         self.last_accessed = datetime.now()
         self.ttl_seconds = ttl_seconds
@@ -22,6 +26,14 @@ class LimbooleCache:
         """Get the cached value and update last accessed time."""
         self.last_accessed = datetime.now()
         return self.value
+
+    def get_previous(self) -> str:
+        """Get the previous formula."""
+        return self.previous
+
+    def get_current(self) -> str:
+        """Get the current formula."""
+        return self.current
 
     def to_dict(self) -> dict:
         """Convert cache metadata to dict (without the actual value)."""
@@ -42,9 +54,11 @@ class CacheManager:
     def __init__(self):
         self.caches: Dict[str, LimbooleCache] = {}
 
-    def create_cache(self, value: str, ttl_seconds: int = 3600) -> str:
+    def create_cache(
+        self, value: str, previous: str, current: str, ttl_seconds: int = 3600
+    ) -> str:
         """Create a new string cache and return its ID."""
-        cache = LimbooleCache(value, ttl_seconds)
+        cache = LimbooleCache(value, previous, current, ttl_seconds)
         self.caches[cache.cache_id] = cache
         self._cleanup_expired()
         return cache.cache_id
@@ -60,6 +74,30 @@ class CacheManager:
             return None
 
         return cache.get_value()
+
+    def get_previous(self, cache_id: str) -> Optional[str]:
+        """Get previous formula from a cache."""
+        cache = self.caches.get(cache_id)
+        if not cache:
+            return None
+
+        if cache.is_expired():
+            self.delete_cache(cache_id)
+            return None
+
+        return cache.previous
+
+    def get_current(self, cache_id: str) -> Optional[str]:
+        """Get current formula from a cache."""
+        cache = self.caches.get(cache_id)
+        if not cache:
+            return None
+
+        if cache.is_expired():
+            self.delete_cache(cache_id)
+            return None
+
+        return cache.current
 
     def get_cache_info(self, cache_id: str) -> Optional[dict]:
         """Get cache metadata."""

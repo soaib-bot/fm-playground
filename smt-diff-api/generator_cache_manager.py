@@ -2,15 +2,17 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Generator, Optional
 
-from z3 import ModelRef
+from z3 import ModelRef, AstVector
 
 
 class GeneratorCache:
     """Represents a single generator cache with TTL support."""
 
-    def __init__(self, generator: Generator, ttl_seconds: int = 3600):
+    def __init__(self, generator: Generator, previous: AstVector, current: AstVector, ttl_seconds: int = 3600):
         self.spec_id = str(uuid.uuid4())
         self.generator = generator
+        self.previous = previous
+        self.current = current
         self.created_at = datetime.now()
         self.last_accessed = datetime.now()
         self.ttl_seconds = ttl_seconds
@@ -55,9 +57,9 @@ class GeneratorCacheManager:
     def __init__(self):
         self.caches: Dict[str, GeneratorCache] = {}
 
-    def create_cache(self, generator: Generator, ttl_seconds: int = 3600) -> str:
+    def create_cache(self, generator: Generator, previous: AstVector, current: AstVector, ttl_seconds: int = 3600) -> str:
         """Create a new generator cache and return its ID."""
-        cache = GeneratorCache(generator, ttl_seconds)
+        cache = GeneratorCache(generator, previous, current, ttl_seconds)
         self.caches[cache.spec_id] = cache
         self._cleanup_expired()
         return cache.spec_id
