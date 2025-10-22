@@ -3,7 +3,6 @@ import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
 import { isFullScreenAtom, smtDiffWitnessAtom } from '@/atoms';
 import { getNextSmtDiffWitness } from '../smtDiffExecutor';
-import SMTDiffEvaluator from './smtDiffEvaluator';
 
 const SmtDiffOutput = () => {
     const [isFullScreen] = useAtom(isFullScreenAtom);
@@ -111,7 +110,6 @@ const SmtDiffOutput = () => {
         <div>
             {hasWitness ? (
                 <div>
-                    {specId !== 'semantic-relation' && <SMTDiffEvaluator specId={specId} />}
                     <pre
                         className='plain-output-box'
                         contentEditable={false}
@@ -121,13 +119,8 @@ const SmtDiffOutput = () => {
                             whiteSpace: 'pre-wrap',
                             marginBottom: '10px',
                         }}
-                    >
-                        {getCurrentWitness()}
-                    </pre>
-
-                    {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>{witnessMessage}</div>
-                    )}
+                        dangerouslySetInnerHTML={{ __html: getCurrentWitness() }}
+                    />
 
                     {specId !== 'semantic-relation' && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -149,6 +142,9 @@ const SmtDiffOutput = () => {
                                 </MDBBtn>
                             </div>
                         </div>
+                    )}
+                    {witnessMessage && (
+                        <div style={{ textAlign: 'center', color: '#ff0000ff'}}>{witnessMessage}</div>
                     )}
                 </div>
             ) : (
