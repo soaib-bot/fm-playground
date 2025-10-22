@@ -125,13 +125,8 @@ const LimbooleDiffOutput = () => {
                             whiteSpace: 'pre-wrap',
                             marginBottom: '10px',
                         }}
-                    >
-                        {getCurrentWitness()}
-                    </pre>
-
-                    {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#666', marginBottom: '10px' }}>{witnessMessage}</div>
-                    )}
+                        dangerouslySetInnerHTML={{ __html: getCurrentWitness() }}
+                    />
 
                     {specId !== 'semantic-relation' && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -153,6 +148,9 @@ const LimbooleDiffOutput = () => {
                                 </MDBBtn>
                             </div>
                         </div>
+                    )}
+                    {witnessMessage && (
+                        <div style={{ textAlign: 'center', color: '#ff0000ff'}}>{witnessMessage}</div>
                     )}
                 </div>
             ) : (
