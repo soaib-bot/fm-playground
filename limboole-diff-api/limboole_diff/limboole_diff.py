@@ -12,6 +12,37 @@ def get_sat_unsat(output: str):
         return "unsat"
     return "unknown"
 
+def get_variables_from_formula(formula: str) -> set:
+    operators = {"->", "<-", "<->", "|", "&", "!"}
+    tokens = re.split(r'\s+|(\W)', formula)
+    variables = [token for token in tokens if token and token not in operators and not re.match(r'\W', token)]
+    return set(variables)
+
+def prettify_result(f1: str, f2: str, result: str) -> str:
+    if result.startswith("% SATISFIABLE"):
+        variables_f1 = get_variables_from_formula(f1)
+        variables_f2 = get_variables_from_formula(f2)
+        common_vars = variables_f1.intersection(variables_f2)
+        previous_vars = variables_f1 - common_vars
+        current_vars = variables_f2 - common_vars
+        lines = result.strip().splitlines()
+        assignments = []
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith("%"):
+                var, val = line.split("=")
+                var = var.strip()
+                val = val.strip()
+                if var in common_vars:
+                    assignments.append(f"{var} = {val}")
+                elif var in previous_vars:
+                    assignments.append(f"<span style='color: red;'>{var} = {val}</span>")
+                elif var in current_vars:
+                    assignments.append(f"<span style='color: green;'>{var} = {val}</span>")
+            else:
+                assignments.append(line)
+        return "\n".join(assignments)
+
 
 def sanitize_formula(formula: str) -> str:
     lines = formula.splitlines()
@@ -21,18 +52,27 @@ def sanitize_formula(formula: str) -> str:
     return sanitize_formula
 
 
-def diff_witness(f1: str, f2: str, filter: str = ""):
+
+
+def diff_witness(f1: str, f2: str, filter: str = "", analysis: str = ""):
     f1_not_f2 = f"({f1}) & (!({f2}))"
     if filter:
         f1_not_f2 = f"({f1_not_f2}) & ({filter})"
-    return f1_not_f2, process_commands(f1_not_f2)
+    res = process_commands(f1_not_f2)
+    if analysis == "not-current-but-previous":
+        res = prettify_result(f1, f2, res)
+    elif analysis == "not-previous-but-current":
+        res = prettify_result(f2, f1, res)
+    return f1_not_f2, res
 
 
 def common_witness(f1: str, f2: str, filter: str = ""):
     conjuncted = f"({f1}) & ({f2})"
     if filter:
         conjuncted = f"({conjuncted}) & ({filter})"
-    return conjuncted, process_commands(conjuncted)
+    res = process_commands(conjuncted)
+    res = prettify_result(f1, f2, res)
+    return conjuncted, res
 
 
 def semantic_relation(f1: str, f2: str):
@@ -77,18 +117,25 @@ def get_formula_from_valuation(valuation: str) -> str:
     return formula
 
 
-def store_witness(f1: str, f2: str, mode: str, filter: str = ""):
+def store_witness(f1: str, f2: str, analysis: str, filter: str = ""):
+    """
+    f1: previous formula
+    f2: current formula
+    """
     f1 = sanitize_formula(f1)
     f2 = sanitize_formula(f2)
-    if mode == "diff":
-        formula, res = diff_witness(f1, f2, filter)
-    elif mode == "common":
+    filter = sanitize_formula(filter) if filter else ""
+    if analysis == "not-previous-but-current":
+        formula, res = diff_witness(f2, f1, filter, analysis=analysis)
+    elif analysis == "not-current-but-previous":
+        formula, res = diff_witness(f1, f2, filter, analysis=analysis)
+    elif analysis == "common-witness":
         formula, res = common_witness(f1, f2, filter)
 
     if res:
         valuation_formula = get_formula_from_valuation(res)
         store_formula = f"({formula}) & (!{valuation_formula})"
-        specId = cache_manager.create_cache(store_formula, ttl_seconds=3600)
+        specId = cache_manager.create_cache(store_formula, previous=f1, current=f2, ttl_seconds=3600)
         if specId:
             return specId, res
     return None, None
@@ -96,6 +143,8 @@ def store_witness(f1: str, f2: str, mode: str, filter: str = ""):
 
 def get_next_witness(specId: str):
     witness = cache_manager.get_value(specId)
+    previous = cache_manager.get_previous(specId)
+    current = cache_manager.get_current(specId)
     res = process_commands(witness)
     if res.startswith("% UNSATISFIABLE"):
         return None
@@ -103,7 +152,7 @@ def get_next_witness(specId: str):
     if witness:
         new_witness = witness.rstrip(")") + f") & !{valuation})"
         cache_manager.update_cache(specId, new_witness)
-        return res
+        return prettify_result(previous, current, res)
     return None
 
 
@@ -116,7 +165,6 @@ def evaluate_formula(specId: str, formula: str) -> Any:
     if stored_formula is None:
         return None
     conjuncted_formula = re.sub(r"\(", f"({formula} & ", stored_formula, count=1)
-    # TODO: Should we update the cache with the new conjuncted formula?
     return process_commands(conjuncted_formula)
 
 

@@ -3,6 +3,8 @@ from limboole_diff.limboole_diff import (
     diff_witness,
     sanitize_formula,
     semantic_relation,
+    store_witness,
+    get_next_witness
 )
 
 
@@ -78,3 +80,37 @@ def test_common_filtered():
     assert "UNSATISFIABLE" in witness
     specId, witness = common_witness(f1, f2)
     assert "a = 1" in witness
+    
+    
+def test_get_variables_from_formula():
+    from limboole_diff.limboole_diff import get_variables_from_formula
+
+    formula = "a & b | c -> d <-> !e"
+    variables = get_variables_from_formula(formula)
+    expected_vars = ['a', 'b', 'c', 'd', 'e']
+    assert variables == expected_vars
+    
+def test_prettify_result():
+    from limboole_diff.limboole_diff import prettify_result
+
+    f1 = "a & b & d"
+    f2 = "a & b & c"
+    result = """% SATISFIABLE
+    a = 1
+    b = 1
+    c = 0
+    d = 1
+    """
+    pretty = prettify_result(f1, f2, result)
+    assert "a = 1" in pretty
+    assert "b = 1" in pretty
+    assert "c = 0" not in pretty
+    assert "d = 1" not in pretty
+    
+def test_get_next_witness():
+    f1 = "a | b | d"
+    f2 = "a | b | c"
+    specId, witness = store_witness(f1, f2, mode="common")
+    next_witness = get_next_witness(specId)
+    assert next_witness is not None
+    
