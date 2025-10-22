@@ -92,7 +92,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str, filter: str = ""):
 
         if analysis == "not-previous-but-current":
             specId, witness = limboole_diff.store_witness(
-                current_formula, previous_formula, mode="diff", filter=filter
+                previous_formula, current_formula, analysis=analysis, filter=filter
             )
             if witness is None:
                 raise HTTPException(
@@ -102,7 +102,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str, filter: str = ""):
             # witness = limboole_diff.diff_witness(current_formula, previous_formula)
         elif analysis == "not-current-but-previous":
             specId, witness = limboole_diff.store_witness(
-                previous_formula, current_formula, mode="diff", filter=filter
+                previous_formula, current_formula, analysis=analysis, filter=filter
             )
             if witness is None:
                 raise HTTPException(
@@ -111,7 +111,7 @@ async def run_sem_analysis(check: str, p: str, analysis: str, filter: str = ""):
                 )
         elif analysis == "common-witness":
             specId, witness = limboole_diff.store_witness(
-                current_formula, previous_formula, mode="common", filter=filter
+                previous_formula, current_formula, analysis=analysis, filter=filter
             )
             if witness is None:
                 raise HTTPException(

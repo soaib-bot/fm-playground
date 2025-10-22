@@ -74,15 +74,15 @@ class SmtDiffResponse(BaseModel):
 @app.get("/run/", response_model=SmtDiffResponse)
 async def run_smt_diff(check: str, p: str, analysis: str):
     try:
-        s1_spec = get_code_by_permalink(check, p)
-        s2_metadata = get_metadata_by_permalink(check, p)
+        current_spec = get_code_by_permalink(check, p)
+        previous_metadata = get_metadata_by_permalink(check, p)
         left_side_code_id = (
-            json.loads(s2_metadata).get("meta", {}).get("leftSideCodeId")
+            json.loads(previous_metadata).get("meta", {}).get("leftSideCodeId")
         )
-        s2_spec = get_code_by_id(left_side_code_id).get("code")
+        previous_spec = get_code_by_id(left_side_code_id).get("code")
 
         if analysis == "not-previous-but-current":
-            specId = smt_diff.store_witness(s1_spec, s2_spec, mode="diff")
+            specId = smt_diff.store_witness(previous_spec, current_spec, analysis=analysis)
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
                 raise HTTPException(
@@ -91,7 +91,7 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                 )
         elif analysis == "not-current-but-previous":
             # s2 previous and s1 current
-            specId = smt_diff.store_witness(s2_spec, s1_spec, mode="diff")
+            specId = smt_diff.store_witness(previous_spec, current_spec, analysis=analysis)
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
                 raise HTTPException(
@@ -99,7 +99,7 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     detail="No diff witnesses found",
                 )
         elif analysis == "common-witness":
-            specId = smt_diff.store_witness(s1_spec, s2_spec, mode="common")
+            specId = smt_diff.store_witness(previous_spec, current_spec, analysis=analysis)
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
                 raise HTTPException(
@@ -107,7 +107,7 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     detail="No common witnesses found",
                 )
         elif analysis == "semantic-relation":
-            sem_relation = smt_diff.get_semantic_relation(s1_spec, s2_spec)
+            sem_relation = smt_diff.get_semantic_relation(current_spec, previous_spec)
             specId = None
             if sem_relation is None:
                 raise HTTPException(
