@@ -1,5 +1,15 @@
 # Change Log
 
+## v2.7.8 [2025-10-22]
+
+- 🐛 Fixed logic to invoke filters
+- 🐛 Fixed diff view not loading correctly from permalink
+- 🐛 Fixed dropdown colour on dark mode
+- ⚡️ Storing previous and current spec in cache
+- 💄 Prettify smt diff witness
+- 💄 Disabled sem analysis button on unsupported tools
+- 💄 Moved witness to run api rather than separate ones
+
 ## v2.7.6 [2025-10-21]
 
 - 🐛 Fixed limboole diff formula error (formula sanitize)

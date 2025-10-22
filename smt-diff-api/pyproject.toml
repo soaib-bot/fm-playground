@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "smt-diff-api"
-version = "2.7.6"
+version = "2.7.8"
 description = "SMT Diff API for FM Playground"
 authors = ["Soaibuzzaman <soaibuzzaman@uni-weimar.de>"]
 license = "MIT"
