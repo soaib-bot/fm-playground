@@ -1,5 +1,10 @@
 # Change Log
 
+## v2.7.9 [2025-10-24]
+
+- ✨ Added filtering for SMT Diff
+- 🥅 Updated error handling for Diff APIs
+
 ## v2.7.8 [2025-10-22]
 
 - 🐛 Fixed logic to invoke filters
