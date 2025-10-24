@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 import redis
 from redis_cache import RedisCache
-from z3 import process_commands
+from z3_exec.z3 import process_commands
 
 API_URL = os.getenv("API_URL")
 REDIS_URL = os.getenv("REDIS_URL")
