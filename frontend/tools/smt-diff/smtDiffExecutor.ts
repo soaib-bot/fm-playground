@@ -10,12 +10,16 @@ import {
     smtDiffOptionsAtom,
     diffComparisonHistoryIdAtom,
     smtDiffWitnessAtom,
+    smtDiffFilterAtom
 } from '@/atoms';
 import { Permalink } from '@/types';
 import axios from 'axios';
 
-async function getSmtDiffWitness(permalink: Permalink, analysis: string) {
+async function getSmtDiffWitness(permalink: Permalink, analysis: string, filter?: string) {
     let url = `/diff-smt/run/?check=${permalink.check}&p=${permalink.permalink}&analysis=${analysis}`;
+    if (filter && filter.trim()) {
+        url += `&filter=${encodeURIComponent(filter)}`;
+    }
     try {
         const response = await axios.get(url);
         return response.data;
@@ -40,6 +44,7 @@ export const executeSmtDiffTool = async () => {
     const permalink = jotaiStore.get(permalinkAtom);
     const smtDiffOption = jotaiStore.get(smtDiffOptionsAtom);
     const diffComparisonHistoryId = jotaiStore.get(diffComparisonHistoryIdAtom);
+    const filterExpression = jotaiStore.get(smtDiffFilterAtom);
 
     // Create metadata with leftSideCodeId
     const metadata = {
@@ -68,7 +73,7 @@ export const executeSmtDiffTool = async () => {
 
     try {
         // Call the backend to get the first witness
-        const res = await getSmtDiffWitness(response.data, smtDiffOption);
+        const res = await getSmtDiffWitness(response.data, smtDiffOption, filterExpression);
         jotaiStore.set(smtDiffWitnessAtom, res);
     } catch (err: any) {
         if (err.response?.status === 404) {
