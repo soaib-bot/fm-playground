@@ -1,9 +1,9 @@
+import sexpdata
+from z3 import *
 from typing import Any, Dict, List, Optional
 
-from generator_cache_manager import cache_manager
-from logics_filter import common_logic
-from z3 import *
-import sexpdata
+from smt_diff.generator_cache_manager import cache_manager
+from smt_diff.logics_filter import common_logic
 
 TTL_SECONDS = 3600  # Default cache TTL in seconds
 
@@ -49,7 +49,11 @@ def get_all_vars(assertions):
         if is_const(expr) and expr.decl().kind() == Z3_OP_UNINTERPRETED:
             vars_set.add(expr)
         # Collect uninterpreted functions (extract function declaration from applications)
-        elif is_app(expr) and expr.decl().kind() == Z3_OP_UNINTERPRETED and expr.num_args() > 0:
+        elif (
+            is_app(expr)
+            and expr.decl().kind() == Z3_OP_UNINTERPRETED
+            and expr.num_args() > 0
+        ):
             # Add the function declaration (not the application)
             vars_set.add(expr.decl())
         for child in expr.children():
@@ -60,18 +64,19 @@ def get_all_vars(assertions):
         all_vars |= collect_vars(assertion)
     return all_vars
 
+
 def prettify_result(s1: AstVector, s2: AstVector, model: str):
     vars_s1 = set(get_all_vars(s1))
     vars_s2 = set(get_all_vars(s2))
     common_vars = vars_s1.intersection(vars_s2)
     previous_vars = vars_s1 - common_vars
     current_vars = vars_s2 - common_vars
-    
-    # Split the model 
+
+    # Split the model
     result = []
     i = 0
     current_text = ""
-    
+
     while i < len(model):
         # Check if we're starting a define-fun expression
         if model[i:].lstrip().startswith("(define-fun"):
@@ -79,38 +84,38 @@ def prettify_result(s1: AstVector, s2: AstVector, model: str):
             if current_text:
                 result.append(current_text)
                 current_text = ""
-            
+
             # Find the start of the define-fun expression (skip leading whitespace)
             leading_whitespace = ""
-            while i < len(model) and model[i] in ' \t\n':
+            while i < len(model) and model[i] in " \t\n":
                 leading_whitespace += model[i]
                 i += 1
-            
+
             # We found the start of a define-fun
             # Parse the S-expression starting from here
             paren_count = 0
             expr_str = ""
-            
+
             # Count parentheses to find the complete expression
             while i < len(model):
                 char = model[i]
                 expr_str += char
-                if char == '(':
+                if char == "(":
                     paren_count += 1
-                elif char == ')':
+                elif char == ")":
                     paren_count -= 1
                     if paren_count == 0:
                         i += 1
                         break
                 i += 1
-            
+
             # Extract the variable name from the define-fun expression
             # Format: (define-fun <name> ...)
             try:
                 parsed = sexpdata.loads(expr_str)
                 if len(parsed) >= 2:
                     var_name = str(parsed[1])
-                    
+
                     # Determine the color based on variable set membership
                     color = ""  # default
                     if var_name in [str(v) for v in common_vars]:
@@ -119,7 +124,7 @@ def prettify_result(s1: AstVector, s2: AstVector, model: str):
                         color = "red"
                     elif var_name in [str(v) for v in current_vars]:
                         color = "green"
-                    
+
                     # Wrap in span with appropriate color
                     wrapped = f"{leading_whitespace}<span style='color: {color};'>{expr_str}</span>"
                     result.append(wrapped)
@@ -133,17 +138,24 @@ def prettify_result(s1: AstVector, s2: AstVector, model: str):
             # Not a define-fun, accumulate the character
             current_text += model[i]
             i += 1
-    
+
     # Append any remaining text
     if current_text:
         result.append(current_text)
-    
+
     return "".join(result)
 
-def diff_witness(assertions1, assertions2, logic1=None, logic2=None):
+
+def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str = ""):
     logic = common_logic(logic1, logic2)
     solver_s1_not_s2 = SolverFor(logic) if logic else Solver()
     solver_s1_not_s2.add(And(assertions1), And(Not(And(assertions2))))
+    if filter:
+        combined_assertions = list(assertions1) + list(assertions2)
+        all_vars = get_all_vars(combined_assertions)
+        decls = {str(v): v for v in all_vars}
+        filter_assertions = parse_smt2_string(filter, decls=decls)
+        solver_s1_not_s2.add(filter_assertions)
     if solver_s1_not_s2.check() == sat:
         vars_s1 = get_all_vars(assertions1)
         vars_s2 = get_all_vars(assertions2)
@@ -159,16 +171,24 @@ def diff_witness(assertions1, assertions2, logic1=None, logic2=None):
     return None
 
 
-def common_witness(assertions1, assertions2, logic1=None, logic2=None):
+def common_witness(
+    assertions1, assertions2, logic1=None, logic2=None, filter: str = ""
+):
     logic = common_logic(logic1, logic2)
     combined_solver = SolverFor(logic) if logic else Solver()
     combined_solver.add(assertions1)
     combined_solver.add(assertions2)
+    if filter:
+        combined_assertions = list(assertions1) + list(assertions2)
+        all_vars = get_all_vars(combined_assertions)
+        decls = {str(v): v for v in all_vars}
+        filter_assertions = parse_smt2_string(filter, decls=decls)
+        combined_solver.add(filter_assertions)
     if combined_solver.check() == sat:
         s1_vars = get_all_vars(assertions1)
         s2_vars = get_all_vars(assertions2)
         all_vars = list(s1_vars.intersection(s2_vars))
-        # If no common variables, use union instead
+        # FIXME: If no common variables, use union instead
         if len(all_vars) == 0:
             all_vars = list(s1_vars.union(s2_vars))
         generator = all_smt(combined_solver, all_vars)
@@ -218,12 +238,11 @@ def get_next_witness(specId: str) -> Optional[str]:
     current = cache_manager.caches[specId].current
     if previous is None or current is None:
         return model
-    print(previous, current, model)
     res = prettify_result(previous, current, model)
     return res
 
 
-def store_witness(s1: str, s2: str, analysis: str):
+def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
     """
     s1: previous spec
     s2: current spec
@@ -233,14 +252,19 @@ def store_witness(s1: str, s2: str, analysis: str):
     logic1 = get_logic_from_smt2(s1)
     logic2 = get_logic_from_smt2(s2)
     if analysis == "not-previous-but-current":
-        generator = diff_witness(assertions2, assertions1, logic2, logic1)
+        generator = diff_witness(assertions2, assertions1, logic2, logic1, filter)
     elif analysis == "not-current-but-previous":
-        generator = diff_witness(assertions1, assertions2, logic1, logic2)
+        generator = diff_witness(assertions1, assertions2, logic1, logic2, filter)
     elif analysis == "common-witness":
-        generator = common_witness(assertions1, assertions2, logic1, logic2)
+        generator = common_witness(assertions1, assertions2, logic1, logic2, filter)
 
     if generator:
-        specId = cache_manager.create_cache(generator, previous=assertions1, current=assertions2, ttl_seconds=TTL_SECONDS)
+        specId = cache_manager.create_cache(
+            generator,
+            previous=assertions1,
+            current=assertions2,
+            ttl_seconds=TTL_SECONDS,
+        )
         if specId:
             return specId
     return None

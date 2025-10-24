@@ -1,4 +1,4 @@
-from smt_diff import *
+from smt_diff.smt_diff import *
 
 
 def test_int_real_diff():

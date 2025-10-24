@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, Union
 
 import requests
-import smt_diff
+import smt_diff.smt_diff as smt_diff
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -59,6 +59,7 @@ class SmtDiffRequest(BaseModel):
     check: str  # SMTSemDiff
     p: str  # Permalink
     analysis: str  # current-vs-left, left-vs-current, common
+    filter: str = ""  # Optional filter expression
 
 
 class SmtDiffResponse(BaseModel):
@@ -72,7 +73,7 @@ class SmtDiffResponse(BaseModel):
 
 
 @app.get("/run/", response_model=SmtDiffResponse)
-async def run_smt_diff(check: str, p: str, analysis: str):
+async def run_smt_diff(check: str, p: str, analysis: str, filter: str = ""):
     try:
         current_spec = get_code_by_permalink(check, p)
         previous_metadata = get_metadata_by_permalink(check, p)
@@ -82,7 +83,9 @@ async def run_smt_diff(check: str, p: str, analysis: str):
         previous_spec = get_code_by_id(left_side_code_id).get("code")
 
         if analysis == "not-previous-but-current":
-            specId = smt_diff.store_witness(previous_spec, current_spec, analysis=analysis)
+            specId = smt_diff.store_witness(
+                previous_spec, current_spec, analysis=analysis, filter=filter
+            )
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
                 raise HTTPException(
@@ -91,7 +94,9 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                 )
         elif analysis == "not-current-but-previous":
             # s2 previous and s1 current
-            specId = smt_diff.store_witness(previous_spec, current_spec, analysis=analysis)
+            specId = smt_diff.store_witness(
+                previous_spec, current_spec, analysis=analysis, filter=filter
+            )
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
                 raise HTTPException(
@@ -99,7 +104,9 @@ async def run_smt_diff(check: str, p: str, analysis: str):
                     detail="No diff witnesses found",
                 )
         elif analysis == "common-witness":
-            specId = smt_diff.store_witness(previous_spec, current_spec, analysis=analysis)
+            specId = smt_diff.store_witness(
+                previous_spec, current_spec, analysis=analysis, filter=filter
+            )
             first_witness = smt_diff.get_next_witness(specId)
             if first_witness is None:
                 raise HTTPException(
