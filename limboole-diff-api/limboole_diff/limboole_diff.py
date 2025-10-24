@@ -43,6 +43,8 @@ def prettify_result(f1: str, f2: str, result: str) -> str:
                 assignments.append(line)
         return "\n".join(assignments)
 
+def pretty_error(message: str) -> str:
+    return f"<span style='color: red'>Error: {message}</span>"
 
 def sanitize_formula(formula: str) -> str:
     lines = formula.splitlines()
@@ -53,10 +55,13 @@ def sanitize_formula(formula: str) -> str:
 
 
 
-
 def diff_witness(f1: str, f2: str, filter: str = "", analysis: str = ""):
     f1_not_f2 = f"({f1}) & (!({f2}))"
     if filter:
+        all_vars = get_variables_from_formula(f1_not_f2)
+        filtered_vars = get_variables_from_formula(filter)
+        if not filtered_vars.issubset(all_vars):
+            return f1_not_f2, pretty_error("Filter contains variables not present in either previous or current formula.")
         f1_not_f2 = f"({f1_not_f2}) & ({filter})"
     res = process_commands(f1_not_f2)
     if analysis == "not-current-but-previous":
@@ -69,6 +74,10 @@ def diff_witness(f1: str, f2: str, filter: str = "", analysis: str = ""):
 def common_witness(f1: str, f2: str, filter: str = ""):
     conjuncted = f"({f1}) & ({f2})"
     if filter:
+        all_vars = get_variables_from_formula(conjuncted)
+        filtered_vars = get_variables_from_formula(filter)
+        if not filtered_vars.issubset(all_vars):
+            return conjuncted, pretty_error("Filter contains variables not present in either previous or current formula.")
         conjuncted = f"({conjuncted}) & ({filter})"
     res = process_commands(conjuncted)
     res = prettify_result(f1, f2, res)

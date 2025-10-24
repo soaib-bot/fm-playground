@@ -65,7 +65,7 @@ def test_filter():
     s2 = """
     (declare-const x Real)
     (assert (> x 0.5))"""
-    specId = store_witness(s1, s2, analysis="not-previous-but-current", filter="(assert (> x 0.7))")
+    specId = store_witness(s1, s2, analysis="not-previous-but-current", filter="(assert (> y 0.7))")
     assert specId is not None
     witness = get_next_witness(specId)
     assert witness is not None

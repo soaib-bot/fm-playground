@@ -5,14 +5,22 @@ from typing import Dict, Generator, Optional
 from z3 import ModelRef, AstVector
 
 
-class GeneratorCache:
-    """Represents a single generator cache with TTL support."""
+class SMTCache:
+    """Represents a single SMT cache with TTL support."""
 
-    def __init__(self, generator: Generator, previous: AstVector, current: AstVector, ttl_seconds: int = 3600):
+    def __init__(
+        self,
+        cached_value: Generator | str,
+        previous: AstVector,
+        current: AstVector,
+        logic: str,
+        ttl_seconds: int = 3600,
+    ):
         self.spec_id = str(uuid.uuid4())
-        self.generator = generator
+        self.cached_value = cached_value
         self.previous = previous
         self.current = current
+        self.logic = logic
         self.created_at = datetime.now()
         self.last_accessed = datetime.now()
         self.ttl_seconds = ttl_seconds
@@ -24,21 +32,24 @@ class GeneratorCache:
         return datetime.now() > expiry_time
 
     def get_next(self) -> Optional[ModelRef]:
-        """Get next item from generator."""
+        """Get next item from cached value."""
         self.last_accessed = datetime.now()
         try:
-            return next(self.generator)
+            if isinstance(self.cached_value, str):
+                self.exhausted = True
+                return self.cached_value
+            return next(self.cached_value)
         except StopIteration:
             self.exhausted = True
             return None
         except Exception as e:
-            # Catch any other exceptions from the generator
-            print(f"Error getting next item from generator: {type(e).__name__}: {e}")
+            # Catch any other exceptions from the cached value
+            print(f"Error getting next item from cached value: {type(e).__name__}: {e}")
             self.exhausted = True
             return None
 
     def to_dict(self) -> dict:
-        """Convert cache metadata to dict (without generator)."""
+        """Convert cache metadata to dict (without cached value)."""
         return {
             "spec_id": self.spec_id,
             "created_at": self.created_at.isoformat(),
@@ -51,15 +62,22 @@ class GeneratorCache:
         }
 
 
-class GeneratorCacheManager:
-    """Manages multiple generator caches with automatic cleanup."""
+class SMTCacheManager:
+    """Manages multiple caches with automatic cleanup."""
 
     def __init__(self):
-        self.caches: Dict[str, GeneratorCache] = {}
+        self.caches: Dict[str, SMTCache] = {}
 
-    def create_cache(self, generator: Generator, previous: AstVector, current: AstVector, ttl_seconds: int = 3600) -> str:
-        """Create a new generator cache and return its ID."""
-        cache = GeneratorCache(generator, previous, current, ttl_seconds)
+    def create_cache(
+        self,
+        cached_value: Generator | str,
+        previous: AstVector,
+        current: AstVector,
+        logic: str,
+        ttl_seconds: int = 3600,
+    ) -> str:
+        """Create a new SMT cache and return its ID."""
+        cache = SMTCache(cached_value, previous, current, logic, ttl_seconds)
         self.caches[cache.spec_id] = cache
         self._cleanup_expired()
         return cache.spec_id
@@ -114,4 +132,4 @@ class GeneratorCacheManager:
 
 
 # Global cache manager instance
-cache_manager = GeneratorCacheManager()
+cache_manager = SMTCacheManager()

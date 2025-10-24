@@ -2,7 +2,7 @@ import sexpdata
 from z3 import *
 from typing import Any, Dict, List, Optional
 
-from smt_diff.generator_cache_manager import cache_manager
+from smt_diff.smt_cache_manager import cache_manager
 from smt_diff.logics_filter import common_logic
 
 TTL_SECONDS = 3600  # Default cache TTL in seconds
@@ -146,16 +146,31 @@ def prettify_result(s1: AstVector, s2: AstVector, model: str):
     return "".join(result)
 
 
+def prettify_error(error_msg):
+    error_msg = str(error_msg).strip()
+    error_msg = error_msg.replace("\\n", "<br/>")
+    error_msg = error_msg.replace("\n", "<br/>")
+
+    return f"<span style='color: red;'>{error_msg}</span>"
+
+
+def prettify_warning(warning_msg: str):
+    return f"<span style='color: orange;'>{warning_msg.strip()}</span>"
+
+
 def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str = ""):
     logic = common_logic(logic1, logic2)
     solver_s1_not_s2 = SolverFor(logic) if logic else Solver()
     solver_s1_not_s2.add(And(assertions1), And(Not(And(assertions2))))
     if filter:
         combined_assertions = list(assertions1) + list(assertions2)
-        all_vars = get_all_vars(combined_assertions)
-        decls = {str(v): v for v in all_vars}
-        filter_assertions = parse_smt2_string(filter, decls=decls)
-        solver_s1_not_s2.add(filter_assertions)
+        try:
+            all_vars = get_all_vars(combined_assertions)
+            decls = {str(v): v for v in all_vars}
+            filter_assertions = parse_smt2_string(filter, decls=decls)
+            solver_s1_not_s2.add(filter_assertions)
+        except Exception as e:
+            return prettify_error(f"Error parsing filter: {e.args[0].decode()}")
     if solver_s1_not_s2.check() == sat:
         vars_s1 = get_all_vars(assertions1)
         vars_s2 = get_all_vars(assertions2)
@@ -167,7 +182,6 @@ def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str
 
         generator = all_smt(solver_s1_not_s2, vars_for_enum)
         return generator
-
     return None
 
 
@@ -179,11 +193,14 @@ def common_witness(
     combined_solver.add(assertions1)
     combined_solver.add(assertions2)
     if filter:
-        combined_assertions = list(assertions1) + list(assertions2)
-        all_vars = get_all_vars(combined_assertions)
-        decls = {str(v): v for v in all_vars}
-        filter_assertions = parse_smt2_string(filter, decls=decls)
-        combined_solver.add(filter_assertions)
+        try:
+            combined_assertions = list(assertions1) + list(assertions2)
+            all_vars = get_all_vars(combined_assertions)
+            decls = {str(v): v for v in all_vars}
+            filter_assertions = parse_smt2_string(filter, decls=decls)
+            combined_solver.add(filter_assertions)
+        except Exception as e:
+            return prettify_error(f"Error parsing filter: {e.args[0].decode()}")
     if combined_solver.check() == sat:
         s1_vars = get_all_vars(assertions1)
         s2_vars = get_all_vars(assertions2)
@@ -231,15 +248,18 @@ def get_semantic_relation(s1: str, s2: str) -> Optional[str]:
 
 def get_next_witness(specId: str) -> Optional[str]:
     model = cache_manager.get_next(specId)
-    if model is None:
-        return None
+    logic = (
+        cache_manager.caches[specId].logic if specId in cache_manager.caches else None
+    )
+    if isinstance(model, str):
+        return model
     model = model.sexpr()
     previous = cache_manager.caches[specId].previous
     current = cache_manager.caches[specId].current
     if previous is None or current is None:
         return model
     res = prettify_result(previous, current, model)
-    return res
+    return logic + "\n" + res
 
 
 def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
@@ -247,22 +267,55 @@ def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
     s1: previous spec
     s2: current spec
     """
-    assertions1 = parse_smt2_string(s1)
-    assertions2 = parse_smt2_string(s2)
+    try:
+        assertions1 = parse_smt2_string(s1)
+    except Exception as e:
+        error_msg = prettify_error(
+            f"Error parsing previous spec:<br/>{e.args[0].decode()}"
+        )
+
+    try:
+        assertions2 = parse_smt2_string(s2)
+    except Exception as e:
+        error_msg = prettify_error(
+            f"Error parsing current spec:<br/>{e.args[0].decode()}"
+        )
+
+    if error_msg:
+        specId = cache_manager.create_cache(
+            cached_value=error_msg,
+            previous=AstVector(),
+            current=AstVector(),
+            logic="",
+            ttl_seconds=TTL_SECONDS,
+        )
+        return specId
+
     logic1 = get_logic_from_smt2(s1)
     logic2 = get_logic_from_smt2(s2)
     if analysis == "not-previous-but-current":
-        generator = diff_witness(assertions2, assertions1, logic2, logic1, filter)
+        witness = diff_witness(assertions2, assertions1, logic2, logic1, filter)
     elif analysis == "not-current-but-previous":
-        generator = diff_witness(assertions1, assertions2, logic1, logic2, filter)
+        witness = diff_witness(assertions1, assertions2, logic1, logic2, filter)
     elif analysis == "common-witness":
-        generator = common_witness(assertions1, assertions2, logic1, logic2, filter)
+        witness = common_witness(assertions1, assertions2, logic1, logic2, filter)
 
-    if generator:
+    if logic1 is None and logic2 is None:
+        logic = prettify_warning("; No logic specified; using default solver settings.")
+    elif logic1 != logic2:
+        c_logic = common_logic(logic1, logic2)
+        logic = prettify_warning(
+            f"; Different logics specified ({logic1} vs {logic2}); using super set logic: {c_logic}."
+        )
+    else:
+        logic = logic1
+
+    if witness:
         specId = cache_manager.create_cache(
-            generator,
+            cached_value=witness,
             previous=assertions1,
             current=assertions2,
+            logic=logic,
             ttl_seconds=TTL_SECONDS,
         )
         if specId:
