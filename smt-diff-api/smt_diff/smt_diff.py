@@ -271,14 +271,14 @@ def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
         assertions1 = parse_smt2_string(s1)
     except Exception as e:
         error_msg = prettify_error(
-            f"Error parsing previous spec:<br/>{e.args[0].decode()}"
+            f"Error parsing previous script:<br/>{e.args[0].decode()}"
         )
 
     try:
         assertions2 = parse_smt2_string(s2)
     except Exception as e:
         error_msg = prettify_error(
-            f"Error parsing current spec:<br/>{e.args[0].decode()}"
+            f"Error parsing current script:<br/>{e.args[0].decode()}"
         )
 
     if error_msg:
