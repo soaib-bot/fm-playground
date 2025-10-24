@@ -67,6 +67,7 @@ class SATDiffRequest(BaseModel):
     check: str  # SATSemDiff
     p: str  # Permalink
     analysis: str  # current-vs-left (Not Previous But Current), left-vs-current (Not Current But Previous), common
+    filter: str = ""  # Optional filter
 
 
 class SATDiffResponse(BaseModel):
