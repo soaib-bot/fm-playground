@@ -342,3 +342,23 @@ def get_metadata_by_permalink(
             or meta_data
         }
     )
+
+def update_metadata_by_permalink(
+    p: str,
+    new_metadata: dict,
+) -> bool:
+    """Append metadata for a specific permalink."""
+    try:
+        data_entry = db.session.query(Data).filter(Data.permalink == p).first()
+        if data_entry is None:
+            return False
+        # append new metadata to existing metadata
+        existing_metadata = json.loads(data_entry.meta) if data_entry.meta else {}
+        existing_metadata.update(new_metadata)
+        data_entry.meta = json.dumps(existing_metadata)
+        db.session.commit()
+        return True
+
+    except Exception:
+        db.session.rollback()
+        return False

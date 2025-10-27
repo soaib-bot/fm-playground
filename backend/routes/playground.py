@@ -20,6 +20,7 @@ from db.db_query import (  # noqa: E402
     search_by_query,
     search_by_query_and_session,
     update_user_history_by_id,
+    update_metadata_by_permalink,
 )
 from db.models import Code, Data, db  # noqa: E402
 from flask import Blueprint, jsonify, make_response, request, session  # noqa: E402
@@ -254,3 +255,10 @@ def get_metadata():
     p = request.args.get("p")
     metadata = get_metadata_by_permalink(c, p)
     return jsonify(metadata), 200
+
+@routes.route("/api/metadata/update", methods=["PUT"])
+def update_metadata():
+    data = request.get_json()
+    if update_metadata_by_permalink(data.get("permalink"), data):
+        return jsonify({"result": "success"})
+    return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)

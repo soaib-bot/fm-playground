@@ -170,3 +170,13 @@ export async function isUserLoggedIn() {
         console.log('Not logged in');
     }
 }
+
+export async function updateMetadataByPermalink(permalink: string, newMetadata: Record<string, any>) {
+    let url = `${API_URL}/metadata/update`;
+    try {
+        const response = await axiosAuth.put(url, { permalink, ...newMetadata });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+    }
+}
