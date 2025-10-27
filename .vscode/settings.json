@@ -1,0 +1,27 @@
+{
+  // Python Test Configuration
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.cwd": "${workspaceFolder}/backend",
+  
+  // Set the default Python interpreter path for the backend
+  // "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+  
+  // Configure Python analysis to include backend directory
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  
+  // Java Test Configuration (already working)
+  "java.test.config": {
+    "workingDirectory": "${workspaceFolder}/alloy-api"
+  },
+  
+  "python.analysis.autoSearchPaths": true,
+  // "python.envFile": "${workspaceFolder}/backend/.env",
+  
+  "testExplorer.useNativeTesting": true
+}
