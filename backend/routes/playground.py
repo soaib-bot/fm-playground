@@ -20,6 +20,7 @@ from db.db_query import (  # noqa: E402
     search_by_query,
     search_by_query_and_session,
     update_user_history_by_id,
+    update_metadata_by_permalink,
 )
 from db.models import Code, Data, db  # noqa: E402
 from flask import Blueprint, jsonify, make_response, request, session  # noqa: E402
@@ -155,19 +156,20 @@ def get_code():
 def get_history():
     user_id = session.get("user_id")
     user_session_id = session.sid
+    page = request.args.get("page", 1, type=int)
+    check_type = request.args.get("check", None, type=str)  # Get optional check filter
+    per_page = 20
+    
     if user_id is None:
         if user_session_id:
-            page = request.args.get("page", 1, type=int)
-            per_page = 20
             data, has_more_data = get_user_history_by_session(
-                user_session_id, page=page, per_page=per_page
+                user_session_id, page=page, per_page=per_page, check_type=check_type
             )
             data = [d for d in data if not d.get("check", "").endswith("Diff")]
             return jsonify({"history": data, "has_more_data": has_more_data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
-    page = request.args.get("page", 1, type=int)
-    per_page = 20
-    data, has_more_data = get_user_history(user_id, page=page, per_page=per_page)
+    
+    data, has_more_data = get_user_history(user_id, page=page, per_page=per_page, check_type=check_type)
     data = [d for d in data if not d.get("check", "").endswith("Diff")]
     return jsonify({"history": data, "has_more_data": has_more_data})
 
@@ -204,14 +206,16 @@ def get_code_by_id(data_id: int):
 def search():
     user_id = session.get("user_id")
     session_id = session.sid
+    query = request.args.get("q")
+    check_type = request.args.get("check", None, type=str)  # Get optional check filter
+    
     if user_id is None:
         if session_id:
-            query = request.args.get("q")
-            data = search_by_query_and_session(query, session_id=session_id)
+            data = search_by_query_and_session(query, session_id=session_id, check_type=check_type)
             return jsonify({"history": data, "has_more_data": False})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
-    query = request.args.get("q")
-    data = search_by_query(query, user_id=user_id)
+    
+    data = search_by_query(query, user_id=user_id, check_type=check_type)
     return jsonify({"history": data, "has_more_data": False})
 
 
@@ -254,3 +258,10 @@ def get_metadata():
     p = request.args.get("p")
     metadata = get_metadata_by_permalink(c, p)
     return jsonify(metadata), 200
+
+@routes.route("/api/metadata/update", methods=["PUT"])
+def update_metadata():
+    data = request.get_json()
+    if update_metadata_by_permalink(data.get("permalink"), data):
+        return jsonify({"result": "success"})
+    return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)

@@ -199,6 +199,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                         onItemSelect={handleDrawerItemClick}
                         isDarkTheme={isDarkTheme}
                         isLoggedIn={isLoggedIn}
+                        selectedTool={language.short}
                     />
                     {isLoggedIn ? (
                         <>
