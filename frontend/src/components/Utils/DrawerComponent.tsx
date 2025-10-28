@@ -13,6 +13,7 @@ import {
     IconButton,
     InputAdornment,
     Input,
+    Tooltip,
 } from '@mui/material';
 import { getHistoryByPage, searchUserHistory, getCodeById } from '@/api/playgroundApi';
 import { historyRefreshTriggerAtom } from '@/atoms';
@@ -25,6 +26,7 @@ interface DrawerComponentProps {
     onItemSelect: (check: string, permalink: string, code: string, itemId?: number) => void;
     isDarkTheme?: boolean;
     isLoggedIn: boolean;
+    selectedTool?: string; // Add selected tool prop
 }
 
 interface HistoryItem {
@@ -40,6 +42,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     onItemSelect,
     isDarkTheme = false,
     isLoggedIn,
+    selectedTool,
 }) => {
     const [historyRefreshTrigger] = useAtom(historyRefreshTriggerAtom); // Get the history refresh trigger atom
     const [shouldRefreshOnOpen, setShouldRefreshOnOpen] = useState(false); //
@@ -51,6 +54,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
     const [searchData, setSearchData] = useState<HistoryItem[]>([]); // contains the search data
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(''); // contains the debounced search query
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null); // contains the selected item id. This is used to highlight the selected item of the history
+    const [fullCodeCache, setFullCodeCache] = useState<Record<number, string>>({}); // Cache for full code content
     const drawerRef = useRef(null);
 
     /**
@@ -67,7 +71,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
 
         try {
             setLoading(true);
-            const res = await getHistoryByPage(pageNumber);
+            const res = await getHistoryByPage(pageNumber, selectedTool);
             if (pageNumber === 1) {
                 setData(res.history);
             } else {
@@ -97,7 +101,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
         }
         try {
             setLoading(true);
-            searchUserHistory(query)
+            searchUserHistory(query, selectedTool)
                 .then((res) => {
                     if (pageNumber === 1) {
                         setSearchData(res.history);
@@ -197,7 +201,7 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
      */
     const handleRefresh = useCallback(async (isAutoRefresh: boolean = false) => {
         try {
-            const res = await getHistoryByPage(1);
+            const res = await getHistoryByPage(1, selectedTool);
             if (isAutoRefresh) {
                 // For auto-refresh after code execution, replace entire data to ensure latest is shown
                 setData(res.history);
@@ -215,13 +219,37 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
         } catch (err) {
             console.log(err);
         }
-    }, []);
+    }, [selectedTool]);
 
     /**
      * Handles the manual refresh button click (wrapper to call handleRefresh with isAutoRefresh=false)
      */
     const handleRefreshButtonClick = () => {
         handleRefresh(false);
+    };
+
+    /**
+     * Fetches the full code for a history item and caches it for tooltip display.
+     * @param {number} itemId - The item id to fetch full code for
+     * @returns {void}
+     */
+    const handleItemHover = async (itemId: number) => {
+        // If already cached, don't fetch again
+        if (fullCodeCache[itemId]) {
+            return;
+        }
+
+        try {
+            const res = await getCodeById(itemId);
+            if (res?.code) {
+                setFullCodeCache((prev) => ({
+                    ...prev,
+                    [itemId]: res.code,
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching full code for tooltip:', error);
+        }
     };
 
     /**
@@ -290,6 +318,17 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
             window.removeEventListener('scroll', handleScroll);
         };
     }, [handleScroll]);
+
+    // Reset history when selected tool changes
+    useEffect(() => {
+        setData([]);
+        setSearchData([]);
+        setPage(1);
+        setHasMoreData(true);
+        if (isOpen) {
+            fetchData(1);
+        }
+    }, [selectedTool]);
 
     useEffect(() => {
         if (isOpen) {
@@ -402,23 +441,48 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
                         ? uniqueSearchData.map((item, index) => (
                               <React.Fragment key={item?.id}>
                                   <ListItem disablePadding>
-                                      <ListItemButton
-                                          selected={item && selectedItemId === item.id}
-                                          onClick={() => item && handleItemClick(item.id, item.check)}
+                                      <Tooltip
+                                          title={
+                                              <pre
+                                                  style={{
+                                                      margin: 0,
+                                                      padding: '8px',
+                                                      maxWidth: '400px',
+                                                      maxHeight: '300px',
+                                                      overflow: 'auto',
+                                                      fontSize: '0.85rem',
+                                                      fontFamily: 'monospace',
+                                                      whiteSpace: 'pre-wrap',
+                                                      wordBreak: 'break-word',
+                                                  }}
+                                              >
+                                                  {fullCodeCache[item?.id || 0] || 'Loading...'}
+                                              </pre>
+                                          }
+                                          placement='left'
+                                          arrow
+                                          enterDelay={500}
+                                          onOpen={() => item?.id && handleItemHover(item.id)}
                                       >
-                                          <div>
-                                              <Typography variant='subtitle1'>
-                                                  {item && `${item.time} -`}{' '}
-                                                  <span style={{ color: 'gray' }}>{item?.check}</span>
-                                              </Typography>
-                                              {item && (
+                                          <ListItemButton
+                                              selected={item && selectedItemId === item.id}
+                                              onClick={() => item && handleItemClick(item.id, item.check)}
+                                              sx={{ width: '100%' }}
+                                          >
+                                              <div>
                                                   <Typography variant='subtitle1'>
-                                                      {' '}
-                                                      <code>{item.code}</code>
+                                                      {item && `${item.time} -`}{' '}
+                                                      <span style={{ color: 'gray' }}>{item?.check}</span>
                                                   </Typography>
-                                              )}
-                                          </div>
-                                      </ListItemButton>
+                                                  {item && (
+                                                      <Typography variant='subtitle1'>
+                                                          {' '}
+                                                          <code>{item.code}</code>
+                                                      </Typography>
+                                                  )}
+                                              </div>
+                                          </ListItemButton>
+                                      </Tooltip>
                                   </ListItem>
                                   {index < data.length - 1 && <Divider />}
                               </React.Fragment>
@@ -426,21 +490,46 @@ const DrawerComponent: React.FC<DrawerComponentProps> = ({
                         : uniqueData.map((item, index) => (
                               <React.Fragment key={item?.id}>
                                   <ListItem disablePadding>
-                                      <ListItemButton
-                                          selected={selectedItemId === item?.id}
-                                          onClick={() => item && handleItemClick(item.id, item.check)}
+                                      <Tooltip
+                                          title={
+                                              <pre
+                                                  style={{
+                                                      margin: 0,
+                                                      padding: '8px',
+                                                      maxWidth: '400px',
+                                                      maxHeight: '300px',
+                                                      overflow: 'auto',
+                                                      fontSize: '0.85rem',
+                                                      fontFamily: 'monospace',
+                                                      whiteSpace: 'pre-wrap',
+                                                      wordBreak: 'break-word',
+                                                  }}
+                                              >
+                                                  {fullCodeCache[item?.id || 0] || 'Loading...'}
+                                              </pre>
+                                          }
+                                          placement='left'
+                                          arrow
+                                          enterDelay={500}
+                                          onOpen={() => item?.id && handleItemHover(item.id)}
                                       >
-                                          <div>
-                                              <Typography variant='subtitle1'>
-                                                  {item?.time} - <span style={{ color: 'gray' }}>{item?.check}</span>
-                                              </Typography>
+                                          <ListItemButton
+                                              selected={selectedItemId === item?.id}
+                                              onClick={() => item && handleItemClick(item.id, item.check)}
+                                              sx={{ width: '100%' }}
+                                          >
+                                              <div>
+                                                  <Typography variant='subtitle1'>
+                                                      {item?.time} - <span style={{ color: 'gray' }}>{item?.check}</span>
+                                                  </Typography>
 
-                                              <Typography variant='subtitle1'>
-                                                  {' '}
-                                                  <code>{item?.code}</code>
-                                              </Typography>
-                                          </div>
-                                      </ListItemButton>
+                                                  <Typography variant='subtitle1'>
+                                                      {' '}
+                                                      <code>{item?.code}</code>
+                                                  </Typography>
+                                              </div>
+                                          </ListItemButton>
+                                      </Tooltip>
                                   </ListItem>
                                   {index < data.length - 1 && <Divider />}
                               </React.Fragment>

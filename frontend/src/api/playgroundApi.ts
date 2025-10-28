@@ -96,10 +96,14 @@ export async function getHistories() {
 /**
  * Return the list of histories by pagination
  * @param {int} page
+ * @param {string} checkType - Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
  * @returns Object with history and has_more_data: true/false
  */
-export async function getHistoryByPage(page: number) {
+export async function getHistoryByPage(page: number, checkType?: string) {
     let url = `${API_URL}/histories?page=${page}`;
+    if (checkType) {
+        url += `&check=${checkType}`;
+    }
     try {
         const response = await axiosAuth.get(url);
         return response.data;
@@ -111,10 +115,14 @@ export async function getHistoryByPage(page: number) {
 /**
  * Search the user history by query
  * @param {string} query
+ * @param {string} checkType - Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
  * @returns list of history objects
  */
-export async function searchUserHistory(query: string) {
+export async function searchUserHistory(query: string, checkType?: string) {
     let url = `${API_URL}/search?q=${query}`;
+    if (checkType) {
+        url += `&check=${checkType}`;
+    }
     try {
         const response = await axiosAuth.get(url);
         return response.data;
