@@ -116,12 +116,16 @@ export async function getHistoryByPage(page: number, checkType?: string) {
  * Search the user history by query
  * @param {string} query
  * @param {string} checkType - Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
+ * @param {string} searchIn - Search scope: 'all', 'code', 'title', or 'tags' (default: 'all')
  * @returns list of history objects
  */
-export async function searchUserHistory(query: string, checkType?: string) {
+export async function searchUserHistory(query: string, checkType?: string, searchIn: string = 'all') {
     let url = `${API_URL}/search?q=${query}`;
     if (checkType) {
         url += `&check=${checkType}`;
+    }
+    if (searchIn && searchIn !== 'all') {
+        url += `&search_in=${searchIn}`;
     }
     try {
         const response = await axiosAuth.get(url);
@@ -183,6 +187,39 @@ export async function updateMetadataByPermalink(permalink: string, newMetadata: 
     let url = `${API_URL}/metadata/update`;
     try {
         const response = await axiosAuth.put(url, { permalink, ...newMetadata });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+// Update title for a history item
+export async function updateHistoryTitle(dataId: number, title: string) {
+    const url = `${API_URL}/history/${dataId}/title`;
+    try {
+        const response = await axiosAuth.put(url, { title });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+// Update tags for a history item
+export async function updateHistoryTags(dataId: number, tags: string[]) {
+    const url = `${API_URL}/history/${dataId}/tags`;
+    try {
+        const response = await axiosAuth.put(url, { tags });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+// Update pinned status for a history item
+export async function updateHistoryPinned(dataId: number, pinned: boolean) {
+    const url = `${API_URL}/history/${dataId}/pin`;
+    try {
+        const response = await axiosAuth.put(url, { pinned });
         return response.data;
     } catch (error) {
         console.log(error);
