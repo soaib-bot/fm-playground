@@ -2,7 +2,7 @@ import json
 
 from sqlalchemy import func
 
-from .models import Code, Data, User, db
+from .models import Code, Data, DataDetails, User, db
 
 DATE_FORMAT = "%d %b %y %I:%M %p"
 
@@ -25,7 +25,9 @@ def get_id_by_permalink(p: str):
     return db.session.query(Data).filter_by(permalink=p).first()
 
 
-def get_user_history(user_id: int, page: int = 1, per_page: int = 20, check_type: str = None):
+def get_user_history(
+    user_id: int, page: int = 1, per_page: int = 20, check_type: str = None
+):
     """
     Get the user history of a user. The data is sorted by time in descending order.
 
@@ -45,16 +47,26 @@ def get_user_history(user_id: int, page: int = 1, per_page: int = 20, check_type
 
     # Build base query
     query = (
-        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
+        db.session.query(
+            Data.id,
+            Data.time,
+            Data.check_type,
+            Data.permalink,
+            Code.code,
+            DataDetails.title,
+            DataDetails.tags,
+            DataDetails.pinned,
+        )
         .join(Code, Data.code_id == Code.id)
+        .outerjoin(DataDetails, DataDetails.data_id == Data.id)
         .order_by(Data.time.desc())
         .filter(Data.user_id == user_id)
     )
-    
+
     # Add check_type filter if provided
     if check_type:
         query = query.filter(Data.check_type == check_type)
-    
+
     # Apply pagination
     query_result = query.slice(start_index, end_index).all()
 
@@ -65,13 +77,22 @@ def get_user_history(user_id: int, page: int = 1, per_page: int = 20, check_type
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        title = getattr(d, "title", None) or "Untitled"
+        tags = getattr(d, "tags", None)
+        pinned = getattr(d, "pinned", False) or False
         result.append(
             {
                 "id": d.id,
                 "time": p_time,
+                "time_iso": (
+                    d.time.isoformat() if hasattr(d, "time") and d.time else None
+                ),
                 "check": d.check_type,
                 "permalink": d.permalink,
                 "code": p_code,
+                "title": title,
+                "tags": tags,
+                "pinned": pinned,
             }
         )
     has_more_data = True if len(result) == per_page else False
@@ -100,16 +121,26 @@ def get_user_history_by_session(
 
     # Build base query
     query = (
-        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
+        db.session.query(
+            Data.id,
+            Data.time,
+            Data.check_type,
+            Data.permalink,
+            Code.code,
+            DataDetails.title,
+            DataDetails.tags,
+            DataDetails.pinned,
+        )
         .join(Code, Data.code_id == Code.id)
+        .outerjoin(DataDetails, DataDetails.data_id == Data.id)
         .order_by(Data.time.desc())
         .filter(Data.session_id == user_session_id)
     )
-    
+
     # Add check_type filter if provided
     if check_type:
         query = query.filter(Data.check_type == check_type)
-    
+
     # Apply pagination
     query_result = query.slice(start_index, end_index).all()
 
@@ -120,13 +151,22 @@ def get_user_history_by_session(
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        title = getattr(d, "title", None) or "Untitled"
+        tags = getattr(d, "tags", None)
+        pinned = getattr(d, "pinned", False) or False
         result.append(
             {
                 "id": d.id,
                 "time": p_time,
+                "time_iso": (
+                    d.time.isoformat() if hasattr(d, "time") and d.time else None
+                ),
                 "check": d.check_type,
                 "permalink": d.permalink,
                 "code": p_code,
+                "title": title,
+                "tags": tags,
+                "pinned": pinned,
             }
         )
     has_more_data = True if len(result) == per_page else False
@@ -169,35 +209,61 @@ def get_code_by_data_id(data_id: int):
     )
 
 
-def search_by_query(query, user_id: int = None, check_type: str = None):
+def search_by_query(
+    query, user_id: int = None, check_type: str = None, search_in: str = "all"
+):
     """
-    Search the ``code`` history of a user by query.
-
-    TODO : Add pagination if needed
-    TODO : Currently query is case sensitive. Make it case insensitive and add fuzzy search.
-          Also check if we need any other parameters to search.
+    Search the history of a user by query across different fields.
 
     Parameters:
       query (str): The query to search
       user_id (int): The id of the user
       check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
+      search_in (str): Where to search - 'all', 'code', 'title', or 'tags' (default: 'all')
     Returns:
       list: The list of the data matching the query
     """
     search_query = (
-        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
-        .join(Code, Data.code_id == Code.id)
-        .order_by(Data.time.desc())
-        .filter(
-            Data.user_id == user_id,
-            func.lower(Code.code).ilike(func.lower(f"%{query}%")),
+        db.session.query(
+            Data.id,
+            Data.time,
+            Data.check_type,
+            Data.permalink,
+            Code.code,
+            DataDetails.title,
+            DataDetails.tags,
+            DataDetails.pinned,
         )
+        .join(Code, Data.code_id == Code.id)
+        .outerjoin(DataDetails, DataDetails.data_id == Data.id)
+        .order_by(Data.time.desc())
+        .filter(Data.user_id == user_id)
     )
-    
+
+    # Build search conditions based on search_in parameter
+    if search_in == "code":
+        search_query = search_query.filter(
+            func.lower(Code.code).ilike(func.lower(f"%{query}%"))
+        )
+    elif search_in == "title":
+        search_query = search_query.filter(
+            func.lower(DataDetails.title).ilike(func.lower(f"%{query}%"))
+        )
+    elif search_in == "tags":
+        search_query = search_query.filter(
+            func.lower(DataDetails.tags).ilike(func.lower(f"%{query}%"))
+        )
+    else:  # search_in == "all" or any other value defaults to searching all fields
+        search_query = search_query.filter(
+            func.lower(Code.code).ilike(func.lower(f"%{query}%"))
+            | func.lower(DataDetails.title).ilike(func.lower(f"%{query}%"))
+            | func.lower(DataDetails.tags).ilike(func.lower(f"%{query}%"))
+        )
+
     # Add check_type filter if provided
     if check_type:
         search_query = search_query.filter(Data.check_type == check_type)
-    
+
     search_result = search_query.all()
 
     data = search_result
@@ -205,42 +271,81 @@ def search_by_query(query, user_id: int = None, check_type: str = None):
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        title = getattr(d, "title", None) or "Untitled"
+        tags = getattr(d, "tags", None)
+        pinned = getattr(d, "pinned", False) or False
         result.append(
             {
                 "id": d.id,
                 "time": p_time,
+                "time_iso": (
+                    d.time.isoformat() if hasattr(d, "time") and d.time else None
+                ),
                 "check": d.check_type,
                 "permalink": d.permalink,
                 "code": p_code,
+                "title": title,
+                "tags": tags,
+                "pinned": pinned,
             }
         )
     return result
 
 
-def search_by_query_and_session(query, session_id: str = None, check_type: str = None):
+def search_by_query_and_session(
+    query, session_id: str = None, check_type: str = None, search_in: str = "all"
+):
     """
-    Search the ``code`` history of a user by query and session id; used when user is not logged in.
+    Search the history of a user by query and session id; used when user is not logged in.
     Parameters:
         query (str): The query to search
         session_id (str): The session id of the user
         check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
+        search_in (str): Where to search - 'all', 'code', 'title', or 'tags' (default: 'all')
     Returns:
         list: The list of the data matching the query
     """
     search_query = (
-        db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
-        .join(Code, Data.code_id == Code.id)
-        .order_by(Data.time.desc())
-        .filter(
-            Data.session_id == session_id,
-            func.lower(Code.code).ilike(func.lower(f"%{query}%")),
+        db.session.query(
+            Data.id,
+            Data.time,
+            Data.check_type,
+            Data.permalink,
+            Code.code,
+            DataDetails.title,
+            DataDetails.tags,
+            DataDetails.pinned,
         )
+        .join(Code, Data.code_id == Code.id)
+        .outerjoin(DataDetails, DataDetails.data_id == Data.id)
+        .order_by(Data.time.desc())
+        .filter(Data.session_id == session_id)
     )
-    
+
+    # Build search conditions based on search_in parameter
+    if search_in == "code":
+        search_query = search_query.filter(
+            func.lower(Code.code).ilike(func.lower(f"%{query}%"))
+        )
+    elif search_in == "title":
+        search_query = search_query.filter(
+            func.lower(DataDetails.title).ilike(func.lower(f"%{query}%"))
+        )
+    elif search_in == "tags":
+        search_query = search_query.filter(
+            func.lower(DataDetails.tags).ilike(func.lower(f"%{query}%"))
+        )
+    else:  # search_in == "all" or any other value defaults to searching all fields
+        search_query = search_query.filter(
+            func.lower(Code.code).ilike(func.lower(f"%{query}%"))
+            | func.lower(DataDetails.title).ilike(func.lower(f"%{query}%"))
+            | func.lower(DataDetails.tags).ilike(func.lower(f"%{query}%"))
+        )
+
     # Add check_type filter if provided
     if check_type:
         search_query = search_query.filter(Data.check_type == check_type)
-    
+
     search_result = search_query.all()
 
     data = search_result
@@ -248,13 +353,22 @@ def search_by_query_and_session(query, session_id: str = None, check_type: str =
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        title = getattr(d, "title", None) or "Untitled"
+        tags = getattr(d, "tags", None)
+        pinned = getattr(d, "pinned", False) or False
         result.append(
             {
                 "id": d.id,
                 "time": p_time,
+                "time_iso": (
+                    d.time.isoformat() if hasattr(d, "time") and d.time else None
+                ),
                 "check": d.check_type,
                 "permalink": d.permalink,
                 "code": p_code,
+                "title": title,
+                "tags": tags,
+                "pinned": pinned,
             }
         )
     return result
@@ -366,6 +480,7 @@ def get_metadata_by_permalink(
             or meta_data
         }
     )
+
 
 def update_metadata_by_permalink(
     p: str,

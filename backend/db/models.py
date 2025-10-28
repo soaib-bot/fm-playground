@@ -1,5 +1,6 @@
 from config import db
 from flask_login import UserMixin
+from sqlalchemy.sql import func
 
 
 class Data(db.Model):
@@ -35,3 +36,22 @@ class Code(db.Model):
     code = db.Column(db.String())
 
     data = db.relationship("Data", backref="code", lazy=True)
+
+
+class DataDetails(db.Model):
+    __tablename__ = "data_details"
+    id = db.Column(db.Integer, primary_key=True)
+    data_id = db.Column(
+        db.Integer, db.ForeignKey("data.id"), nullable=False, unique=True
+    )
+    title = db.Column(db.String(), nullable=True, default="Untitled")
+    # Store tags as JSON string (e.g., ["safety", "invariant"]) for simplicity
+    tags = db.Column(db.String(), nullable=True)
+    pinned = db.Column(db.Boolean(), nullable=False, default=False)
+    created_at = db.Column(db.DateTime(), server_default=func.now())
+    updated_at = db.Column(
+        db.DateTime(), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Optional: relationship back to Data if needed later
+    data = db.relationship("Data", backref=db.backref("details", uselist=False))

@@ -22,7 +22,7 @@ from db.db_query import (  # noqa: E402
     update_user_history_by_id,
     update_metadata_by_permalink,
 )
-from db.models import Code, Data, db  # noqa: E402
+from db.models import Code, Data, DataDetails, db  # noqa: E402
 from flask import Blueprint, jsonify, make_response, request, session  # noqa: E402
 from utils.logging_utils import (  # noqa: E402
     generate_after_request_log,
@@ -124,6 +124,17 @@ def save():
         )
         db.session.add(new_data)
         db.session.commit()
+        # Create a default details row for this data (title, tags)
+        try:
+            existing_details = (
+                db.session.query(DataDetails).filter_by(data_id=new_data.id).first()
+            )
+            if existing_details is None:
+                details = DataDetails(data_id=new_data.id, title="Untitled", tags=None)
+                db.session.add(details)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
     except Exception:
         app.logger.error(f"Error saving the code. Permalink: {permalink}")
         db.session.rollback()
@@ -159,7 +170,7 @@ def get_history():
     page = request.args.get("page", 1, type=int)
     check_type = request.args.get("check", None, type=str)  # Get optional check filter
     per_page = 20
-    
+
     if user_id is None:
         if user_session_id:
             data, has_more_data = get_user_history_by_session(
@@ -168,8 +179,10 @@ def get_history():
             data = [d for d in data if not d.get("check", "").endswith("Diff")]
             return jsonify({"history": data, "has_more_data": has_more_data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
-    
-    data, has_more_data = get_user_history(user_id, page=page, per_page=per_page, check_type=check_type)
+
+    data, has_more_data = get_user_history(
+        user_id, page=page, per_page=per_page, check_type=check_type
+    )
     data = [d for d in data if not d.get("check", "").endswith("Diff")]
     return jsonify({"history": data, "has_more_data": has_more_data})
 
@@ -208,14 +221,21 @@ def search():
     session_id = session.sid
     query = request.args.get("q")
     check_type = request.args.get("check", None, type=str)  # Get optional check filter
-    
+    search_in = request.args.get(
+        "search_in", "all", type=str
+    )  # Get search scope: all, code, title, tags
+
     if user_id is None:
         if session_id:
-            data = search_by_query_and_session(query, session_id=session_id, check_type=check_type)
+            data = search_by_query_and_session(
+                query, session_id=session_id, check_type=check_type, search_in=search_in
+            )
             return jsonify({"history": data, "has_more_data": False})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
-    
-    data = search_by_query(query, user_id=user_id, check_type=check_type)
+
+    data = search_by_query(
+        query, user_id=user_id, check_type=check_type, search_in=search_in
+    )
     return jsonify({"history": data, "has_more_data": False})
 
 
@@ -259,9 +279,136 @@ def get_metadata():
     metadata = get_metadata_by_permalink(c, p)
     return jsonify(metadata), 200
 
+
 @routes.route("/api/metadata/update", methods=["PUT"])
 def update_metadata():
     data = request.get_json()
     if update_metadata_by_permalink(data.get("permalink"), data):
         return jsonify({"result": "success"})
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
+
+
+# ------------------ Title/Tags Update Endpoints ------------------
+
+
+@routes.route("/api/history/<int:data_id>/title", methods=["PUT"])
+def update_history_title(data_id: int):
+    user_id = session.get("user_id")
+    user_session_id = session.sid
+    payload = request.get_json() or {}
+    new_title = payload.get("title", "").strip()
+    if not new_title:
+        return jsonify({"result": "fail", "message": "Title cannot be empty"}), 400
+
+    # Ownership check: either user owns it, or same session for anonymous
+    data_row = db.session.query(Data).filter(Data.id == data_id).first()
+    if not data_row:
+        return jsonify({"result": "fail", "message": "Not found"}), 404
+    if data_row.user_id:
+        if user_id is None or data_row.user_id != user_id:
+            return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}), 401
+    else:
+        if data_row.session_id != user_session_id:
+            return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}), 401
+
+    try:
+        details = db.session.query(DataDetails).filter_by(data_id=data_id).first()
+        if details is None:
+            details = DataDetails(data_id=data_id, title=new_title)
+            db.session.add(details)
+        else:
+            details.title = new_title
+        db.session.commit()
+        return jsonify({"result": "success"})
+    except Exception:
+        db.session.rollback()
+        return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}), 500
+
+
+@routes.route("/api/history/<int:data_id>/pin", methods=["PUT"])
+def update_history_pin(data_id: int):
+    user_id = session.get("user_id")
+    user_session_id = session.sid
+    payload = request.get_json() or {}
+    pinned = payload.get("pinned")
+    if not isinstance(pinned, bool):
+        return jsonify({"result": "fail", "message": "Pinned must be a boolean"}), 400
+
+    # Ensure the database actually has the 'pinned' column; otherwise, guide to migrate
+    try:
+        from sqlalchemy import inspect as sa_inspect
+
+        insp = sa_inspect(db.engine)
+        cols = [c.get("name") for c in insp.get_columns("data_details")]
+        if "pinned" not in cols:
+            return (
+                jsonify(
+                    {
+                        "result": "fail",
+                        "message": "Pinned feature not available until DB is migrated (missing data_details.pinned).",
+                    }
+                ),
+                501,
+            )
+    except Exception:
+        # If inspection fails, proceed; errors will be caught below and reported
+        pass
+
+    data_row = db.session.query(Data).filter(Data.id == data_id).first()
+    if not data_row:
+        return jsonify({"result": "fail", "message": "Not found"}), 404
+    if data_row.user_id:
+        if user_id is None or data_row.user_id != user_id:
+            return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}), 401
+    else:
+        if data_row.session_id != user_session_id:
+            return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}), 401
+
+    try:
+        details = db.session.query(DataDetails).filter_by(data_id=data_id).first()
+        if details is None:
+            details = DataDetails(data_id=data_id, title="Untitled", pinned=pinned)
+            db.session.add(details)
+        else:
+            details.pinned = pinned
+        db.session.commit()
+        return jsonify({"result": "success"})
+    except Exception:
+        db.session.rollback()
+        return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}), 500
+
+
+@routes.route("/api/history/<int:data_id>/tags", methods=["PUT"])
+def update_history_tags(data_id: int):
+    user_id = session.get("user_id")
+    user_session_id = session.sid
+    payload = request.get_json() or {}
+    tags = payload.get("tags")
+    if tags is not None and not isinstance(tags, list):
+        return jsonify({"result": "fail", "message": "Tags must be a list"}), 400
+
+    data_row = db.session.query(Data).filter(Data.id == data_id).first()
+    if not data_row:
+        return jsonify({"result": "fail", "message": "Not found"}), 404
+    if data_row.user_id:
+        if user_id is None or data_row.user_id != user_id:
+            return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}), 401
+    else:
+        if data_row.session_id != user_session_id:
+            return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}), 401
+
+    try:
+        import json
+
+        tags_json = json.dumps(tags or [])
+        details = db.session.query(DataDetails).filter_by(data_id=data_id).first()
+        if details is None:
+            details = DataDetails(data_id=data_id, title="Untitled", tags=tags_json)
+            db.session.add(details)
+        else:
+            details.tags = tags_json
+        db.session.commit()
+        return jsonify({"result": "success"})
+    except Exception:
+        db.session.rollback()
+        return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}), 500
