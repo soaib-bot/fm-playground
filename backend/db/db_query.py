@@ -25,7 +25,7 @@ def get_id_by_permalink(p: str):
     return db.session.query(Data).filter_by(permalink=p).first()
 
 
-def get_user_history(user_id: int, page: int = 1, per_page: int = 20):
+def get_user_history(user_id: int, page: int = 1, per_page: int = 20, check_type: str = None):
     """
     Get the user history of a user. The data is sorted by time in descending order.
 
@@ -33,6 +33,7 @@ def get_user_history(user_id: int, page: int = 1, per_page: int = 20):
       user_id (int): The id of the user
       page (int): The page number
       per_page (int): The number of items per page
+      check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
 
     Returns:
       list: The list of the data
@@ -42,15 +43,20 @@ def get_user_history(user_id: int, page: int = 1, per_page: int = 20):
     start_index = (page - 1) * per_page
     end_index = page * per_page
 
-    # Query data with pagination
-    query_result = (
+    # Build base query
+    query = (
         db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
         .join(Code, Data.code_id == Code.id)
         .order_by(Data.time.desc())
         .filter(Data.user_id == user_id)
-        .slice(start_index, end_index)
-        .all()
     )
+    
+    # Add check_type filter if provided
+    if check_type:
+        query = query.filter(Data.check_type == check_type)
+    
+    # Apply pagination
+    query_result = query.slice(start_index, end_index).all()
 
     # Extract the data from the query result
     data = query_result
@@ -73,7 +79,7 @@ def get_user_history(user_id: int, page: int = 1, per_page: int = 20):
 
 
 def get_user_history_by_session(
-    user_session_id: str, page: int = 1, per_page: int = 20
+    user_session_id: str, page: int = 1, per_page: int = 20, check_type: str = None
 ):
     """
     Get the user history of a user if the user is not logged in. The data is sorted by time in descending order.
@@ -82,6 +88,7 @@ def get_user_history_by_session(
       user_session_id (str): The session id of the user
       page (int): The page number
       per_page (int): The number of items per page
+      check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
 
     Returns:
       list: The list of the data
@@ -91,15 +98,20 @@ def get_user_history_by_session(
     start_index = (page - 1) * per_page
     end_index = page * per_page
 
-    # Query data with pagination
-    query_result = (
+    # Build base query
+    query = (
         db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
         .join(Code, Data.code_id == Code.id)
         .order_by(Data.time.desc())
         .filter(Data.session_id == user_session_id)
-        .slice(start_index, end_index)
-        .all()
     )
+    
+    # Add check_type filter if provided
+    if check_type:
+        query = query.filter(Data.check_type == check_type)
+    
+    # Apply pagination
+    query_result = query.slice(start_index, end_index).all()
 
     # Extract the data from the query result
     data = query_result
@@ -157,7 +169,7 @@ def get_code_by_data_id(data_id: int):
     )
 
 
-def search_by_query(query, user_id: int = None):
+def search_by_query(query, user_id: int = None, check_type: str = None):
     """
     Search the ``code`` history of a user by query.
 
@@ -168,10 +180,11 @@ def search_by_query(query, user_id: int = None):
     Parameters:
       query (str): The query to search
       user_id (int): The id of the user
+      check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
     Returns:
       list: The list of the data matching the query
     """
-    search_result = (
+    search_query = (
         db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
         .join(Code, Data.code_id == Code.id)
         .order_by(Data.time.desc())
@@ -179,8 +192,13 @@ def search_by_query(query, user_id: int = None):
             Data.user_id == user_id,
             func.lower(Code.code).ilike(func.lower(f"%{query}%")),
         )
-        .all()
     )
+    
+    # Add check_type filter if provided
+    if check_type:
+        search_query = search_query.filter(Data.check_type == check_type)
+    
+    search_result = search_query.all()
 
     data = search_result
     result = []
@@ -199,16 +217,17 @@ def search_by_query(query, user_id: int = None):
     return result
 
 
-def search_by_query_and_session(query, session_id: str = None):
+def search_by_query_and_session(query, session_id: str = None, check_type: str = None):
     """
     Search the ``code`` history of a user by query and session id; used when user is not logged in.
     Parameters:
         query (str): The query to search
         session_id (str): The session id of the user
+        check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
     Returns:
         list: The list of the data matching the query
     """
-    search_result = (
+    search_query = (
         db.session.query(Data.id, Data.time, Data.check_type, Data.permalink, Code.code)
         .join(Code, Data.code_id == Code.id)
         .order_by(Data.time.desc())
@@ -216,8 +235,13 @@ def search_by_query_and_session(query, session_id: str = None):
             Data.session_id == session_id,
             func.lower(Code.code).ilike(func.lower(f"%{query}%")),
         )
-        .all()
     )
+    
+    # Add check_type filter if provided
+    if check_type:
+        search_query = search_query.filter(Data.check_type == check_type)
+    
+    search_result = search_query.all()
 
     data = search_result
     result = []
