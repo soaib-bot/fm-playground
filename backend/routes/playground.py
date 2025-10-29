@@ -272,8 +272,12 @@ def get_metadata():
 
 @routes.route("/api/metadata/update", methods=["PUT"])
 def update_metadata():
+    """Update metadata by permalink"""
     data = request.get_json()
-    if update_metadata_by_permalink(data.get("permalink"), data):
+    if not data or "permalink" not in data:
+        return jsonify({"result": "fail", "message": "Invalid request"}), 400
+    data_to_update = {k: v for k, v in data.items() if k != "permalink"}
+    if update_metadata_by_permalink(data.get("permalink"), data_to_update):
         return jsonify({"result": "success"})
     return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}, 500)
 
