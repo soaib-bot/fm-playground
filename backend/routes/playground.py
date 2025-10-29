@@ -124,17 +124,7 @@ def save():
         )
         db.session.add(new_data)
         db.session.commit()
-        # Create a default details row for this data (title, tags)
-        try:
-            existing_details = (
-                db.session.query(DataDetails).filter_by(data_id=new_data.id).first()
-            )
-            if existing_details is None:
-                details = DataDetails(data_id=new_data.id, title="Untitled", tags=None)
-                db.session.add(details)
-                db.session.commit()
-        except Exception:
-            db.session.rollback()
+        # Don't create DataDetails here - it will be created only when user sets custom title/tags
     except Exception:
         app.logger.error(f"Error saving the code. Permalink: {permalink}")
         db.session.rollback()
@@ -297,8 +287,9 @@ def update_history_title(data_id: int):
     user_session_id = session.sid
     payload = request.get_json() or {}
     new_title = payload.get("title", "").strip()
-    if not new_title:
-        return jsonify({"result": "fail", "message": "Title cannot be empty"}), 400
+    # Allow empty title (will revert to showing date/time on frontend)
+    # if not new_title:
+    #     return jsonify({"result": "fail", "message": "Title cannot be empty"}), 400
 
     # Ownership check: either user owns it, or same session for anonymous
     data_row = db.session.query(Data).filter(Data.id == data_id).first()
@@ -314,10 +305,12 @@ def update_history_title(data_id: int):
     try:
         details = db.session.query(DataDetails).filter_by(data_id=data_id).first()
         if details is None:
-            details = DataDetails(data_id=data_id, title=new_title)
-            db.session.add(details)
+            # Only create details if title is not empty
+            if new_title:
+                details = DataDetails(data_id=data_id, title=new_title)
+                db.session.add(details)
         else:
-            details.title = new_title
+            details.title = new_title if new_title else None
         db.session.commit()
         return jsonify({"result": "success"})
     except Exception:
@@ -367,7 +360,8 @@ def update_history_pin(data_id: int):
     try:
         details = db.session.query(DataDetails).filter_by(data_id=data_id).first()
         if details is None:
-            details = DataDetails(data_id=data_id, title="Untitled", pinned=pinned)
+            # Only create details when pinning, no default title
+            details = DataDetails(data_id=data_id, title=None, pinned=pinned)
             db.session.add(details)
         else:
             details.pinned = pinned
@@ -403,7 +397,8 @@ def update_history_tags(data_id: int):
         tags_json = json.dumps(tags or [])
         details = db.session.query(DataDetails).filter_by(data_id=data_id).first()
         if details is None:
-            details = DataDetails(data_id=data_id, title="Untitled", tags=tags_json)
+            # Only create details if tags are being added, no default title
+            details = DataDetails(data_id=data_id, title=None, tags=tags_json)
             db.session.add(details)
         else:
             details.tags = tags_json

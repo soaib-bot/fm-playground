@@ -28,7 +28,8 @@ interface HistoryItemProps {
 
 const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, onHover, onTitleChange, onTagsChange, onPinToggle, fullCode, isDarkTheme }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
-    const [titleDraft, setTitleDraft] = useState(item.title || 'Untitled');
+    const displayTitle = item.title || item.time || 'Untitled';
+    const [titleDraft, setTitleDraft] = useState(displayTitle);
     const tags = useMemo(() => parseTags(item.tags), [item.tags]);
     const [localTags, setLocalTags] = useState<string[]>(tags);
     const [newTag, setNewTag] = useState('');
@@ -38,9 +39,17 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
         setIsPinned(item.pinned || false);
     }, [item.pinned]);
 
+    React.useEffect(() => {
+        // Update titleDraft when item changes
+        setTitleDraft(item.title || item.time || 'Untitled');
+    }, [item.title, item.time]);
+
     const handleSaveTitle = async () => {
-        const t = titleDraft.trim() || 'Untitled';
-        await onTitleChange(item.id, t);
+        const t = titleDraft.trim();
+        // If the title is empty or same as the default time, save it as empty string (will show time)
+        const defaultTitle = item.time || 'Untitled';
+        const titleToSave = t === defaultTitle || !t ? '' : t;
+        await onTitleChange(item.id, titleToSave);
         setIsEditingTitle(false);
     };
 
@@ -121,10 +130,13 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                                     onChange={(e) => setTitleDraft(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') handleSaveTitle();
-                                        if (e.key === 'Escape') setIsEditingTitle(false);
+                                        if (e.key === 'Escape') {
+                                            setTitleDraft(item.title || item.time || 'Untitled');
+                                            setIsEditingTitle(false);
+                                        }
                                     }}
                                     onClick={(e) => e.stopPropagation()}
-                                    placeholder="Untitled"
+                                    placeholder={item.time || 'Untitled'}
                                     sx={{
                                         fontWeight: 600,
                                         flex: 1,
@@ -156,7 +168,7 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                             </>
                         ) : (
                             <>
-                                <span style={{ fontWeight: 600, flex: 1, color: isDarkTheme ? '#fff' : '#000' }}>{item.title || 'Untitled'}</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, flex: 1, color: isDarkTheme ? '#fff' : '#000' }}>{displayTitle}</span>
                                 <Stack direction="row" spacing={0.5}>
                                     <IconButton
                                         size="small"
@@ -229,7 +241,7 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                                     }
                                 }}
                                 sx={{
-                                    width: 80,
+                                    width: 50,
                                     fontSize: 12,
                                     color: isDarkTheme ? '#fff' : '#000',
                                     '& input::placeholder': {

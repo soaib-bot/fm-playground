@@ -77,7 +77,11 @@ def get_user_history(
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
-        title = getattr(d, "title", None) or "Untitled"
+        title = getattr(d, "title", None)
+        # Only use title if it's not None and not empty string
+        if title:
+            title = title.strip()
+        title = title if title else None
         tags = getattr(d, "tags", None)
         pinned = getattr(d, "pinned", False) or False
         result.append(
@@ -150,8 +154,12 @@ def get_user_history_by_session(
     result = []
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
-        p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
-        title = getattr(d, "title", None) or "Untitled"
+        p_code = d.code[:35] + "..." if len(d.code) > 35 else d.code
+        title = getattr(d, "title", None)
+        # Only use title if it's not None and not empty string
+        if title:
+            title = title.strip()
+        title = title if title else None
         tags = getattr(d, "tags", None)
         pinned = getattr(d, "pinned", False) or False
         result.append(
@@ -271,7 +279,11 @@ def search_by_query(
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
-        title = getattr(d, "title", None) or "Untitled"
+        title = getattr(d, "title", None)
+        # Only use title if it's not None and not empty string
+        if title:
+            title = title.strip()
+        title = title if title else None
         tags = getattr(d, "tags", None)
         pinned = getattr(d, "pinned", False) or False
         result.append(
@@ -353,7 +365,11 @@ def search_by_query_and_session(
     for d in data:
         p_time = d.time.strftime(DATE_FORMAT)
         p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
-        title = getattr(d, "title", None) or "Untitled"
+        title = getattr(d, "title", None)
+        # Only use title if it's not None and not empty string
+        if title:
+            title = title.strip()
+        title = title if title else None
         tags = getattr(d, "tags", None)
         pinned = getattr(d, "pinned", False) or False
         result.append(
