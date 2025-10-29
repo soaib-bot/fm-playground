@@ -1,6 +1,6 @@
 // Tool executors
 import { executeLimboole } from '@/../tools/limboole/limbooleExecutor';
-import { executeZ3Wasm } from '@/../tools/smt/z3Executor';
+import { executeZ3Server } from '@/../tools/smt/z3Executor';
 import { executeNuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
 import { executeAlloyTool } from '@/../tools/alloy/alloyExecutor';
 import { executeSpectraTool } from '@/../tools/spectra/spectraExecutor';
@@ -48,7 +48,7 @@ export const additonalOutputAreaUiMap: Record<string, React.FC<any>> = {
 
 export const toolExecutionMap: Record<string, () => void> = {
     SAT: executeLimboole,
-    SMT: executeZ3Wasm,
+    SMT: executeZ3Server,
     XMV: executeNuxmvTool,
     ALS: executeAlloyTool,
     SPECTRA: executeSpectraTool,
