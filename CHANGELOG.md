@@ -1,5 +1,15 @@
 # Change Log
 
+## v2.7.9 [2025-10-29]
+
+- ✨ Added SMT Redundancy Checking
+- ✨ Rewritten history drawer with additional features (title, tags, pinning)
+- ✨ Added new table to the database for storing history metadata
+- ⚡️ Added api for history
+- ⚡️ Updated api to update metadata
+- 📌 Upgrade z3 wasm to 4.15.1
+
+
 ## v2.7.9 [2025-10-24]
 
 - ✨ Added filtering for SMT Diff
