@@ -372,7 +372,12 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
             ) : (
                 <div
                     className='analyze-mode-layout'
-                    style={{ display: 'flex', gap: '10px', height: getEditorHeight() }}
+                    style={{
+                        display: 'flex',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        gap: '10px',
+                        height: isMobile ? 'auto' : getEditorHeight(),
+                    }}
                 >
                     <div style={{ flex: 1 }}>
                         <CodeDiffEditor

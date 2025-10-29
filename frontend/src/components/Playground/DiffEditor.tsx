@@ -22,6 +22,21 @@ const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProp
     const [language, setLanguage] = useAtom(languageAtom);
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Check screen size on mount and resize for mobile detection
+    useEffect(() => {
+        const checkScreenSize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+
+        return () => {
+            window.removeEventListener('resize', checkScreenSize);
+        };
+    }, []);
 
     /**
      * Sets the editor value when the editorValue prop changes.
@@ -147,7 +162,7 @@ const CodeDiffEditor: React.FC<DiffCodeEditorProps> = (props: DiffCodeEditorProp
                         independentColorPoolPerBracketType: true,
                     },
                     readOnly: false,
-                    renderSideBySide: !props.isAnalyzeMode,
+                    renderSideBySide: !isMobile && !props.isAnalyzeMode,
                     enableSplitViewResizing: true,
                     renderOverviewRuler: true,
                     ignoreTrimWhitespace: false,
