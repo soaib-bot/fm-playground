@@ -68,8 +68,11 @@ def run_z3_with_redundancy_detection(code: str):
     res = run_z3(code)
     if not at_least_one_sat(res):
         return res, []
-    solver = Solver()
-    solver.from_string(code)
+    try:
+        solver = Solver()
+        solver.from_string(code)
+    except Exception:
+        return res, []
     redundant_lines = unsat_core(solver, solver.assertions(), smt2_file=code)
     return res, list(redundant_lines)
 
