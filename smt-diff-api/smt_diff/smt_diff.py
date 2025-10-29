@@ -171,18 +171,18 @@ def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str
             solver_s1_not_s2.add(filter_assertions)
         except Exception as e:
             return prettify_error(f"Error parsing filter: {e.args[0].decode()}")
-    if solver_s1_not_s2.check() == sat:
-        vars_s1 = get_all_vars(assertions1)
-        vars_s2 = get_all_vars(assertions2)
-        vars_for_enum = list(vars_s1.intersection(vars_s2))
+    if solver_s1_not_s2.check() != sat:
+        return "No diff witnesses found (unsat/unknown)."
+    vars_s1 = get_all_vars(assertions1)
+    vars_s2 = get_all_vars(assertions2)
+    vars_for_enum = list(vars_s1.intersection(vars_s2))
 
-        # FIXME: If no common variables, use union instead
-        if len(vars_for_enum) == 0:
-            vars_for_enum = list(vars_s1.union(vars_s2))
+    # FIXME: If no common variables, use union instead
+    if len(vars_for_enum) == 0:
+        vars_for_enum = list(vars_s1.union(vars_s2))
 
-        generator = all_smt(solver_s1_not_s2, vars_for_enum)
-        return generator
-    return None
+    generator = all_smt(solver_s1_not_s2, vars_for_enum)
+    return generator
 
 
 def common_witness(
@@ -201,16 +201,16 @@ def common_witness(
             combined_solver.add(filter_assertions)
         except Exception as e:
             return prettify_error(f"Error parsing filter: {e.args[0].decode()}")
-    if combined_solver.check() == sat:
-        s1_vars = get_all_vars(assertions1)
-        s2_vars = get_all_vars(assertions2)
-        all_vars = list(s1_vars.intersection(s2_vars))
-        # FIXME: If no common variables, use union instead
-        if len(all_vars) == 0:
-            all_vars = list(s1_vars.union(s2_vars))
-        generator = all_smt(combined_solver, all_vars)
-        return generator
-    return None
+    if combined_solver.check() != sat:
+        return "No diff witnesses found (unsat/unknown)."
+    s1_vars = get_all_vars(assertions1)
+    s2_vars = get_all_vars(assertions2)
+    all_vars = list(s1_vars.intersection(s2_vars))
+    # FIXME: If no common variables, use union instead
+    if len(all_vars) == 0:
+        all_vars = list(s1_vars.union(s2_vars))
+    generator = all_smt(combined_solver, all_vars)
+    return generator
 
 
 def get_semantic_relation(s1: str, s2: str) -> Optional[str]:
@@ -267,6 +267,7 @@ def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
     s1: previous spec
     s2: current spec
     """
+    error_msg = None
     try:
         assertions1 = parse_smt2_string(s1)
     except Exception as e:
