@@ -217,7 +217,7 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
                         padding: '8px 12px',
                         borderBottom: `1px solid ${isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
                     }}>
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: isDarkTheme ? '#2d2d2d' : '#f2f2f2', borderRadius: 6, padding: '4px 8px' }}>
+                        <div id='search-history-input' style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: isDarkTheme ? '#2d2d2d' : '#f2f2f2', borderRadius: 6, padding: '4px 8px' }}>
                             <MdSearch style={{ color: isDarkTheme ? '#aaa' : '#666' }} />
                             <InputBase
                                 placeholder='Search'
@@ -251,6 +251,7 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
                         </div>
                         <IconButton
                             size='small'
+                            id='pin-history-button'
                             onClick={() => setIsDrawerPinned((p) => !p)}
                             aria-label='pin drawer'
                             title={isDrawerPinned ? 'Unpin drawer' : 'Pin drawer open'}

@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, AuthContext } from '@/contexts/AuthContext';
 import { Provider as JotaiProvider, useAtom } from 'jotai';
 import Nav from '@/components/Utils/Nav';
 import Footer from '@/components/Utils/Footer';
+import Tour from '@/components/Utils/Tour';
+import { loggedInTourSteps, loggedOutTourSteps } from '@/components/Utils/tourSteps';
+import { CallBackProps } from 'react-joyride';
 import Playground from '@/components/Playground/Playground';
 import Login from '@/components/Authentication/Login';
 import ProtectedRoutes from '@/components/Authentication/ProtectedRoutes';
@@ -20,6 +23,30 @@ const App = () => {
         const storedTheme = localStorage.getItem('editorTheme');
         return storedTheme || 'vs';
     });
+    const [runTour, setRunTour] = useState(false);
+    const authContext = useContext(AuthContext);
+    const isLoggedIn = authContext?.isLoggedIn ?? false;
+
+    const handleStartTour = () => {
+        setRunTour(true);
+    };
+
+    const handleTourEnd = (data: CallBackProps) => {
+        const { status } = data;
+        const finishedStatuses: string[] = ['finished', 'skipped'];
+
+        if (finishedStatuses.includes(status)) {
+            setRunTour(false);
+        }
+    };
+
+    useEffect(() => {
+        const tourViewed = localStorage.getItem('tourViewed');
+        if (!tourViewed) {
+            setRunTour(true);
+            localStorage.setItem('tourViewed', 'true');
+        }
+    }, []);
 
     // const handleToggleTheme = () => {
     //   setIsDarkTheme((prevIsDarkTheme) => {
@@ -45,7 +72,12 @@ const App = () => {
         <AuthProvider>
             <JotaiProvider store={jotaiStore}>
                 <div className='App' data-theme={isDarkTheme ? 'dark' : 'light'}>
-                    <Nav isDarkTheme={isDarkTheme} setIsDarkTheme={setIsDarkTheme} />
+                    <Tour
+                        run={runTour}
+                        steps={isLoggedIn ? loggedInTourSteps : loggedOutTourSteps}
+                        onTourEnd={handleTourEnd}
+                    />
+                    <Nav isDarkTheme={isDarkTheme} setIsDarkTheme={setIsDarkTheme} onStartTour={handleStartTour} />
                     <Router>
                         <Routes>
                             <Route element={<ProtectedRoutes />}></Route>

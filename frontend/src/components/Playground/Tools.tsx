@@ -57,7 +57,7 @@ const Tools: React.FC<ToolsProps> = (props: ToolsProps) => {
     };
 
     return (
-        <div className='tools'>
+        <div id='tool-selector' className='tools'>
             <Select
                 className='basic-single react-select-container'
                 classNamePrefix='select'

@@ -18,7 +18,7 @@ const OutputArea: React.FC<OutputAreaProps> = ({ onFullScreenButtonClick }) => {
     const OutputComponent = toolOutputMap[language.short];
 
     return (
-        <div className='row'>
+        <div id='output-area' className='row'>
             <div className='col-md-12'>
                 <div
                     className={`d-flex justify-content-between align-items-center ${language.id !== 'xmv' ? 'mb-2' : ''}`}

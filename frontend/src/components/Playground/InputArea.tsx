@@ -119,9 +119,9 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
     };
 
     return (
-        <div className='row'>
+        <div id='input-area' className='row'>
             <div className='col-md-12 mx-auto mb-2'>
-                <div className='d-flex justify-content-between align-items-center'>
+                <div id='input-actions' className='d-flex justify-content-between align-items-center'>
                     <div className='col-md-4'>
                         <h2>Input</h2>
                     </div>
@@ -196,6 +196,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
                                     data-tooltip-id='playground-tooltip'
                                     data-tooltip-content='Compare Specs (New Feature!)'
                                     onClick={handleEnterDiffView}
+                                    id='diff-view-button'
                                     style={{
                                         backgroundColor: editorTheme === 'vs-dark' ? '#1e1e1e' : '#ffffff',
                                         borderRadius: '4px',
@@ -240,6 +241,7 @@ const InputArea: React.FC<InputAreaProps> = ({ editorTheme, onRunButtonClick, on
 
             <div className='additional-input-ui'>{AdditionalUi && <AdditionalUi />}</div>
             <MDBBtn
+                id='run-button'
                 className={`mx-auto my-3 ${isMobile ? 'mobile-run-button' : ''}`}
                 style={{ width: '95%' }}
                 color='primary'

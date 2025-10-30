@@ -32,9 +32,10 @@ import '@/assets/style/Nav.css';
 interface NavbarProps {
     isDarkTheme: boolean;
     setIsDarkTheme: (value: boolean) => void;
+    onStartTour: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
+const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme, onStartTour }) => {
     const [editorValue, setEditorValue] = useAtom(editorValueAtom);
     const [language, setLanguage] = useAtom(languageAtom);
     const [isDiffViewMode] = useAtom(isDiffViewModeAtom);
@@ -186,6 +187,17 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                 <div className='nav-right d-none d-lg-flex gap-2'>
                     <MDBBtn
                         rounded
+                        id='tour-button'
+                        color={isDarkTheme ? 'dark' : 'light'}
+                        className='navbar-option-button'
+                        onClick={onStartTour}
+                        style={{ width: 'auto', display: 'flex', alignItems: 'center', height: '38px' }}
+                    >
+                        Tour
+                    </MDBBtn>
+                    <MDBBtn
+                        rounded
+                        id='history-button'
                         color={isDarkTheme ? 'dark' : 'light'}
                         className='navbar-option-button'
                         onClick={handleDrawerOpen}
@@ -204,6 +216,7 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                     {isLoggedIn ? (
                         <>
                             <MDBDropdown
+                                id='login-button'
                                 className='btn-group navbar-option-button'
                                 style={{ width: 'auto', display: 'flex', alignItems: 'center', height: '38px' }}
                             >
@@ -251,7 +264,10 @@ const Navbar: React.FC<NavbarProps> = ({ isDarkTheme, setIsDarkTheme }) => {
                         <MdOutlineMenu />
                     </MDBDropdownToggle>
                     <MDBDropdownMenu style={{ textAlign: 'right' }}>
-                        <MDBDropdownItem link onClick={handleDrawerOpen}>
+                        <MDBDropdownItem link onClick={onStartTour}>
+                            Tour
+                        </MDBDropdownItem>
+                        <MDBDropdownItem link onClick={handleDrawerOpen} id='history-button'>
                             History
                         </MDBDropdownItem>
                         {isLoggedIn ? (
