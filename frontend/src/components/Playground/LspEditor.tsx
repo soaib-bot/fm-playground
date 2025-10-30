@@ -8,6 +8,8 @@ import '@codingame/monaco-vscode-theme-defaults-default-extension';
 import type { LanguageProps } from './Tools';
 import { fmpConfig } from '@/ToolMaps';
 import * as monaco from 'monaco-editor';
+import { useAtom } from 'jotai';
+import { cursorLineAtom, greenHighlightAtom } from '@/atoms';
 
 type LspEditorProps = {
     height: string;
@@ -27,7 +29,11 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
     const editorRef = useRef<any>(null);
     const prevLanguageRef = useRef<LanguageProps | null>(null);
     const isInitializedRef = useRef<boolean>(false);
+    const cursorListenerRef = useRef<any>(null); // Store cursor listener disposable
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
+    const [greenDecorationIds, setGreenDecorationIds] = useState<string[]>([]);
+    const [greenHighlight, setGreenHighlight] = useAtom(greenHighlightAtom);
+    const [, setCursorLine] = useAtom(cursorLineAtom);
 
     const getExtensionById = (id: string): string | undefined => {
         const tool = Object.values(fmpConfig.tools).find((tool) => tool.extension.toLowerCase() === id.toLowerCase());
@@ -36,6 +42,7 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
     const handleCodeChange = (value: string) => {
         props.setEditorValue(value);
         props.setLineToHighlight([]);
+        setGreenHighlight([]); // Clear green highlighting when code changes
     };
 
     useEffect(() => {
@@ -78,6 +85,18 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     });
 
                     editorRef.current = wrapperInstance!.getEditor();
+
+                    // Dispose old cursor listener if exists
+                    if (cursorListenerRef.current) {
+                        cursorListenerRef.current.dispose();
+                    }
+
+                    // Track cursor position changes
+                    cursorListenerRef.current = editorRef.current.onDidChangeCursorPosition((e: any) => {
+                        const lineNumber = e.position.lineNumber;
+                        setCursorLine(lineNumber);
+                    });
+
                     editorRef.current.onDidChangeModelContent(() => {
                         handleCodeChange(editorRef.current.getValue());
                     });
@@ -87,6 +106,12 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                         editorRef.current.setValue(code);
                     } else {
                         editorRef.current.setValue(props.editorValue);
+                    }
+
+                    // Initialize cursor position AFTER setting value (setValue resets cursor to line 1)
+                    const currentPosition = editorRef.current.getPosition();
+                    if (currentPosition) {
+                        setCursorLine(currentPosition.lineNumber);
                     }
 
                     isInitializedRef.current = true;
@@ -100,6 +125,12 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
         startEditor();
 
         return () => {
+            // Clean up cursor listener
+            if (cursorListenerRef.current) {
+                cursorListenerRef.current.dispose();
+                cursorListenerRef.current = null;
+            }
+
             // Clean up on unmount
             if (wrapperInstance?.isStarted()) {
                 wrapperInstance.dispose();
@@ -130,12 +161,33 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
 
         // Update the model reference with new language extension
         const updateModel = async () => {
+            console.log('[LspEditor] Updating model for language:', props.language.id);
             const currentExtension = getExtensionById(props.language.id);
             const uri = vscode.Uri.parse(`/workspace/example.${currentExtension}`);
             const modelRef = await createModelReference(uri, props.editorValue);
             wrapperInstance!.updateEditorModels({
                 modelRef,
             });
+
+            // Re-establish cursor tracking after model update
+            editorRef.current = wrapperInstance!.getEditor();
+
+            // Dispose old cursor listener if exists
+            if (cursorListenerRef.current) {
+                cursorListenerRef.current.dispose();
+            }
+
+            // Track cursor position changes
+            cursorListenerRef.current = editorRef.current.onDidChangeCursorPosition((e: any) => {
+                const lineNumber = e.position.lineNumber;
+                setCursorLine(lineNumber);
+            });
+
+            // Initialize cursor position to current position
+            const currentPosition = editorRef.current.getPosition();
+            if (currentPosition) {
+                setCursorLine(currentPosition.lineNumber);
+            }
         };
 
         updateModel();
@@ -172,6 +224,31 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
         }
     }, [props.lineToHighlight]);
 
+    // Green highlighting for explain redundancy
+    useEffect(() => {
+        if (editorRef.current) {
+            const editor = editorRef.current;
+            if (greenHighlight !== null && greenHighlight.length > 0) {
+                const decorations = greenHighlight.map((line) => {
+                    return {
+                        range: new monaco.Range(line, 1, line, 1),
+                        options: {
+                            isWholeLine: true,
+                            className: 'lineHighlightGreen',
+                            glyphMarginClassName: 'lineHighlightGlyphGreen',
+                        },
+                    };
+                });
+                const newGreenDecorationIds = editor.deltaDecorations(greenDecorationIds, decorations);
+                setGreenDecorationIds(newGreenDecorationIds);
+            } else {
+                // Remove all green decorations
+                const newGreenDecorationIds = editor.deltaDecorations(greenDecorationIds, []);
+                setGreenDecorationIds(newGreenDecorationIds);
+            }
+        }
+    }, [greenHighlight]);
+
     const setEditorValue = (value: string) => {
         if (editorRef.current) {
             const currentValue = editorRef.current.getValue();
@@ -184,13 +261,6 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
             }
         }
     };
-
-    // const getEditorValue = () => {
-    //   if (editorRef.current) {
-    //     const value = editorRef.current.getValue();
-    //     props.setEditorValue(value);
-    //   }
-    // };
 
     return (
         <div className='custom-code-editor'>

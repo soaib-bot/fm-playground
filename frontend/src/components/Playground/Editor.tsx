@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import * as monacoEditor from 'monaco-editor';
 import Editor from '@monaco-editor/react';
 import { useAtom } from 'jotai';
-import { editorValueAtom, languageAtom, lineToHighlightAtom } from '@/atoms';
+import { editorValueAtom, languageAtom, lineToHighlightAtom, greenHighlightAtom, cursorLineAtom } from '@/atoms';
 import { fmpConfig, languageConfigMap } from '@/ToolMaps';
 import '@/assets/style/Playground.css';
 
@@ -16,7 +16,10 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
     const editorRef = useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(null); // editor reference
     const [language, setLanguage] = useAtom(languageAtom);
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
+    const [greenHighlight, setGreenHighlight] = useAtom(greenHighlightAtom);
+    const [, setCursorLine] = useAtom(cursorLineAtom);
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
+    const [greenDecorationIds, setGreenDecorationIds] = useState<string[]>([]);
 
     /**
      * Sets the editor value when the editorValue prop changes.
@@ -56,10 +59,47 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
         }
     }, [lineToHighlight]);
 
+    // Green highlighting for explain redundancy
+    useEffect(() => {
+        if (editorRef.current) {
+            const editor = editorRef.current;
+            if (greenHighlight !== null && greenHighlight.length > 0) {
+                const decorations = greenHighlight.map((line) => {
+                    return {
+                        range: new window.monaco.Range(line, 1, line, 1),
+                        options: {
+                            isWholeLine: true,
+                            className: 'lineHighlightGreen',
+                            glyphMarginClassName: 'lineHighlightGlyphGreen',
+                        },
+                    };
+                });
+                const newGreenDecorationIds = editor.deltaDecorations(greenDecorationIds, decorations);
+                setGreenDecorationIds(newGreenDecorationIds);
+            } else {
+                // Remove all green decorations
+                const newGreenDecorationIds = editor.deltaDecorations(greenDecorationIds, []);
+                setGreenDecorationIds(newGreenDecorationIds);
+            }
+        }
+    }, [greenHighlight]);
+
     // Register the language configuration for each tool
     function handleEditorDidMount(editor: monacoEditor.editor.IStandaloneCodeEditor, monaco: typeof monacoEditor) {
         editorRef.current = editor;
         editorRef.current.focus();
+
+        // Track cursor position changes
+        editor.onDidChangeCursorPosition((e) => {
+            const lineNumber = e.position.lineNumber;
+            setCursorLine(lineNumber);
+        });
+        
+        // Initialize cursor position
+        const currentPosition = editor.getPosition();
+        if (currentPosition) {
+            setCursorLine(currentPosition.lineNumber);
+        }
 
         const tools: { [key: string]: { name: string; extension: string; shortName: string } } = fmpConfig.tools;
         for (const toolKey in tools) {
@@ -100,6 +140,7 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
         if (newCode !== undefined) {
             setEditorValue(newCode);
             setLineToHighlight([]);
+            setGreenHighlight([]);
         }
     };
 

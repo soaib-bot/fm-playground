@@ -122,6 +122,13 @@
     background-color: yellow; /* Yellow margin */
 }
 
+.lineHighlightGreen {
+    background-color: rgba(0, 255, 0, 0.15); /* Greenish background */
+}
+.lineHighlightGlyphGreen {
+    background-color: rgba(0, 255, 0, 0.4); /* Greenish margin */
+}
+
 .MuiStack-root {
     display: flex;
     align-items: center;

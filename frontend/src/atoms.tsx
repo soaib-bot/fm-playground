@@ -30,6 +30,8 @@ export const languageAtom = atomWithStorage('language', defaultLanguage);
 export const permalinkAtom = atom<{ check: string | null; permalink: string | null }>({ check: null, permalink: null });
 export const isExecutingAtom = atom(false);
 export const lineToHighlightAtom = atom<number[]>([]);
+export const greenHighlightAtom = atom<number[]>([]); // For greenish highlighting (explain redundancy)
+export const cursorLineAtom = atom<number>(1); // Current cursor line number (1-based)
 export const outputAtom = atom<string>('');
 export const isFullScreenAtom = atom(false);
 export const enableLspAtom = atom(true);
@@ -43,6 +45,7 @@ export const historyRefreshTriggerAtom = atom(0); // Incremented to trigger hist
 
 export const spectraCliOptionsAtom = atom('check-realizability');
 export const limbooleCliOptionsAtom = atom({ value: '1', label: 'satisfiability' });
+export const smtCliOptionsAtom = atom({ value: 'execute-z3', label: 'Execute SMT' });
 
 export const alloySelectedCmdAtom = atom(0);
 export const alloyInstanceAtom = atom<any[]>([]);
@@ -59,6 +62,8 @@ export const limbooleDiffFilterAtom = atom('');
 jotaiStore.sub(editorValueAtom, () => {});
 jotaiStore.sub(languageAtom, () => {});
 jotaiStore.sub(lineToHighlightAtom, () => {});
+jotaiStore.sub(greenHighlightAtom, () => {});
+jotaiStore.sub(cursorLineAtom, () => {});
 jotaiStore.sub(enableLspAtom, () => {});
 jotaiStore.sub(isLoadingPermalinkAtom, () => {});
 jotaiStore.sub(isDiffViewModeAtom, () => {});

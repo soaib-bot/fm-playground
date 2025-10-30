@@ -1,6 +1,6 @@
 // Tool executors
 import { executeLimboole } from '@/../tools/limboole/limbooleExecutor';
-import { executeZ3Server } from '@/../tools/smt/z3Executor';
+import { executeZ3WithOptionOnServer } from '@/../tools/smt/z3Executor';
 import { executeNuxmvTool } from '@/../tools/nuxmv/nuxmvExecutor';
 import { executeAlloyTool } from '@/../tools/alloy/alloyExecutor';
 import { executeSpectraTool } from '@/../tools/spectra/spectraExecutor';
@@ -20,6 +20,7 @@ import { spectraConf, spectraLang } from '@/../tools/spectra/spectraTextMateGram
 
 // Additional input area components for the different tools
 import LimbooleCheckOptions from '@/../tools/limboole/components/limbooleCheckOptions';
+import SmtCheckOptions from '@/../tools/smt/components/smtCheckOptions';
 import SpectraCliOptions from '@/../tools/spectra/components/SpectraCliOptions';
 import AlloyCmdOptions from '@/../tools/alloy/components/AlloyCmdOptions';
 
@@ -38,6 +39,7 @@ import type { FmpConfig } from '@/types';
 
 export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
     SAT: LimbooleCheckOptions,
+    SMT: SmtCheckOptions,
     SPECTRA: SpectraCliOptions,
     ALS: AlloyCmdOptions,
 };
@@ -48,7 +50,7 @@ export const additonalOutputAreaUiMap: Record<string, React.FC<any>> = {
 
 export const toolExecutionMap: Record<string, () => void> = {
     SAT: executeLimboole,
-    SMT: executeZ3Server,
+    SMT: executeZ3WithOptionOnServer,
     XMV: executeNuxmvTool,
     ALS: executeAlloyTool,
     SPECTRA: executeSpectraTool,

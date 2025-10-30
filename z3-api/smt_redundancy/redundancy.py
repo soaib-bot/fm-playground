@@ -105,7 +105,6 @@ def unsat_core(slvr: Solver, assertions: list[ExprRef], smt2_file: str = None, l
         solver = Solver(ctx=slvr.ctx)
     solver.set(unsat_core=True)
     solver.set("core.minimize", True)
-    start = time.time()
     
     # Get line number mapping if file provided
     line_mapping = {}
@@ -141,7 +140,6 @@ def unsat_core(slvr: Solver, assertions: list[ExprRef], smt2_file: str = None, l
         c = solver.unsat_core()
         c = [trackerToElement[tracker] for tracker in c]
         e = [elementToAssertion[element] for element in c]
-        time_taken = time.time() - start
     cleanedSolver = Solver()
     cleanedSolver.add(e)
 
@@ -164,16 +162,8 @@ def unsat_core(slvr: Solver, assertions: list[ExprRef], smt2_file: str = None, l
                             break
             
             if line_range:
-                # Add all lines in the range to the set
                 for line_num in range(line_range[0], line_range[1] + 1):
                     redundant_lines.add(line_num)
-                
-                if line_range[0] == line_range[1]:
-                    print(f"Line {line_range[0]}: {sexpr}")
-                else:
-                    print(f"Lines {line_range[0]}-{line_range[1]}: {sexpr}")
-            else:
-                print(sexpr)
         else:
             e.remove(a)
     

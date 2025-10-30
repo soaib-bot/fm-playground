@@ -1,4 +1,5 @@
-import runZ3WASM from '@/../tools/smt/runZ3WASM';
+import { explainRedundancy, parseLineRanges } from '@/../tools/smt/explainRedundancy';
+import { checkRedundancy } from '@/../tools/smt/checkRedundancy';
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
 import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
 import { fmpConfig } from '@/ToolMaps';
@@ -9,8 +10,11 @@ import {
     permalinkAtom,
     isExecutingAtom,
     lineToHighlightAtom,
+    greenHighlightAtom,
+    cursorLineAtom,
     outputAtom,
     enableLspAtom,
+    smtCliOptionsAtom,
 } from '@/atoms';
 import axios from 'axios';
 import { updateMetadataByPermalink } from '@/api/playgroundApi';
@@ -130,7 +134,7 @@ if (typeof window !== 'undefined') {
     };
 }
 
-async function executeZ3(permalink: Permalink) {
+async function fetchZ3Result(permalink: Permalink) {
     let url = `/smt/smt/run/?check=${permalink.check}&p=${permalink.permalink}`;
     try {
         const response = await axios.get(url);
@@ -144,7 +148,144 @@ async function executeZ3(permalink: Permalink) {
  * Execute Z3 on the server.
  * Handles redundant assertions if returned by the server.
  */
-export const executeZ3Server = async () => {
+export const executeZ3WithOptionOnServer = async () => {
+    const smtCliOption = jotaiStore.get(smtCliOptionsAtom);
+
+    // Determine which function to execute based on the selected option
+    if (smtCliOption?.value === 'explain-redundancy') {
+        await executeExplainRedundancy();
+    } else if (smtCliOption?.value === 'check-redundancy') {
+        await executeCheckRedundancy();
+    } else {
+        // Default: execute-z3
+        await executeZ3();
+    }
+};
+
+/**
+ * Execute Z3 to explain redundancy at the current cursor line.
+ */
+async function executeExplainRedundancy() {
+    const editorValue = jotaiStore.get(editorValueAtom);
+    const language = jotaiStore.get(languageAtom);
+    const permalink = jotaiStore.get(permalinkAtom);
+    const enableLsp = jotaiStore.get(enableLspAtom);
+    const cursorLine = jotaiStore.get(cursorLineAtom);
+
+    let response: any = null;
+    const metadata = { ls: enableLsp };
+
+    try {
+        response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
+        if (response) {
+            jotaiStore.set(permalinkAtom, response.data);
+        }
+    } catch (error: any) {
+        jotaiStore.set(
+            outputAtom,
+            `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
+        jotaiStore.set(isExecutingAtom, false);
+        return;
+    }
+
+    try {
+        const result = await explainRedundancy(response?.data.check, response?.data.permalink, cursorLine);
+
+        // Parse line ranges and set green highlighting
+        const linesToHighlight = parseLineRanges(result.lineRanges);
+        jotaiStore.set(greenHighlightAtom, linesToHighlight);
+        jotaiStore.set(lineToHighlightAtom, [cursorLine]);
+
+        // Format output message
+        const outputMsg = `; The green highlighted assertions make the yellow highlighted assertion redundant.` +
+            `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
+            `<button onclick="__removeRedundantAssertions()">Remove</button>`;
+
+        jotaiStore.set(outputAtom, outputMsg);
+    } catch (error: any) {
+        jotaiStore.set(outputAtom, `; ${error.message}\n; If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
+        jotaiStore.set(greenHighlightAtom, []);
+        jotaiStore.set(lineToHighlightAtom, []);
+    }
+
+    jotaiStore.set(isExecutingAtom, false);
+}
+
+//Execute Z3 to check for redundancy
+async function executeCheckRedundancy() {
+    const editorValue = jotaiStore.get(editorValueAtom);
+    const language = jotaiStore.get(languageAtom);
+    const permalink = jotaiStore.get(permalinkAtom);
+    const enableLsp = jotaiStore.get(enableLspAtom);
+    let response: any = null;
+    const metadata = { ls: enableLsp };
+    try {
+        response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
+        if (response) {
+            jotaiStore.set(permalinkAtom, response.data);
+        }
+    } catch (error: any) {
+        jotaiStore.set(
+            outputAtom,
+            `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
+        jotaiStore.set(isExecutingAtom, false);
+        return;
+    }
+
+    try {
+        const result = await checkRedundancy(response?.data.check, response?.data.permalink);
+
+        // Check for errors in the output
+        if (result.output.includes('(error')) {
+            jotaiStore.set(outputAtom, result.output);
+            jotaiStore.set(lineToHighlightAtom, getLineToHighlight(result.output, language.id) || []);
+            jotaiStore.set(greenHighlightAtom, []);
+            jotaiStore.set(isExecutingAtom, false);
+            return;
+        }
+
+        // Check if redundant lines were found
+        if (result.redundantLines && result.redundantLines.length > 0) {
+            __redundantLinesToRemove = result.redundantLines;
+            jotaiStore.set(lineToHighlightAtom, result.redundantLines);
+            jotaiStore.set(greenHighlightAtom, []);
+
+            // Update metadata in backend with redundant lines found
+            try {
+                const currentPermalink = jotaiStore.get(permalinkAtom);
+                if (currentPermalink?.permalink) {
+                    await updateMetadataByPermalink(currentPermalink.permalink, { redFound: result.redundantLines });
+                }
+            } catch (error) {
+                console.error('Failed to update metadata:', error);
+            }
+
+            const msg =
+                result.output +
+                `; Redundant assertions are highlighted in the editor).\n; Do you want to remove them?` +
+                `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
+                `<button onclick="__removeRedundantAssertions()">Remove</button>`;
+            jotaiStore.set(outputAtom, msg);
+            jotaiStore.set(isExecutingAtom, false);
+            return;
+        }
+
+        jotaiStore.set(outputAtom, result.output);
+        jotaiStore.set(greenHighlightAtom, []);
+    } catch (error: any) {
+        jotaiStore.set(outputAtom, `; Error: ${error.message}\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
+        jotaiStore.set(greenHighlightAtom, []);
+        jotaiStore.set(isExecutingAtom, false);
+        return;
+    }
+    jotaiStore.set(isExecutingAtom, false);
+}
+
+
+//Execute Z3 normally 
+async function executeZ3() {
     const editorValue = jotaiStore.get(editorValueAtom);
     const language = jotaiStore.get(languageAtom);
     const permalink = jotaiStore.get(permalinkAtom);
@@ -163,10 +304,8 @@ export const executeZ3Server = async () => {
         );
     }
 
-    // Removed unused runWithTimeout helper (was used only by commented-out WASM path)
-
     try {
-        const res = await executeZ3(response?.data);
+        const res = await fetchZ3Result(response?.data);
         if (res[0].includes('(error')) {
             jotaiStore.set(outputAtom, res[0]);
             jotaiStore.set(lineToHighlightAtom, getLineToHighlight(res[0], language.id) || []);
@@ -189,7 +328,7 @@ export const executeZ3Server = async () => {
 
             const msg =
                 res[0] +
-                `\n; Your script contains redundant assertions (see highlighted lines).\n; Do you want to remove them?` +
+                `; --------------------------------\n; Your script contains redundant assertions (see highlighted lines).\n; Do you want to remove them?` +
                 `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
                 `<button onclick="__removeRedundantAssertions()">Remove</button>`;
             jotaiStore.set(outputAtom, msg);
@@ -199,60 +338,9 @@ export const executeZ3Server = async () => {
 
         jotaiStore.set(outputAtom, res[0]);
     } catch (error) {
-        jotaiStore.set(outputAtom, (error as any).message);
+        jotaiStore.set(outputAtom, (error as any).message + `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
         jotaiStore.set(isExecutingAtom, false);
         return;
-    }
-    jotaiStore.set(isExecutingAtom, false);
-};
-
-
-/**
- * Execute Z3 using a hybrid approach: try WASM first, then fall back to server.
- */
-export const executeZ3Hybrid = async () => {
-    const editorValue = jotaiStore.get(editorValueAtom);
-    const language = jotaiStore.get(languageAtom);
-    const permalink = jotaiStore.get(permalinkAtom);
-    const enableLsp = jotaiStore.get(enableLspAtom);
-    let response: any = null;
-    const metadata = { ls: enableLsp };
-    try {
-        response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
-        if (response) {
-            jotaiStore.set(permalinkAtom, response.data);
-        }
-    } catch (error: any) {
-        jotaiStore.set(
-            outputAtom,
-            `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
-        );
-    }
-
-    const runWithTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
-        return Promise.race([
-            promise,
-            new Promise<T>((_, reject) => setTimeout(() => reject(new Error('WASM load timeout')), timeoutMs)),
-        ]);
-    };
-
-    try {
-        const res = await runWithTimeout(runZ3WASM(editorValue), 10000);
-        if (res.error) {
-            jotaiStore.set(outputAtom, res.error);
-        } else {
-            jotaiStore.set(lineToHighlightAtom, getLineToHighlight(res.output, language.id) || []);
-            jotaiStore.set(outputAtom, res.output);
-        }
-    } catch (err: any) {
-        jotaiStore.set(outputAtom, "Could't load WASM module. Trying to execute on the server...");
-        try {
-            const res = await executeZ3(response?.data);
-            jotaiStore.set(lineToHighlightAtom, getLineToHighlight(res, language.id) || []);
-            jotaiStore.set(outputAtom, res);
-        } catch (error: any) {
-            jotaiStore.set(outputAtom, error.message);
-        }
     }
     jotaiStore.set(isExecutingAtom, false);
 };
