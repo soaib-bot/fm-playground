@@ -9,7 +9,14 @@ import type { LanguageProps } from './Tools';
 import { fmpConfig } from '@/ToolMaps';
 import * as monaco from 'monaco-editor';
 import { useAtom } from 'jotai';
-import { cursorLineAtom, greenHighlightAtom } from '@/atoms';
+import { 
+    cursorLineAtom, 
+    greenHighlightAtom, 
+    selectedTextAtom, 
+    targetAssertionRangeAtom, 
+    minimalSetRangesAtom,
+    jotaiStore
+} from '@/atoms';
 
 type LspEditorProps = {
     height: string;
@@ -32,8 +39,12 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
     const cursorListenerRef = useRef<any>(null); // Store cursor listener disposable
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
     const [greenDecorationIds, setGreenDecorationIds] = useState<string[]>([]);
+    const [rangeDecorationIds, setRangeDecorationIds] = useState<string[]>([]);
     const [greenHighlight, setGreenHighlight] = useAtom(greenHighlightAtom);
     const [, setCursorLine] = useAtom(cursorLineAtom);
+    const [, setSelectedText] = useAtom(selectedTextAtom);
+    const [targetAssertionRange] = useAtom(targetAssertionRangeAtom);
+    const [minimalSetRanges] = useAtom(minimalSetRangesAtom);
 
     const getExtensionById = (id: string): string | undefined => {
         const tool = Object.values(fmpConfig.tools).find((tool) => tool.extension.toLowerCase() === id.toLowerCase());
@@ -42,7 +53,10 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
     const handleCodeChange = (value: string) => {
         props.setEditorValue(value);
         props.setLineToHighlight([]);
-        setGreenHighlight([]); // Clear green highlighting when code changes
+        setGreenHighlight([]);
+        // Clear range-based highlights
+        jotaiStore.set(targetAssertionRangeAtom, null);
+        jotaiStore.set(minimalSetRangesAtom, []);
     };
 
     useEffect(() => {
@@ -95,6 +109,16 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     cursorListenerRef.current = editorRef.current.onDidChangeCursorPosition((e: any) => {
                         const lineNumber = e.position.lineNumber;
                         setCursorLine(lineNumber);
+                    });
+
+                    // Track selection changes
+                    editorRef.current.onDidChangeCursorSelection((e: any) => {
+                        const model = editorRef.current.getModel();
+                        if (model) {
+                            const selection = e.selection;
+                            const selectedText = model.getValueInRange(selection);
+                            setSelectedText(selectedText);
+                        }
                     });
 
                     editorRef.current.onDidChangeModelContent(() => {
@@ -183,6 +207,16 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                 setCursorLine(lineNumber);
             });
 
+            // Track selection changes
+            editorRef.current.onDidChangeCursorSelection((e: any) => {
+                const model = editorRef.current.getModel();
+                if (model) {
+                    const selection = e.selection;
+                    const selectedText = model.getValueInRange(selection);
+                    setSelectedText(selectedText);
+                }
+            });
+
             // Initialize cursor position to current position
             const currentPosition = editorRef.current.getPosition();
             if (currentPosition) {
@@ -248,6 +282,51 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
             }
         }
     }, [greenHighlight]);
+
+    // Range-based highlighting for precise assertion ranges
+    useEffect(() => {
+        if (editorRef.current) {
+            const editor = editorRef.current;
+            const decorations: any[] = [];
+
+            // Add target assertion range decoration (yellow)
+            if (targetAssertionRange) {
+                decorations.push({
+                    range: new monaco.Range(
+                        targetAssertionRange.startLine,
+                        targetAssertionRange.startColumn,
+                        targetAssertionRange.endLine,
+                        targetAssertionRange.endColumn
+                    ),
+                    options: {
+                        inlineClassName: 'inlineHighlightYellow',
+                        className: 'rangeHighlightYellow',
+                    },
+                });
+            }
+
+            // Add minimal set ranges decorations (green)
+            if (minimalSetRanges && minimalSetRanges.length > 0) {
+                minimalSetRanges.forEach((range) => {
+                    decorations.push({
+                        range: new monaco.Range(
+                            range.startLine,
+                            range.startColumn,
+                            range.endLine,
+                            range.endColumn
+                        ),
+                        options: {
+                            inlineClassName: 'inlineHighlightGreen',
+                            className: 'rangeHighlightGreen',
+                        },
+                    });
+                });
+            }
+
+            const newRangeDecorationIds = editor.deltaDecorations(rangeDecorationIds, decorations);
+            setRangeDecorationIds(newRangeDecorationIds);
+        }
+    }, [targetAssertionRange, minimalSetRanges]);
 
     const setEditorValue = (value: string) => {
         if (editorRef.current) {

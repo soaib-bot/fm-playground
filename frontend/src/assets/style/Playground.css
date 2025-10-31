@@ -129,6 +129,21 @@
     background-color: rgba(0, 255, 0, 0.4); /* Greenish margin */
 }
 
+/* Range-based highlighting for precise assertion highlighting */
+.rangeHighlightYellow {
+    background-color: rgba(255, 255, 0, 0.2); /* Yellow background for target assertion */
+}
+.inlineHighlightYellow {
+    background-color: rgba(255, 255, 0, 0.3); /* Slightly more opaque yellow for inline */
+}
+
+.rangeHighlightGreen {
+    background-color: rgba(0, 255, 0, 0.15); /* Green background for minimal set */
+}
+.inlineHighlightGreen {
+    background-color: rgba(0, 255, 0, 0.25); /* Slightly more opaque green for inline */
+}
+
 .MuiStack-root {
     display: flex;
     align-items: center;

@@ -2,7 +2,17 @@ import { useState, useRef, useEffect } from 'react';
 import * as monacoEditor from 'monaco-editor';
 import Editor from '@monaco-editor/react';
 import { useAtom } from 'jotai';
-import { editorValueAtom, languageAtom, lineToHighlightAtom, greenHighlightAtom, cursorLineAtom } from '@/atoms';
+import { 
+    editorValueAtom, 
+    languageAtom, 
+    lineToHighlightAtom, 
+    greenHighlightAtom, 
+    cursorLineAtom, 
+    selectedTextAtom,
+    targetAssertionRangeAtom,
+    minimalSetRangesAtom,
+    jotaiStore
+} from '@/atoms';
 import { fmpConfig, languageConfigMap } from '@/ToolMaps';
 import '@/assets/style/Playground.css';
 
@@ -18,8 +28,12 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
     const [greenHighlight, setGreenHighlight] = useAtom(greenHighlightAtom);
     const [, setCursorLine] = useAtom(cursorLineAtom);
+    const [, setSelectedText] = useAtom(selectedTextAtom);
+    const [targetAssertionRange] = useAtom(targetAssertionRangeAtom);
+    const [minimalSetRanges] = useAtom(minimalSetRangesAtom);
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
     const [greenDecorationIds, setGreenDecorationIds] = useState<string[]>([]);
+    const [rangeDecorationIds, setRangeDecorationIds] = useState<string[]>([]);
 
     /**
      * Sets the editor value when the editorValue prop changes.
@@ -84,6 +98,51 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
         }
     }, [greenHighlight]);
 
+    // Range-based highlighting for precise assertion ranges
+    useEffect(() => {
+        if (editorRef.current) {
+            const editor = editorRef.current;
+            const decorations: any[] = [];
+
+            // Add target assertion range decoration (yellow)
+            if (targetAssertionRange) {
+                decorations.push({
+                    range: new window.monaco.Range(
+                        targetAssertionRange.startLine,
+                        targetAssertionRange.startColumn,
+                        targetAssertionRange.endLine,
+                        targetAssertionRange.endColumn
+                    ),
+                    options: {
+                        inlineClassName: 'inlineHighlightYellow',
+                        className: 'rangeHighlightYellow',
+                    },
+                });
+            }
+
+            // Add minimal set ranges decorations (green)
+            if (minimalSetRanges && minimalSetRanges.length > 0) {
+                minimalSetRanges.forEach((range) => {
+                    decorations.push({
+                        range: new window.monaco.Range(
+                            range.startLine,
+                            range.startColumn,
+                            range.endLine,
+                            range.endColumn
+                        ),
+                        options: {
+                            inlineClassName: 'inlineHighlightGreen',
+                            className: 'rangeHighlightGreen',
+                        },
+                    });
+                });
+            }
+
+            const newRangeDecorationIds = editor.deltaDecorations(rangeDecorationIds, decorations);
+            setRangeDecorationIds(newRangeDecorationIds);
+        }
+    }, [targetAssertionRange, minimalSetRanges]);
+
     // Register the language configuration for each tool
     function handleEditorDidMount(editor: monacoEditor.editor.IStandaloneCodeEditor, monaco: typeof monacoEditor) {
         editorRef.current = editor;
@@ -93,6 +152,16 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
         editor.onDidChangeCursorPosition((e) => {
             const lineNumber = e.position.lineNumber;
             setCursorLine(lineNumber);
+        });
+        
+        // Track selection changes
+        editor.onDidChangeCursorSelection((e) => {
+            const model = editor.getModel();
+            if (model) {
+                const selection = e.selection;
+                const selectedText = model.getValueInRange(selection);
+                setSelectedText(selectedText);
+            }
         });
         
         // Initialize cursor position
@@ -141,6 +210,9 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
             setEditorValue(newCode);
             setLineToHighlight([]);
             setGreenHighlight([]);
+            // Clear range-based highlights
+            jotaiStore.set(targetAssertionRangeAtom, null);
+            jotaiStore.set(minimalSetRangesAtom, []);
         }
     };
 
