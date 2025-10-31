@@ -140,7 +140,7 @@ def unsat_core(slvr: Solver, assertions: list[ExprRef], smt2_file: str = None, l
         c = solver.unsat_core()
         c = [trackerToElement[tracker] for tracker in c]
         e = [elementToAssertion[element] for element in c]
-    cleanedSolver = Solver()
+    cleanedSolver = SolverFor(logic) if logic else Solver()
     cleanedSolver.add(e)
 
     for a in assertions:
@@ -168,12 +168,3 @@ def unsat_core(slvr: Solver, assertions: list[ExprRef], smt2_file: str = None, l
             e.remove(a)
     
     return redundant_lines
-
-# solver = Solver()
-# file = "resources/ex-1_noLabels.smt2"
-# with open(file, 'r') as f:
-#         content = f.read()
-
-# solver.from_string(content)
-# redundant_lines = unsat_core(solver, solver.assertions(), smt2_file=file)
-# print(f"\nRedundant lines: {sorted(redundant_lines)}")
