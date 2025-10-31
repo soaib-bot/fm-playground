@@ -1,11 +1,13 @@
 import concurrent.futures
 import os
 import queue
+import re
 import subprocess
 import tempfile
 from z3 import *
-from logics_filter import Z3_SUPPORTED_LOGICS
-from z3_cache_manager import cache_manager
+from utils.logics_filter import Z3_SUPPORTED_LOGICS
+from utils.helper import prettify_error, get_logic_from_smt2, prettify_warning
+from utils.z3_cache_manager import cache_manager
 
 from smt_redundancy.redundancy import unsat_core
 
@@ -36,15 +38,6 @@ def all_smt(s: Solver, vars: list):
     yield from all_smt_rec(list(vars))
 
 
-def get_logic_from_smt2(spec: str):
-    lines = spec.splitlines()
-    for line in lines:
-        line = line.strip()
-        if line.startswith("(set-logic"):
-            return line.split()[1].rstrip(")")
-    return None
-
-
 def get_all_vars(assertions):
     all_vars = set()
 
@@ -71,18 +64,6 @@ def get_all_vars(assertions):
     return all_vars
 
 
-def prettify_error(error_msg):
-    error_msg = str(error_msg).strip()
-    error_msg = error_msg.replace("\\n", "<br/>")
-    error_msg = error_msg.replace("\n", "<br/>")
-
-    return f"<span style='color: red;'>{error_msg}</span>"
-
-
-def prettify_warning(warning_msg: str):
-    return f"<span style='color: orange;'>{warning_msg.strip()}</span>"
-
-
 def get_next_model(specId: str):
     model = cache_manager.get_next(specId)
     logic = (
@@ -93,13 +74,14 @@ def get_next_model(specId: str):
     model = model.sexpr()
     return logic + "\n" + model
 
+
 def run_z3_with_cache(spec: str) -> str:
     error_msg = None
     try:
         assertions = parse_smt2_string(spec)
     except Z3Exception as e:
         error_msg = prettify_error(e.args[0].decode())
-    
+
     if error_msg:
         specId = cache_manager.create_cache(
             cached_value=error_msg,
@@ -109,13 +91,17 @@ def run_z3_with_cache(spec: str) -> str:
         return specId
     logic = get_logic_from_smt2(spec)
     if logic is None or logic not in Z3_SUPPORTED_LOGICS:
-        logic = prettify_warning("; No logic specified or unsupported logic, using default solver settings.")
-    
+        logic = prettify_warning(
+            "; No logic specified or unsupported logic, using default solver settings."
+        )
+
     solver = SolverFor(logic) if logic else Solver()
     solver.add(assertions)
     check_sat_result = solver.check()
     if check_sat_result == sat:
-        redundant_lines = list(unsat_core(solver, solver.assertions(), smt2_file=spec, logic=logic))
+        redundant_lines = list(
+            unsat_core(solver, solver.assertions(), smt2_file=spec, logic=logic)
+        )
     all_vars = list(get_all_vars(assertions))
     generator = all_smt(solver, all_vars)
     if generator:
@@ -125,7 +111,7 @@ def run_z3_with_cache(spec: str) -> str:
             ttl_seconds=3600,
         )
     return specId, redundant_lines if check_sat_result == sat else []
-    
+
 
 def run_z3(code: str) -> str:
     tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".smt2")
@@ -155,10 +141,11 @@ def at_least_one_sat(model: str) -> bool:
 
 def run_z3_with_redundancy_detection(code: str):
     res = run_z3(code)
+    logic = get_logic_from_smt2(code)
     if not at_least_one_sat(res):
         return res, []
     try:
-        solver = Solver()
+        solver = SolverFor(logic) if logic else Solver()
         solver.from_string(code)
     except Exception:
         return res, []
@@ -167,7 +154,8 @@ def run_z3_with_redundancy_detection(code: str):
 
 
 def check_redundancy_only(code: str):
-    solver = Solver()
+    logic = get_logic_from_smt2(code)
+    solver = SolverFor(logic) if logic else Solver()
     try:
         solver.from_string(code)
     except Exception as e:

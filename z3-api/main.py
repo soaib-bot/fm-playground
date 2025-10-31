@@ -1,11 +1,12 @@
 import os
-from typing import Union
+from typing import Union, Optional
 
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from smt_redundancy.explain_redundancy import explain_redundancy_from_smtlib
+from pydantic import BaseModel
+from smt_redundancy.explain_redundancy import explain_redundancy_from_smtlib, explain_redundancy_from_smtlib_by_assertion
 
 load_dotenv()
 import redis
@@ -25,6 +26,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class ExplainRedundancyRequest(BaseModel):
+    check: str
+    p: str
+    assertion_line: Optional[int] = None
+    assertion_text: Optional[str] = None
 
 
 def is_redis_available() -> bool:
@@ -84,20 +92,34 @@ def check_redundancy(check: str, p: str):
         raise HTTPException(status_code=500, detail="Error running code")
 
 
-@app.get("/smt/explain-redundancy/", response_model=None)
-def explain_redundancy(check: str, p: str, assertion_line: int):
-    code = get_code_by_permalink(check, p)
+@app.post("/smt/explain-redundancy/", response_model=None)
+def explain_redundancy(request: ExplainRedundancyRequest):
+    code = get_code_by_permalink(request.check, request.p)
     try:
-        time_taken, minimal_set, given_assert, minimal_line_ranges = (
-            explain_redundancy_from_smtlib(
-                code, assertion_line, method="marker_quick_explain"
+        # Validate that at least one parameter is provided
+        if request.assertion_line is None and request.assertion_text is None:
+            raise HTTPException(
+                status_code=400, 
+                detail="Either assertion_line or assertion_text must be provided"
             )
-        )
+        
+        # If assertion_text is provided, use it; otherwise use assertion_line
+        if request.assertion_text:
+            time_taken, minimal_set, given_assert, minimal_line_ranges, target_assertion_range = (
+                explain_redundancy_from_smtlib_by_assertion(
+                    code, request.assertion_text, method="quick_explain"
+                )
+            )
+        else:
+            time_taken, minimal_set, given_assert, minimal_line_ranges, target_assertion_range = (
+                explain_redundancy_from_smtlib(
+                    code, request.assertion_line, method="quick_explain"
+                )
+            )
+        
         return {
-            "time_taken": time_taken,
-            "minimal_set": [str(assertion) for assertion in minimal_set],
-            "given_assert": str(given_assert),
             "minimal_line_ranges": minimal_line_ranges,
+            "target_assertion_range": target_assertion_range,
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
