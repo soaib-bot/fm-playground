@@ -91,20 +91,17 @@ def run_z3(code: str, check_redundancy: bool = False) -> str:
 def execute_z3(check: str, p: str):
     code = get_code_by_permalink(check, p)
     try:
-        result, redundant_lines = process_commands(code, check_redundancy=True)
-        try:
-            log_to_db(
-                p,
-                json.dumps({"redundant_lines": list(redundant_lines)}),
-            )
-        except Exception:
-            pass
+        result, redundant_lines = process_commands(code, check_redundancy=False)
+        log_to_db(
+            p,
+            json.dumps(
+                {"analysis_type": "run_z3", "redundant_lines": list(redundant_lines)}
+            ),
+        )
         return result, redundant_lines
     except Exception as e:
-        try:
-            log_to_db(p, json.dumps({"error": str(e)}))
-        except Exception:
-            pass
+        log_to_db(p, json.dumps({"analysis_type": "run_z3", "error": str(e)}))
+
         raise HTTPException(status_code=500, detail="Error running code")
 
 
@@ -113,13 +110,18 @@ def check_redundancy(check: str, p: str):
     code = get_code_by_permalink(check, p)
     try:
         result, redundant_lines = process_commands(code, check_redundancy=True)
-        try:
-            log_to_db(p, json.dumps({"redundant_lines": list(redundant_lines)}))
-        except Exception:
-            pass
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "analysis_type": "check_redundancy",
+                    "redundant_lines": list(redundant_lines),
+                }
+            ),
+        )
         return {"result": result, "redundant_lines": redundant_lines}
     except Exception as e:
-        log_to_db(p, json.dumps({"error": str(e)}))
+        log_to_db(p, json.dumps({"analysis_type": "check_redundancy", "error": str(e)}))
         raise HTTPException(status_code=500, detail="Error running code")
 
 
@@ -155,38 +157,36 @@ def explain_redundancy(request: ExplainRedundancyRequest):
             ) = explain_redundancy_from_smtlib(
                 code, request.assertion_line, method="quick_explain"
             )
-        try:
-            log_to_db(
-                request.p,
-                json.dumps(
-                    {
-                        "time_taken": time_taken,
-                        "minimal_set": [
-                            str(expr) for expr in minimal_set
-                        ],  # Convert Z3 expressions to strings
-                        "given_assert": str(
-                            given_assert
-                        ),  # Convert Z3 expression to string
-                        "minimal_line_ranges": minimal_line_ranges,
-                        "target_assertion_range": target_assertion_range,
-                    }
-                ),
-            )
-        except Exception as e:
-            pass  # Don't raise HTTPException, just continue
+        log_to_db(
+            request.p,
+            json.dumps(
+                {
+                    "analysis_type": "explain_redundancy",
+                    "time_taken": time_taken,
+                    "minimal_set": [
+                        str(expr) for expr in minimal_set
+                    ],  # Convert Z3 expressions to strings
+                    "given_assert": str(
+                        given_assert
+                    ),  # Convert Z3 expression to string
+                    "minimal_line_ranges": minimal_line_ranges,
+                    "target_assertion_range": target_assertion_range,
+                }
+            ),
+        )
         return {
             "minimal_line_ranges": minimal_line_ranges,
             "target_assertion_range": target_assertion_range,
         }
     except ValueError as e:
-        try:
-            log_to_db(request.p, json.dumps({"error": str(e)}))
-        except Exception as e:
-            pass
+        log_to_db(
+            request.p,
+            json.dumps({"analysis_type": "explain_redundancy", "error": str(e)}),
+        )
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        try:
-            log_to_db(request.p, json.dumps({"error": str(e)}))
-        except Exception as e:
-            pass
+        log_to_db(
+            request.p,
+            json.dumps({"analysis_type": "explain_redundancy", "error": str(e)}),
+        )
         raise HTTPException(status_code=500, detail=f"Error running code: {str(e)}")
