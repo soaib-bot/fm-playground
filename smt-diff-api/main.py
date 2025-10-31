@@ -53,6 +53,16 @@ def get_code_by_id(code_id) -> Union[Dict[str, Any], None]:
         raise HTTPException(status_code=404, detail="Permalink not found")
 
 
+def log_to_db(p: str, result: str):
+    try:
+        url = f"{API_URL}api/analysis/log"
+        payload = {"permalink": p, "result": result}
+        headers = {"Content-Type": "application/json"}
+        requests.post(url, json=payload, headers=headers)
+    except Exception:
+        pass
+
+
 class SmtDiffRequest(BaseModel):
     """Request model for starting witness enumeration."""
 
@@ -121,23 +131,52 @@ async def run_smt_diff(check: str, p: str, analysis: str, filter: str = ""):
                     status_code=404,
                     detail="No semantic relation witnesses found",
                 )
+            log_to_db(
+                p,
+                json.dumps(
+                    {
+                        "tool": "SMTSemDiff-Run",
+                        "analysis": analysis,
+                    }
+                ),
+            )
             return SmtDiffResponse(specId="semantic-relation", witness=sem_relation)
         else:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid mode: {analysis}. Supported modes: current-vs-left, left-vs-current, common",
             )
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "tool": "SMTSemDiff-Run",
+                    "analysis": analysis,
+                    "specId": specId,
+                }
+            ),
+        )
         return SmtDiffResponse(specId=specId, witness=first_witness)
     except HTTPException:
         raise
     except Exception as e:
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "tool": "SMTSemDiff-Run",
+                    "analysis": analysis,
+                    "error": str(e),
+                }
+            ),
+        )
         raise HTTPException(
             status_code=500, detail=f"Error starting enumeration: {str(e)}"
         )
 
 
 @app.get("/next/{specId}", response_model=SmtDiffResponse)
-async def get_next_witness(specId: str):
+async def get_next_witness(specId: str, p: str):
     try:
         cache_info = smt_diff.get_cache_info(specId)
         if cache_info is None:
@@ -150,11 +189,20 @@ async def get_next_witness(specId: str):
             raise HTTPException(
                 status_code=404, detail="No more witnesses or cache exhausted"
             )
-
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "tool": "SMTSemDiff-Next",
+                    "specId": specId,
+                }
+            ),
+        )
         return SmtDiffResponse(specId=specId, witness=next_witness)
     except HTTPException:
         raise
     except Exception as e:
+        log_to_db(p, json.dumps({"error": str(e)}))
         raise HTTPException(
             status_code=500, detail=f"Error retrieving next witness: {str(e)}"
         )

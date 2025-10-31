@@ -61,6 +61,19 @@ def get_code_by_id(code_id) -> Union[Dict[str, Any], None]:
         raise HTTPException(status_code=404, detail="Permalink not found")
 
 
+def log_to_db(p: str, result: str):
+    try:
+        url = f"{API_URL}api/analysis/log"
+        payload = {"permalink": p, "result": result}
+        headers = {"Content-Type": "application/json"}
+        requests.post(url, json=payload, headers=headers)
+    except Exception:
+        pass
+
+
+# --------------------------------------------------
+
+
 class SATDiffRequest(BaseModel):
     """Request model for starting witness enumeration."""
 
@@ -128,12 +141,14 @@ async def run_sem_analysis(check: str, p: str, analysis: str, filter: str = ""):
                     status_code=404,
                     detail="Could not determine semantic relation",
                 )
-            logger.info(
-                "RUN: specId=%s check=%s p=%s analysis=%s",
-                "semantic-relation",
-                check,
+            log_to_db(
                 p,
-                analysis,
+                json.dumps(
+                    {
+                        "tool": "SATSemDiff-Run",
+                        "analysis": analysis,
+                    }
+                ),
             )
             return SATDiffResponse(
                 specId="semantic-relation", witness=semantic_relation
@@ -143,20 +158,29 @@ async def run_sem_analysis(check: str, p: str, analysis: str, filter: str = ""):
                 status_code=400,
                 detail=f"Invalid mode: {analysis}. Supported modes: current-vs-left, left-vs-current, common",
             )
-        logger.info(
-            "RUN: specId=%s check=%s p=%s analysis=%s", specId, check, p, analysis
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "tool": "SATSemDiff-Run",
+                    "analysis": analysis,
+                    "specId": specId,
+                    "filter": filter,
+                }
+            ),
         )
         return SATDiffResponse(specId=specId, witness=witness)
     except HTTPException:
         raise
     except Exception as e:
+        log_to_db(p, json.dumps({"error": str(e)}))
         raise HTTPException(
             status_code=500, detail=f"Error starting enumeration: {str(e)}"
         )
 
 
 @app.get("/next/{specId}", response_model=SATDiffResponse)
-async def get_next_witness(specId: str):
+async def get_next_witness(specId: str, p: str):
     try:
         cache_info = limboole_diff.cache_manager.get_cache_info(specId)
         if cache_info is None:
@@ -169,11 +193,20 @@ async def get_next_witness(specId: str):
             raise HTTPException(
                 status_code=404, detail="No more witnesses or cache exhausted"
             )
-        logger.info("NEXT: specId=%s", specId)
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "tool": "SATSemDiff-Next",
+                    "specId": specId,
+                }
+            ),
+        )
         return SATDiffResponse(specId=specId, witness=next_witness)
     except HTTPException:
         raise
     except Exception as e:
+        log_to_db(p, json.dumps({"error": str(e)}))
         raise HTTPException(
             status_code=500, detail=f"Error retrieving next witness: {str(e)}"
         )
