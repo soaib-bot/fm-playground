@@ -1,4 +1,5 @@
-import { explainRedundancy, parseLineRanges } from '@/../tools/smt/explainRedundancy';
+import { explainRedundancy, parseLineRanges, parseRangesToMonaco } from '@/../tools/smt/explainRedundancy';
+import { validateAssertion } from '@/../tools/smt/assertionValidator';
 import { checkRedundancy } from '@/../tools/smt/checkRedundancy';
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
 import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
@@ -12,16 +13,17 @@ import {
     lineToHighlightAtom,
     greenHighlightAtom,
     cursorLineAtom,
+    selectedTextAtom,
+    targetAssertionRangeAtom,
+    minimalSetRangesAtom,
     outputAtom,
     enableLspAtom,
     smtCliOptionsAtom,
 } from '@/atoms';
 import axios from 'axios';
-import { updateMetadataByPermalink } from '@/api/playgroundApi';
 import { Permalink } from '@/types';
 
 
-// Cache of redundant lines to remove, set when the server returns res[1]
 let __redundantLinesToRemove: any[] | null = null;
 
 // Helper to parse line data and return a set of line numbers
@@ -171,9 +173,11 @@ async function executeExplainRedundancy() {
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
     const cursorLine = jotaiStore.get(cursorLineAtom);
+    const selectedText = jotaiStore.get(selectedTextAtom);
+    const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
 
     let response: any = null;
-    const metadata = { ls: enableLsp };
+    const metadata = { ls: enableLsp, command: smtCmdOption.value };
 
     try {
         response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
@@ -190,23 +194,70 @@ async function executeExplainRedundancy() {
     }
 
     try {
-        const result = await explainRedundancy(response?.data.check, response?.data.permalink, cursorLine);
+        let result;
 
-        // Parse line ranges and set green highlighting
+        // Check if user has selected text
+        if (selectedText && selectedText.trim().length > 0) {
+            // Validate the selected assertion
+            const validation = validateAssertion(selectedText);
+
+            if (!validation.isValid) {
+                // Show error message if validation fails
+                jotaiStore.set(outputAtom, `; Error: ${validation.error}`);
+                jotaiStore.set(greenHighlightAtom, []);
+                jotaiStore.set(lineToHighlightAtom, []);
+                jotaiStore.set(isExecutingAtom, false);
+                return;
+            }
+
+            // Use the normalized text from validation
+            result = await explainRedundancy(
+                response?.data.check,
+                response?.data.permalink,
+                undefined,
+                validation.normalizedText
+            );
+        } else {
+            // Fall back to using cursor line
+            result = await explainRedundancy(
+                response?.data.check,
+                response?.data.permalink,
+                cursorLine
+            );
+        }
+
+        // Parse line ranges and set range-based highlighting
+        const minimalRanges = parseRangesToMonaco(result.lineRanges);
+        const targetRange = result.targetAssertionRange
+            ? parseRangesToMonaco([result.targetAssertionRange])[0]
+            : null;
+
+        // Set the range atoms for precise highlighting
+        jotaiStore.set(minimalSetRangesAtom, minimalRanges);
+        jotaiStore.set(targetAssertionRangeAtom, targetRange);
+
+        // Keep the old atoms for backward compatibility (can be removed later)
         const linesToHighlight = parseLineRanges(result.lineRanges);
         jotaiStore.set(greenHighlightAtom, linesToHighlight);
         jotaiStore.set(lineToHighlightAtom, [cursorLine]);
 
-        // Format output message
-        const outputMsg = `; The green highlighted assertions make the yellow highlighted assertion redundant.` +
-            `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
-            `<button onclick="__removeRedundantAssertions()">Remove</button>`;
+        // Format output message based on whether redundant assertions were found
+        let outputMsg: string;
+        if (result.lineRanges.length === 0) {
+            outputMsg = `; No redundant assertion found.\n; Perhaps you selected a wrong or stronger assertion.`;
+        } else {
+            outputMsg = `; The green highlighted assertions make the yellow highlighted assertion redundant.` +
+                `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
+                `<button onclick="__removeRedundantAssertions()">Remove</button>`;
+        }
 
         jotaiStore.set(outputAtom, outputMsg);
     } catch (error: any) {
         jotaiStore.set(outputAtom, `; ${error.message}\n; If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
         jotaiStore.set(greenHighlightAtom, []);
         jotaiStore.set(lineToHighlightAtom, []);
+        jotaiStore.set(minimalSetRangesAtom, []);
+        jotaiStore.set(targetAssertionRangeAtom, null);
     }
 
     jotaiStore.set(isExecutingAtom, false);
@@ -218,8 +269,9 @@ async function executeCheckRedundancy() {
     const language = jotaiStore.get(languageAtom);
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
+    const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
     let response: any = null;
-    const metadata = { ls: enableLsp };
+    const metadata = { ls: enableLsp, command: smtCmdOption.value };
     try {
         response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
         if (response) {
@@ -252,16 +304,6 @@ async function executeCheckRedundancy() {
             jotaiStore.set(lineToHighlightAtom, result.redundantLines);
             jotaiStore.set(greenHighlightAtom, []);
 
-            // Update metadata in backend with redundant lines found
-            try {
-                const currentPermalink = jotaiStore.get(permalinkAtom);
-                if (currentPermalink?.permalink) {
-                    await updateMetadataByPermalink(currentPermalink.permalink, { redFound: result.redundantLines });
-                }
-            } catch (error) {
-                console.error('Failed to update metadata:', error);
-            }
-
             const msg =
                 result.output +
                 `; Redundant assertions are highlighted in the editor).\n; Do you want to remove them?` +
@@ -290,8 +332,9 @@ async function executeZ3() {
     const language = jotaiStore.get(languageAtom);
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
+    const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
     let response: any = null;
-    const metadata = { ls: enableLsp };
+    const metadata = { ls: enableLsp, command: smtCmdOption.value };
     try {
         response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
         if (response) {
@@ -315,16 +358,6 @@ async function executeZ3() {
         if (res[1] && res[1].length > 0) {
             __redundantLinesToRemove = res[1];
             jotaiStore.set(lineToHighlightAtom, res[1]);
-
-            // Update metadata in backend with redundant lines found
-            try {
-                const currentPermalink = jotaiStore.get(permalinkAtom);
-                if (currentPermalink?.permalink) {
-                    await updateMetadataByPermalink(currentPermalink.permalink, { redFound: res[1] });
-                }
-            } catch (error) {
-                console.error('Failed to update metadata:', error);
-            }
 
             const msg =
                 res[0] +
