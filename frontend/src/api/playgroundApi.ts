@@ -229,7 +229,12 @@ export async function updateHistoryPinned(dataId: number, pinned: boolean) {
 export async function logToDb(permalink: string, result: Record<string, any>) {
     let url = `${API_URL}/analysis/log`;
     try {
-        const response = await axiosAuth.post(url, { permalink, ...result });
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        // Convert result object to JSON string for backend storage
+        const resultString = JSON.stringify(result);
+        const response = await axiosAuth.post(url, { permalink, result: resultString }, { headers });
         return response.data;
     } catch (error) {
         // pass
