@@ -225,3 +225,13 @@ export async function updateHistoryPinned(dataId: number, pinned: boolean) {
         console.log(error);
     }
 }
+
+export async function logToDb(permalink: string, result: Record<string, any>) {
+    let url = `${API_URL}/analysis/log`;
+    try {
+        const response = await axiosAuth.post(url, { permalink, ...result });
+        return response.data;
+    } catch (error) {
+        // pass
+    }
+}

@@ -3,11 +3,13 @@ import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
 import { isFullScreenAtom, limbooleDiffWitnessAtom } from '@/atoms';
 import { getNextLimbooleDiffWitness } from '../limbooleDiffExecutor';
+import { jotaiStore, permalinkAtom } from '@/atoms';
+import { logToDb } from '@/api/playgroundApi';
 
 const LimbooleDiffOutput = () => {
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [limbooleDiffWitness, setLimbooleDiffWitness] = useAtom(limbooleDiffWitnessAtom);
-
+    const permalink = jotaiStore.get(permalinkAtom);
     const [witnesses, setWitnesses] = useState<any[]>([]);
     const [currentWitnessIndex, setCurrentWitnessIndex] = useState(0);
     const [specId, setSpecId] = useState<string | null>(null);
@@ -63,7 +65,7 @@ const LimbooleDiffOutput = () => {
         if (!specId) return;
 
         setIsNextWitnessExecuting(true);
-        getNextLimbooleDiffWitness(specId)
+        getNextLimbooleDiffWitness(specId, permalink.permalink || '')
             .then((data) => {
                 if (data.error) {
                     setIsLastWitness(true);
@@ -96,6 +98,7 @@ const LimbooleDiffOutput = () => {
             setCurrentWitnessIndex(prevIndex);
             setLimbooleDiffWitness(witnesses[prevIndex]);
             setIsLastWitness(false);
+            logToDb(permalink.permalink || '', { tool: 'SATSemDiff-Previous', witness: witnesses[prevIndex], specId: specId });
         }
     };
 
@@ -150,7 +153,7 @@ const LimbooleDiffOutput = () => {
                         </div>
                     )}
                     {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#ff0000ff'}}>{witnessMessage}</div>
+                        <div style={{ textAlign: 'center', color: '#ff0000ff' }}>{witnessMessage}</div>
                     )}
                 </div>
             ) : (

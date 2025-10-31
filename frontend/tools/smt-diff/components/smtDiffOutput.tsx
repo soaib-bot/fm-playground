@@ -3,11 +3,13 @@ import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
 import { isFullScreenAtom, smtDiffWitnessAtom } from '@/atoms';
 import { getNextSmtDiffWitness } from '../smtDiffExecutor';
+import { jotaiStore, permalinkAtom } from '@/atoms';
+import { logToDb } from '@/api/playgroundApi';
 
 const SmtDiffOutput = () => {
     const [isFullScreen] = useAtom(isFullScreenAtom);
     const [smtDiffWitness, setSmtDiffWitness] = useAtom(smtDiffWitnessAtom);
-
+    const permalink = jotaiStore.get(permalinkAtom);
     const [witnesses, setWitnesses] = useState<any[]>([]);
     const [currentWitnessIndex, setCurrentWitnessIndex] = useState(0);
     const [specId, setSpecId] = useState<string | null>(null);
@@ -63,7 +65,7 @@ const SmtDiffOutput = () => {
         if (!specId) return;
 
         setIsNextWitnessExecuting(true);
-        getNextSmtDiffWitness(specId)
+        getNextSmtDiffWitness(specId, permalink.permalink || '')
             .then((data) => {
                 if (data.error) {
                     setIsLastWitness(true);
@@ -96,6 +98,7 @@ const SmtDiffOutput = () => {
             setCurrentWitnessIndex(prevIndex);
             setSmtDiffWitness(witnesses[prevIndex]);
             setIsLastWitness(false);
+            logToDb(permalink.permalink || '', { tool: 'SMTDiff-Previous', witness: witnesses[prevIndex], specId: specId });
         }
     };
 
@@ -144,7 +147,7 @@ const SmtDiffOutput = () => {
                         </div>
                     )}
                     {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#ff0000ff'}}>{witnessMessage}</div>
+                        <div style={{ textAlign: 'center', color: '#ff0000ff' }}>{witnessMessage}</div>
                     )}
                 </div>
             ) : (

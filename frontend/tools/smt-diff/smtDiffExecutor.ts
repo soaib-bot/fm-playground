@@ -28,8 +28,8 @@ async function getSmtDiffWitness(permalink: Permalink, analysis: string, filter?
     }
 }
 
-export async function getNextSmtDiffWitness(specId: string) {
-    let url = `/diff-smt/next/${specId}`;
+export async function getNextSmtDiffWitness(specId: string, p: string) {
+    let url = `/diff-smt/next/${specId}?p=${p}`;
     try {
         const response = await axios.get(url);
         return response.data;

@@ -28,8 +28,8 @@ async function getLimbooleDiffWitness(permalink: Permalink, analysis: string, fi
     }
 }
 
-export async function getNextLimbooleDiffWitness(specId: string) {
-    let url = `/diff-limboole/next/${specId}`;
+export async function getNextLimbooleDiffWitness(specId: string, p: string) {
+    let url = `/diff-limboole/next/${specId}?p=${p}`;
     try {
         const response = await axios.get(url);
         return response.data;
