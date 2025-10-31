@@ -17,6 +17,7 @@ from db.db_query import (  # noqa: E402
     get_user_data,
     get_user_history,
     get_user_history_by_session,
+    insert_result_log,
     search_by_query,
     search_by_query_and_session,
     update_user_history_by_id,
@@ -410,4 +411,50 @@ def update_history_tags(data_id: int):
         return jsonify({"result": "success"})
     except Exception:
         db.session.rollback()
+        return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}), 500
+
+
+# ------------------ Result Logs Endpoint ------------------
+
+
+@routes.route("/api/analysis/log", methods=["POST"])
+def create_result_log():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"result": "fail", "message": "No data provided"}), 400
+
+    permalink = data.get("permalink")
+    result = data.get("result")
+    print(permalink, result)
+
+    if not permalink:
+        return jsonify({"result": "fail", "message": "Permalink is required"}), 400
+
+    if not result:
+        return jsonify({"result": "fail", "message": "Result is required"}), 400
+
+    if not is_valid_size(result):
+        return jsonify({"result": "fail", "message": "Result data is too large"}), 413
+
+    try:
+        if insert_result_log(permalink, result):
+            return (
+                jsonify(
+                    {"result": "success", "message": "Result log created successfully"}
+                ),
+                201,
+            )
+        else:
+            return (
+                jsonify(
+                    {
+                        "result": "fail",
+                        "message": "Permalink not found or insert failed",
+                    }
+                ),
+                404,
+            )
+    except Exception as e:
+        app.logger.error(f"Error creating result log: {str(e)}")
         return jsonify({"result": "fail", "message": TRY_AGAIN_MESSAGE}), 500

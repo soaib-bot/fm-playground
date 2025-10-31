@@ -2,7 +2,7 @@ import json
 
 from sqlalchemy import func
 
-from .models import Code, Data, DataDetails, User, db
+from .models import Code, Data, DataDetails, ResultLogs, User, db
 
 DATE_FORMAT = "%d %b %y %I:%M %p"
 
@@ -511,6 +511,24 @@ def update_metadata_by_permalink(
         existing_metadata = json.loads(data_entry.meta) if data_entry.meta else {}
         existing_metadata.update(new_metadata)
         data_entry.meta = json.dumps(existing_metadata)
+        db.session.commit()
+        return True
+
+    except Exception:
+        db.session.rollback()
+        return False
+
+
+def insert_result_log(permalink: str, result: str) -> bool:
+    try:
+        # Fetch data_id by permalink
+        data_entry = db.session.query(Data).filter(Data.permalink == permalink).first()
+        if data_entry is None:
+            return False
+
+        # Insert the result log
+        new_result_log = ResultLogs(data_id=data_entry.id, result=result)
+        db.session.add(new_result_log)
         db.session.commit()
         return True
 
