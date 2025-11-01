@@ -19,6 +19,7 @@ import {
     outputAtom,
     enableLspAtom,
     smtCliOptionsAtom,
+    smtModelAtom,
 } from '@/atoms';
 import axios from 'axios';
 import { Permalink } from '@/types';
@@ -152,6 +153,9 @@ async function fetchZ3Result(permalink: Permalink) {
  */
 export const executeZ3WithOptionOnServer = async () => {
     const smtCliOption = jotaiStore.get(smtCliOptionsAtom);
+
+    // Clear the smtModelAtom when starting a new execution
+    jotaiStore.set(smtModelAtom, null);
 
     // Determine which function to execute based on the selected option
     if (smtCliOption?.value === 'explain-redundancy') {
@@ -314,8 +318,11 @@ async function executeCheckRedundancy() {
             return;
         }
 
-        jotaiStore.set(outputAtom, result.output);
+        // No redundant lines found
+        const outputMsg = result.output + '\n; No redundant assertions found.';
+        jotaiStore.set(outputAtom, outputMsg);
         jotaiStore.set(greenHighlightAtom, []);
+        jotaiStore.set(lineToHighlightAtom, []);
     } catch (error: any) {
         jotaiStore.set(outputAtom, `; Error: ${error.message}\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
         jotaiStore.set(greenHighlightAtom, []);
@@ -349,29 +356,40 @@ async function executeZ3() {
 
     try {
         const res = await fetchZ3Result(response?.data);
-        if (res[0].includes('(error')) {
-            jotaiStore.set(outputAtom, res[0]);
-            jotaiStore.set(lineToHighlightAtom, getLineToHighlight(res[0], language.id) || []);
+        
+        // Handle new response format from backend
+        // Backend returns: { specId: string, result: string, redundant_lines: array }
+        const result = res.result || res[0];
+        const redundantLines = res.redundant_lines || res[1];
+        const specId = res.specId;
+        
+        if (result.includes('(error')) {
+            jotaiStore.set(outputAtom, result);
+            jotaiStore.set(smtModelAtom, { result: result, error: true });
+            jotaiStore.set(lineToHighlightAtom, getLineToHighlight(result, language.id) || []);
             jotaiStore.set(isExecutingAtom, false);
             return;
         }
-        if (res[1] && res[1].length > 0) {
-            __redundantLinesToRemove = res[1];
-            jotaiStore.set(lineToHighlightAtom, res[1]);
+        if (redundantLines && redundantLines.length > 0) {
+            __redundantLinesToRemove = redundantLines;
+            jotaiStore.set(lineToHighlightAtom, redundantLines);
 
             const msg =
-                res[0] +
+                result +
                 `; --------------------------------\n; Your script contains redundant assertions (see highlighted lines).\n; Do you want to remove them?` +
                 `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
                 `<button onclick="__removeRedundantAssertions()">Remove</button>`;
             jotaiStore.set(outputAtom, msg);
+            jotaiStore.set(smtModelAtom, { result: msg, specId: specId });
             jotaiStore.set(isExecutingAtom, false);
             return;
         }
 
-        jotaiStore.set(outputAtom, res[0]);
+        jotaiStore.set(outputAtom, result);
+        jotaiStore.set(smtModelAtom, { result: result, specId: specId });
     } catch (error) {
         jotaiStore.set(outputAtom, (error as any).message + `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
+        jotaiStore.set(smtModelAtom, { error: (error as any).message });
         jotaiStore.set(isExecutingAtom, false);
         return;
     }

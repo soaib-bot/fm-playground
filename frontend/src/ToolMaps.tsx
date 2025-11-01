@@ -10,6 +10,7 @@ import { executeLimbooleDiffTool } from '@/../tools/limboole-diff/limbooleDiffEx
 // Tool output components
 import TextualOutput from '@/components/Playground/TextualOutput';
 import AlloyOutput from '@/../tools/alloy/components/AlloyOutput';
+import SmtOutput from '@/../tools/smt/components/SmtOutput';
 
 // Language configurations for the different tools
 import { limbooleConf, limbooleLang } from '@/../tools/limboole/limbooleTextMateGrammar';
@@ -60,7 +61,7 @@ export const toolExecutionMap: Record<string, () => void> = {
 
 export const toolOutputMap: Record<string, React.FC<any>> = {
     SAT: TextualOutput,
-    SMT: TextualOutput,
+    SMT: SmtOutput,
     XMV: TextualOutput,
     ALS: AlloyOutput,
     SPECTRA: TextualOutput,
