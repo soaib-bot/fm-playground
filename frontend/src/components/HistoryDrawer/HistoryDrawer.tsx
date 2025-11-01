@@ -3,7 +3,7 @@ import { Drawer, List, ListSubheader, InputBase, IconButton, CircularProgress, C
 import { MdRefresh, MdPushPin, MdOutlinePushPin, MdSearch, MdClose } from 'react-icons/md';
 import { useAtom } from 'jotai';
 import { historyRefreshTriggerAtom } from '@/atoms';
-import { getHistoryByPage, searchUserHistory, getCodeById, updateHistoryTitle, updateHistoryTags, updateHistoryPinned } from '@/api/playgroundApi';
+import { getHistoryByPage, getPinnedHistory, searchUserHistory, getCodeById, updateHistoryTitle, updateHistoryTags, updateHistoryPinned } from '@/api/playgroundApi';
 import HistoryItem from './HistoryItem';
 import type { DrawerComponentProps, HistoryItemDTO } from './types';
 
@@ -25,6 +25,7 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
     const [historyRefreshTrigger] = useAtom(historyRefreshTriggerAtom);
     const [shouldRefreshOnOpen, setShouldRefreshOnOpen] = useState(false);
     const [data, setData] = useState<HistoryItemDTO[]>([]);
+    const [pinnedData, setPinnedData] = useState<HistoryItemDTO[]>([]);
     const [searchData, setSearchData] = useState<HistoryItemDTO[]>([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -36,6 +37,7 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
     const [fullCodeCache, setFullCodeCache] = useState<Record<number, string>>({});
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const drawerRef = useRef<HTMLDivElement | null>(null);
+    const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
     const uniqueData = useMemo(() => {
         const ids = new Set<number>();
@@ -44,6 +46,13 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
         return list;
     }, [data]);
 
+    const uniquePinnedData = useMemo(() => {
+        const ids = new Set<number>();
+        const list: HistoryItemDTO[] = [];
+        (pinnedData || []).forEach((it) => { if (!ids.has(it.id)) { ids.add(it.id); list.push(it); } });
+        return list;
+    }, [pinnedData]);
+
     const uniqueSearchData = useMemo(() => {
         const ids = new Set<number>();
         const list: HistoryItemDTO[] = [];
@@ -51,19 +60,7 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
         return list;
     }, [searchData]);
 
-    const handleScroll = () => {
-        const el = drawerRef.current;
-        if (el) {
-            const { scrollTop, scrollHeight, clientHeight } = el;
-            const fromBottom = scrollHeight - (scrollTop + clientHeight);
-            if (fromBottom < 50 && !loading && hasMoreData && !debouncedSearchQuery) {
-                void fetchData(page);
-            }
-        }
-    };
-
-    const fetchData = async (pageNumber: number) => {
-        if (loading || !hasMoreData) return;
+    const fetchData = useCallback(async (pageNumber: number) => {
         try {
             setLoading(true);
             const res = await getHistoryByPage(pageNumber, selectedTool);
@@ -73,7 +70,21 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
             setHasMoreData(!!res?.has_more_data);
             setPage((p) => p + 1);
         } catch (e) {
+            // Error fetching history
             console.error('Error fetching history', e);
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedTool]);
+
+    const fetchPinnedData = async () => {
+        try {
+            setLoading(true);
+            const res = await getPinnedHistory(selectedTool);
+            const hist = res?.history || [];
+            setPinnedData(hist);
+        } catch (e) {
+            console.error('Error fetching pinned history', e);
         } finally { setLoading(false); }
     };
 
@@ -124,8 +135,13 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
                 const newIds = new Set(hist.map((h: HistoryItemDTO) => h.id));
                 setData((prev) => [...hist, ...prev.filter((p) => !newIds.has(p.id))]);
             }
+
+            // Also refresh pinned data if we're in pinned view
+            if (showPinnedOnly) {
+                await fetchPinnedData();
+            }
         } catch (e) { console.error(e); }
-    }, [selectedTool]);
+    }, [selectedTool, showPinnedOnly]);
 
     useEffect(() => {
         if (!debouncedSearchQuery) {
@@ -141,29 +157,75 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
         }
     }, [isOpen, shouldRefreshOnOpen, debouncedSearchQuery, handleRefresh]);
 
+    // Intersection Observer for infinite scroll
     useEffect(() => {
-        const el = drawerRef.current;
-        el?.addEventListener('scroll', handleScroll);
-        return () => el?.removeEventListener('scroll', handleScroll);
-    }, [handleScroll]);
+        const currentLoadMoreRef = loadMoreRef.current;
+
+        if (!currentLoadMoreRef) {
+            // No loadMoreRef, skipping observer setup
+            return;
+        }
+
+        // Setting up Intersection Observer 
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    // Only trigger when the sentinel is visible and we should load more
+                    if (entry.isIntersecting && !loading && hasMoreData && !debouncedSearchQuery && !showPinnedOnly) {
+                        // Fetching more data for page:
+                        void fetchData(page);
+                    }
+                });
+            },
+            {
+                root: null, // Use viewport as root
+                rootMargin: '200px', // Start loading 200px before reaching the sentinel
+                threshold: 0.01,
+            }
+        );
+
+        observer.observe(currentLoadMoreRef);
+
+        return () => {
+            // Cleaning up observer
+            observer.disconnect();
+        };
+    }, [loading, hasMoreData, debouncedSearchQuery, showPinnedOnly, page, fetchData]);
 
     useEffect(() => {
-        setData([]); setSearchData([]); setPage(1); setHasMoreData(true);
+        setData([]); setSearchData([]); setPinnedData([]); setPage(1); setHasMoreData(true);
         if (isOpen) void fetchData(1);
     }, [selectedTool]);
 
     useEffect(() => { if (isOpen && page === 1) void fetchData(1); }, [isOpen]);
 
+    // Fetch pinned data when showPinnedOnly is enabled
+    useEffect(() => {
+        if (showPinnedOnly && !debouncedSearchQuery) {
+            void fetchPinnedData();
+        }
+    }, [showPinnedOnly, selectedTool, debouncedSearchQuery]);
+
     const groups = useMemo(() => {
-        const base = debouncedSearchQuery ? uniqueSearchData : uniqueData;
-        const filtered = showPinnedOnly ? base.filter((it) => !!it.pinned) : base;
-        return groupByDate(filtered);
-    }, [debouncedSearchQuery, uniqueSearchData, uniqueData, showPinnedOnly]);
+        // When searching, use search results
+        if (debouncedSearchQuery) {
+            const filtered = showPinnedOnly ? uniqueSearchData.filter((it) => !!it.pinned) : uniqueSearchData;
+            return groupByDate(filtered);
+        }
+        // When showing pinned only, use pinned data from API
+        if (showPinnedOnly) {
+            return groupByDate(uniquePinnedData);
+        }
+        // Default: show all data
+        return groupByDate(uniqueData);
+    }, [debouncedSearchQuery, uniqueSearchData, uniqueData, uniquePinnedData, showPinnedOnly]);
 
     const handleTitleChange = async (id: number, title: string) => {
         // optimistic update
         setData((prev) => prev.map((it) => (it.id === id ? { ...it, title } : it)));
         setSearchData((prev) => prev.map((it) => (it.id === id ? { ...it, title } : it)));
+        setPinnedData((prev) => prev.map((it) => (it.id === id ? { ...it, title } : it)));
         await updateHistoryTitle(id, title);
     };
 
@@ -172,6 +234,7 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
         const encoded = JSON.stringify(tags);
         setData((prev) => prev.map((it) => (it.id === id ? { ...it, tags: encoded } : it)));
         setSearchData((prev) => prev.map((it) => (it.id === id ? { ...it, tags: encoded } : it)));
+        setPinnedData((prev) => prev.map((it) => (it.id === id ? { ...it, tags: encoded } : it)));
         await updateHistoryTags(id, tags);
     };
 
@@ -179,6 +242,23 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
         // optimistic update
         setData((prev) => prev.map((it) => (it.id === id ? { ...it, pinned } : it)));
         setSearchData((prev) => prev.map((it) => (it.id === id ? { ...it, pinned } : it)));
+        setPinnedData((prev) => {
+            if (pinned) {
+                // Item was pinned - add if not already present
+                const existing = prev.find(it => it.id === id);
+                if (!existing) {
+                    // Find the item in data or searchData to add to pinned
+                    const item = [...data, ...searchData].find(it => it.id === id);
+                    if (item) {
+                        return [{ ...item, pinned: true }, ...prev];
+                    }
+                }
+                return prev.map((it) => (it.id === id ? { ...it, pinned: true } : it));
+            } else {
+                // Item was unpinned - remove from pinned list
+                return prev.filter(it => it.id !== id);
+            }
+        });
         await updateHistoryPinned(id, pinned);
     };
 
@@ -369,53 +449,139 @@ const HistoryDrawer: React.FC<DrawerComponentProps> = ({ isOpen, onClose, onItem
                 </div>
 
                 {/* Scrollable List Area */}
-                <div style={{ flex: 1, overflowY: 'auto' }} ref={drawerRef as any} onScroll={handleScroll}>
-                    <List sx={{ padding: 0 }}>
-                        {Object.entries(groups).map(([label, items]) => (
-                            items.length > 0 ? (
-                                <li key={label} style={{ listStyle: 'none' }}>
-                                    <ul style={{ padding: 0, margin: 0 }}>
-                                        <ListSubheader
-                                            sx={{
-                                                bgcolor: isDarkTheme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-                                                color: isDarkTheme ? '#fff' : 'rgba(0, 0, 0, 0.87)',
-                                                fontWeight: 700,
-                                                fontSize: '0.85rem',
-                                                lineHeight: '32px',
-                                                paddingLeft: '16px',
-                                                paddingRight: '16px',
-                                                borderBottom: `1px solid ${isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-                                                position: 'sticky',
-                                                top: 0,
-                                                zIndex: 1
-                                            }}
-                                        >
-                                            {label}
-                                        </ListSubheader>
-                                        {items.map((it) => (
-                                            <HistoryItem
-                                                key={it.id}
-                                                item={it}
-                                                isSelected={selectedItemId === it.id}
-                                                onSelect={handleItemClick}
-                                                onHover={handleItemHover}
-                                                onTitleChange={handleTitleChange}
-                                                onTagsChange={handleTagsChange}
-                                                onPinToggle={handlePinToggle}
-                                                fullCode={fullCodeCache[it.id]}
-                                                isDarkTheme={isDarkTheme}
-                                            />
-                                        ))}
-                                    </ul>
-                                </li>
-                            ) : null
-                        ))}
-                        {loading && (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}>
-                                <CircularProgress size={20} />
-                            </div>
-                        )}
-                    </List>
+                <div style={{ flex: 1, overflowY: 'auto' }} ref={drawerRef as any}>
+                    {loading && ((page === 1 && data.length === 0 && !debouncedSearchQuery && !showPinnedOnly) ||
+                        (showPinnedOnly && pinnedData.length === 0) ||
+                        (debouncedSearchQuery && searchData.length === 0)) ? (
+                        // Initial loading state
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            gap: 8
+                        }}>
+                            <CircularProgress size={32} sx={{ color: isDarkTheme ? '#fff' : undefined }} />
+                            <span style={{
+                                fontSize: '0.875rem',
+                                color: isDarkTheme ? '#aaa' : '#666'
+                            }}>
+                                {debouncedSearchQuery ? 'Searching...' : showPinnedOnly ? 'Loading pinned items...' : 'Loading history...'}
+                            </span>
+                        </div>
+                    ) : (
+                        <List sx={{ padding: 0 }}>
+                            {Object.entries(groups).map(([label, items]) => (
+                                items.length > 0 ? (
+                                    <li key={label} style={{ listStyle: 'none' }}>
+                                        <ul style={{ padding: 0, margin: 0 }}>
+                                            <ListSubheader
+                                                sx={{
+                                                    bgcolor: isDarkTheme ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+                                                    color: isDarkTheme ? '#fff' : 'rgba(0, 0, 0, 0.87)',
+                                                    fontWeight: 700,
+                                                    fontSize: '0.85rem',
+                                                    lineHeight: '32px',
+                                                    paddingLeft: '16px',
+                                                    paddingRight: '16px',
+                                                    borderBottom: `1px solid ${isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                                                    position: 'sticky',
+                                                    top: 0,
+                                                    zIndex: 1
+                                                }}
+                                            >
+                                                {label}
+                                            </ListSubheader>
+                                            {items.map((it) => (
+                                                <HistoryItem
+                                                    key={it.id}
+                                                    item={it}
+                                                    isSelected={selectedItemId === it.id}
+                                                    onSelect={handleItemClick}
+                                                    onHover={handleItemHover}
+                                                    onTitleChange={handleTitleChange}
+                                                    onTagsChange={handleTagsChange}
+                                                    onPinToggle={handlePinToggle}
+                                                    fullCode={fullCodeCache[it.id]}
+                                                    isDarkTheme={isDarkTheme}
+                                                />
+                                            ))}
+                                        </ul>
+                                    </li>
+                                ) : null
+                            ))}
+
+                            {/* Sentinel element for Intersection Observer */}
+                            {!debouncedSearchQuery && !showPinnedOnly && hasMoreData && (
+                                <div
+                                    ref={loadMoreRef}
+                                    style={{
+                                        height: '20px',
+                                        width: '100%',
+                                        backgroundColor: isDarkTheme ? 'rgba(253, 251, 251, 0.1)' : 'rgba(253, 253, 253, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '10px',
+                                        color: isDarkTheme ? '#666' : '#999'
+                                    }}
+                                >
+                                    Loading...
+                                </div>
+                            )}
+
+                            {loading && page > 1 && !debouncedSearchQuery && !showPinnedOnly && (
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 16,
+                                    gap: 8
+                                }}>
+                                    <CircularProgress size={20} sx={{ color: isDarkTheme ? '#fff' : undefined }} />
+                                    <span style={{
+                                        fontSize: '0.75rem',
+                                        color: isDarkTheme ? '#aaa' : '#666'
+                                    }}>
+                                        Loading more history...
+                                    </span>
+                                </div>
+                            )}
+                            {!loading && !hasMoreData && data.length > 0 && !debouncedSearchQuery && !showPinnedOnly && (
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    padding: 16,
+                                    fontSize: '0.75rem',
+                                    color: isDarkTheme ? '#666' : '#999'
+                                }}>
+                                    No more history to load
+                                </div>
+                            )}
+                            {!loading && Object.values(groups).every(arr => arr.length === 0) && (
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 32,
+                                    gap: 8,
+                                    color: isDarkTheme ? '#666' : '#999'
+                                }}>
+                                    <span style={{ fontSize: '1rem' }}>📭</span>
+                                    <span style={{ fontSize: '0.875rem' }}>
+                                        {debouncedSearchQuery
+                                            ? 'No results found'
+                                            : showPinnedOnly
+                                                ? 'No pinned items yet'
+                                                : 'No history yet'}
+                                    </span>
+                                </div>
+                            )}
+                        </List>
+                    )}
 
                     {/* Sticky Footer (for non-logged-in users) */}
                     {!isLoggedIn && (

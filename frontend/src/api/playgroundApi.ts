@@ -113,6 +113,24 @@ export async function getHistoryByPage(page: number, checkType?: string) {
 }
 
 /**
+ * Return all pinned history items
+ * @param {string} checkType - Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
+ * @returns Object with history array
+ */
+export async function getPinnedHistory(checkType?: string) {
+    let url = `${API_URL}/histories/pinned`;
+    if (checkType) {
+        url += `?check=${checkType}`;
+    }
+    try {
+        const response = await axiosAuth.get(url);
+        return response.data;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+/**
  * Search the user history by query
  * @param {string} query
  * @param {string} checkType - Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
