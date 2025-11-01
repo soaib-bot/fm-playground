@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Dict, Generator, Optional
 
-from z3 import ModelRef, AstVector
+from z3 import AstVector, ModelRef
 
 
 class SMTCache:

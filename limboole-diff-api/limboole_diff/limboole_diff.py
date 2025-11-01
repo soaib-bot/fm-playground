@@ -12,11 +12,17 @@ def get_sat_unsat(output: str):
         return "unsat"
     return "unknown"
 
+
 def get_variables_from_formula(formula: str) -> set:
     operators = {"->", "<-", "<->", "|", "&", "!"}
-    tokens = re.split(r'\s+|(\W)', formula)
-    variables = [token for token in tokens if token and token not in operators and not re.match(r'\W', token)]
+    tokens = re.split(r"\s+|(\W)", formula)
+    variables = [
+        token
+        for token in tokens
+        if token and token not in operators and not re.match(r"\W", token)
+    ]
     return set(variables)
+
 
 def prettify_result(f1: str, f2: str, result: str) -> str:
     if result.startswith("% SATISFIABLE"):
@@ -36,15 +42,21 @@ def prettify_result(f1: str, f2: str, result: str) -> str:
                 if var in common_vars:
                     assignments.append(f"{var} = {val}")
                 elif var in previous_vars:
-                    assignments.append(f"<span style='color: red;'>{var} = {val}</span>")
+                    assignments.append(
+                        f"<span style='color: red;'>{var} = {val}</span>"
+                    )
                 elif var in current_vars:
-                    assignments.append(f"<span style='color: green;'>{var} = {val}</span>")
+                    assignments.append(
+                        f"<span style='color: green;'>{var} = {val}</span>"
+                    )
             else:
                 assignments.append(line)
         return "\n".join(assignments)
 
+
 def pretty_error(message: str) -> str:
     return f"<span style='color: red'>Error: {message}</span>"
+
 
 def sanitize_formula(formula: str) -> str:
     lines = formula.splitlines()
@@ -54,14 +66,15 @@ def sanitize_formula(formula: str) -> str:
     return sanitize_formula
 
 
-
 def diff_witness(f1: str, f2: str, filter: str = "", analysis: str = ""):
     f1_not_f2 = f"({f1}) & (!({f2}))"
     if filter:
         all_vars = get_variables_from_formula(f1_not_f2)
         filtered_vars = get_variables_from_formula(filter)
         if not filtered_vars.issubset(all_vars):
-            return f1_not_f2, pretty_error("Filter contains variables not present in either previous or current formula.")
+            return f1_not_f2, pretty_error(
+                "Filter contains variables not present in either previous or current formula."
+            )
         f1_not_f2 = f"({f1_not_f2}) & ({filter})"
     res = process_commands(f1_not_f2)
     if analysis == "not-current-but-previous":
@@ -77,7 +90,9 @@ def common_witness(f1: str, f2: str, filter: str = ""):
         all_vars = get_variables_from_formula(conjuncted)
         filtered_vars = get_variables_from_formula(filter)
         if not filtered_vars.issubset(all_vars):
-            return conjuncted, pretty_error("Filter contains variables not present in either previous or current formula.")
+            return conjuncted, pretty_error(
+                "Filter contains variables not present in either previous or current formula."
+            )
         conjuncted = f"({conjuncted}) & ({filter})"
     res = process_commands(conjuncted)
     res = prettify_result(f1, f2, res)
@@ -144,7 +159,9 @@ def store_witness(f1: str, f2: str, analysis: str, filter: str = ""):
     if res:
         valuation_formula = get_formula_from_valuation(res)
         store_formula = f"({formula}) & (!{valuation_formula})"
-        specId = cache_manager.create_cache(store_formula, previous=f1, current=f2, ttl_seconds=3600)
+        specId = cache_manager.create_cache(
+            store_formula, previous=f1, current=f2, ttl_seconds=3600
+        )
         if specId:
             return specId, res
     return None, None

@@ -1,10 +1,10 @@
-import sexpdata
-from z3 import *
-from typing import Any, Dict, List, Optional
 import multiprocessing
+from typing import Any, Dict, List, Optional
 
-from smt_diff.smt_cache_manager import cache_manager
+import sexpdata
 from smt_diff.logics_filter import common_logic
+from smt_diff.smt_cache_manager import cache_manager
+from z3 import *
 
 TTL_SECONDS = 3600  # Default cache TTL in seconds
 DEFAULT_TIMEOUT = 60  # Default timeout in seconds for witness computation
