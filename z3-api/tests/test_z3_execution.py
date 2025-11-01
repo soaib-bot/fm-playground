@@ -1,5 +1,10 @@
-from z3_exec.z3 import check_redundancy_only, run_z3, run_z3_with_cache, get_next_model, process_commands
-
+from z3_exec.z3 import (
+    check_redundancy_only,
+    get_next_model,
+    process_commands,
+    run_z3,
+    run_z3_with_cache,
+)
 
 valid_spec = """(declare-const a Int)
 (declare-const b Int)
@@ -28,7 +33,8 @@ def test_run_z3_with_cache():
     assert specId is not None
     model = get_next_model(specId)
     model = get_next_model(specId)
-    
+
+
 def test_process_commands():
     spec = """(declare-const a Int)
 (declare-const b Int)
@@ -41,6 +47,7 @@ def test_process_commands():
     assert result is not None
     assert redundant_lines is not None
 
+
 def test_check_redundancy_only():
     spec = """(declare-const a Int)
 (declare-const b Int)
@@ -52,4 +59,3 @@ def test_check_redundancy_only():
 
     output, redundant_lines = check_redundancy_only(spec)
     assert redundant_lines is not None
-    

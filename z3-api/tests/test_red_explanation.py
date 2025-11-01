@@ -1,5 +1,5 @@
-from z3 import *
 from smt_redundancy.explain_redundancy import explain_redundancy_from_smtlib
+from z3 import *
 
 
 def test_redundancy_explanation():
@@ -31,9 +31,9 @@ def test_space_in_assert():
 def test_line_comment_in_assert():
     spec = """(declare-const x Int)
 (assert (> x 2))
-  (     assert 
+  (     assert
     ( > x 1)  ; this is a comment
-    ; this is a comment 
+    ; this is a comment
 )
 (check-sat)"""
     explanation = explain_redundancy_from_smtlib(spec, 3)
@@ -53,7 +53,7 @@ def test_line_comment_in_assert():
 
 
 def test_multiple_asserts_single_line():
-    spec = """( 
+    spec = """(
     declare-const x Int)
 (assert (> x 2)) (assert (> x 1))
 (check-sat)"""
@@ -84,9 +84,9 @@ def test_push_pop_asserts2():
 (check-sat)
 (pop)
 (assert (> x 1))
-(assert (> x 13)) 
+(assert (> x 13))
 (check-sat)
-; (assert (= x 2)) 
+; (assert (= x 2))
 """
     explanation2 = explain_redundancy_from_smtlib(spec2, 8)
     assert explanation2 is not None

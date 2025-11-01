@@ -1,7 +1,7 @@
 import re
-from z3 import *
-from utils.logics_filter import Z3_SUPPORTED_LOGICS
 
+from utils.logics_filter import Z3_SUPPORTED_LOGICS
+from z3 import *
 
 
 def get_all_vars(assertions):

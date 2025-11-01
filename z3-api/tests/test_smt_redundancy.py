@@ -1,5 +1,5 @@
-from z3 import *
 from smt_redundancy.redundancy import unsat_core
+from z3 import *
 
 
 def test_redundant_lines():
@@ -13,8 +13,8 @@ def test_redundant_lines():
 (assert (> x 1))
 
 
-(assert (or 
-    (> (+ x y) 0) 
+(assert (or
+    (> (+ x y) 0)
         (< y 0)))
 (assert (or (>= y 0) (>= x 0)))
 (assert (or (< y 0) (< x 0)))

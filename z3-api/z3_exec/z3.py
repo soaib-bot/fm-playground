@@ -6,17 +6,17 @@ import re
 import subprocess
 import tempfile
 from typing import Any, Dict, List
-from z3 import *
-from utils.logics_filter import Z3_SUPPORTED_LOGICS
-from utils.helper import (
-    prettify_error,
-    get_logic_from_smt2,
-    prettify_warning,
-    get_all_vars,
-)
-from utils.z3_cache_manager import cache_manager
 
 from smt_redundancy.redundancy import unsat_core
+from utils.helper import (
+    get_all_vars,
+    get_logic_from_smt2,
+    prettify_error,
+    prettify_warning,
+)
+from utils.logics_filter import Z3_SUPPORTED_LOGICS
+from utils.z3_cache_manager import cache_manager
+from z3 import *
 
 MAX_CONCURRENT_REQUESTS = 10
 TIMEOUT = 30  # seconds
@@ -144,7 +144,7 @@ def _run_z3_with_redundancy_worker(result_queue, code: str):
         # Don't create cache here since it won't be accessible in parent process
         z3_result = run_z3(code)
         logic = get_logic_from_smt2(code)
-        
+
         if not at_least_one_sat(z3_result):
             result_queue.put((z3_result, []))
             return
@@ -201,32 +201,32 @@ def process_commands(code: str):
         code_command = code_queue.get()
         if code_command is None:
             break
-        
+
         # Run z3 with redundancy check in separate process (for timeout protection)
         ex = executor.submit(
             run_with_timeout, _run_z3_with_redundancy_worker, code_command, TIMEOUT
         )
         result = ex.result()
-        
+
         # result is either (z3_result, redundant_lines) or error message
         if len(result) == 2:
             z3_result, redundant_lines = result
-            
+
             # Now create the cache in the parent process
             try:
                 assertions = parse_smt2_string(code_command)
                 logic = get_logic_from_smt2(code_command)
-                
+
                 if logic is None or logic not in Z3_SUPPORTED_LOGICS:
                     logic_msg = prettify_warning(
                         "; No logic specified or unsupported logic, using default solver settings."
                     )
                     if not z3_result.startswith(logic_msg):
                         z3_result = logic_msg + "\n" + z3_result
-                
+
                 solver = SolverFor(logic) if logic else Solver()
                 solver.add(assertions)
-                
+
                 specId = None
                 if solver.check() == sat:
                     all_vars = list(get_all_vars(assertions))
@@ -237,7 +237,7 @@ def process_commands(code: str):
                             logic=logic_msg if "logic_msg" in locals() else logic,
                             ttl_seconds=3600,
                         )
-                
+
                 return specId, z3_result, redundant_lines
             except Exception as e:
                 # If cache creation fails, still return the results

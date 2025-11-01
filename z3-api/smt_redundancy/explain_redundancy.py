@@ -1,9 +1,11 @@
-import time
 import re
+import time
+from typing import List, Tuple
+
+from utils.helper import get_all_vars, get_logic_from_smt2, prettify_error
 from z3 import *
-from typing import Tuple, List
+
 from .minimizer import quick_explain
-from utils.helper import get_all_vars, prettify_error, get_logic_from_smt2
 
 PASS = "GoalNotEntailedByInput"
 FAIL = "GoalEntailedByInput"

@@ -1,25 +1,24 @@
-import os
-from typing import Union, Optional
 import json
+import os
+from typing import Optional, Union
 
+import redis
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import redis
 from redis_cache import RedisCache
 from smt_redundancy.explain_redundancy import (
     explain_redundancy_from_smtlib,
     explain_redundancy_from_smtlib_by_assertion,
 )
 from z3_exec.z3 import (
+    check_redundancy_only,
     get_cache_info,
     get_next_model,
-    check_redundancy_only,
     process_commands,
 )
-
 
 load_dotenv()
 

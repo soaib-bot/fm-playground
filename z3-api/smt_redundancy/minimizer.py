@@ -1,4 +1,5 @@
 from typing import Any, Callable
+
 from z3 import *
 
 PASS = "GoalNotEntailedByInput"
