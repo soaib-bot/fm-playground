@@ -181,6 +181,139 @@ def get_user_history_by_session(
     return result, has_more_data
 
 
+def get_pinned_history(user_id: int, check_type: str = None):
+    """
+    Get all pinned history items for a user. The data is sorted by time in descending order.
+
+    Parameters:
+      user_id (int): The id of the user
+      check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
+
+    Returns:
+      list: The list of pinned data items
+    """
+    # Build base query
+    query = (
+        db.session.query(
+            Data.id,
+            Data.time,
+            Data.check_type,
+            Data.permalink,
+            Code.code,
+            DataDetails.title,
+            DataDetails.tags,
+            DataDetails.pinned,
+        )
+        .join(Code, Data.code_id == Code.id)
+        .join(DataDetails, DataDetails.data_id == Data.id)
+        .filter(Data.user_id == user_id)
+        .filter(DataDetails.pinned == True)
+        .order_by(Data.time.desc())
+    )
+
+    # Add check_type filter if provided
+    if check_type:
+        query = query.filter(Data.check_type == check_type)
+
+    # Get all pinned items
+    query_result = query.all()
+
+    result = []
+    for d in query_result:
+        p_time = d.time.strftime(DATE_FORMAT)
+        p_code = d.code[:25] + "..." if len(d.code) > 25 else d.code
+        title = getattr(d, "title", None)
+        # Only use title if it's not None and not empty string
+        if title:
+            title = title.strip()
+        title = title if title else None
+        tags = getattr(d, "tags", None)
+        pinned = getattr(d, "pinned", False) or False
+        result.append(
+            {
+                "id": d.id,
+                "time": p_time,
+                "time_iso": (
+                    d.time.isoformat() if hasattr(d, "time") and d.time else None
+                ),
+                "check": d.check_type,
+                "permalink": d.permalink,
+                "code": p_code,
+                "title": title,
+                "tags": tags,
+                "pinned": pinned,
+            }
+        )
+    return result
+
+
+def get_pinned_history_by_session(user_session_id: str, check_type: str = None):
+    """
+    Get all pinned history items for a user by session if the user is not logged in.
+    The data is sorted by time in descending order.
+
+    Parameters:
+      user_session_id (str): The session id of the user
+      check_type (str): Optional filter for specific check type (e.g., 'SAT', 'SMT', 'XMV')
+
+    Returns:
+      list: The list of pinned data items
+    """
+    # Build base query
+    query = (
+        db.session.query(
+            Data.id,
+            Data.time,
+            Data.check_type,
+            Data.permalink,
+            Code.code,
+            DataDetails.title,
+            DataDetails.tags,
+            DataDetails.pinned,
+        )
+        .join(Code, Data.code_id == Code.id)
+        .join(DataDetails, DataDetails.data_id == Data.id)
+        .filter(Data.session_id == user_session_id)
+        .filter(DataDetails.pinned == True)
+        .order_by(Data.time.desc())
+    )
+
+    # Add check_type filter if provided
+    if check_type:
+        query = query.filter(Data.check_type == check_type)
+
+    # Get all pinned items
+    query_result = query.all()
+
+    result = []
+    for d in query_result:
+        p_time = d.time.strftime(DATE_FORMAT)
+        p_code = d.code[:35] + "..." if len(d.code) > 35 else d.code
+        title = getattr(d, "title", None)
+        # Only use title if it's not None and not empty string
+        if title:
+            title = title.strip()
+        title = title if title else None
+        tags = getattr(d, "tags", None)
+        pinned = getattr(d, "pinned", False) or False
+        result.append(
+            {
+                "id": d.id,
+                "time": p_time,
+                "time_iso": (
+                    d.time.isoformat() if hasattr(d, "time") and d.time else None
+                ),
+                "check": d.check_type,
+                "permalink": d.permalink,
+                "code": p_code,
+                "title": title,
+                "tags": tags,
+                "pinned": pinned,
+            }
+        )
+    return result
+
+
 def update_user_history_by_id(data_id: int):
     """
     Unlink the user history by id.

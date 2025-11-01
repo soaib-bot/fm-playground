@@ -14,6 +14,8 @@ from db.db_query import (  # noqa: E402
     get_history_by_permalink,
     get_id_by_permalink,
     get_metadata_by_permalink,
+    get_pinned_history,
+    get_pinned_history_by_session,
     get_user_data,
     get_user_history,
     get_user_history_by_session,
@@ -176,6 +178,27 @@ def get_history():
     )
     data = [d for d in data if not d.get("check", "").endswith("Diff")]
     return jsonify({"history": data, "has_more_data": has_more_data})
+
+
+@routes.route("/api/histories/pinned", methods=["GET"])
+def get_pinned_items():
+    """Get all pinned history items"""
+    user_id = session.get("user_id")
+    user_session_id = session.sid
+    check_type = request.args.get("check", None, type=str)  # Get optional check filter
+
+    if user_id is None:
+        if user_session_id:
+            data = get_pinned_history_by_session(
+                user_session_id, check_type=check_type
+            )
+            data = [d for d in data if not d.get("check", "").endswith("Diff")]
+            return jsonify({"history": data})
+        return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)
+
+    data = get_pinned_history(user_id, check_type=check_type)
+    data = [d for d in data if not d.get("check", "").endswith("Diff")]
+    return jsonify({"history": data})
 
 
 @routes.route("/api/unlink-history", methods=["PUT"])
