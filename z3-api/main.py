@@ -7,15 +7,21 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import redis
+from redis_cache import RedisCache
 from smt_redundancy.explain_redundancy import (
     explain_redundancy_from_smtlib,
     explain_redundancy_from_smtlib_by_assertion,
 )
+from z3_exec.z3 import (
+    get_cache_info,
+    get_next_model,
+    check_redundancy_only,
+    process_commands,
+)
+
 
 load_dotenv()
-import redis
-from redis_cache import RedisCache
-from z3_exec.z3 import process_commands
 
 API_URL = os.getenv("API_URL")
 REDIS_URL = os.getenv("REDIS_URL")
@@ -91,14 +97,22 @@ def run_z3(code: str, check_redundancy: bool = False) -> str:
 def execute_z3(check: str, p: str):
     code = get_code_by_permalink(check, p)
     try:
-        result, redundant_lines = process_commands(code, check_redundancy=False)
+        specId, result, redundant_lines = process_commands(code)
         log_to_db(
             p,
             json.dumps(
-                {"analysis_type": "run_z3", "redundant_lines": list(redundant_lines)}
+                {
+                    "specId": specId,
+                    "analysis_type": "run_z3",
+                    "redundant_lines": list(redundant_lines),
+                }
             ),
         )
-        return result, redundant_lines
+        return {
+            "specId": specId,
+            "result": result,
+            "redundant_lines": list(redundant_lines),
+        }
     except Exception as e:
         log_to_db(p, json.dumps({"analysis_type": "run_z3", "error": str(e)}))
 
@@ -109,7 +123,7 @@ def execute_z3(check: str, p: str):
 def check_redundancy(check: str, p: str):
     code = get_code_by_permalink(check, p)
     try:
-        result, redundant_lines = process_commands(code, check_redundancy=True)
+        result, redundant_lines = check_redundancy_only(code)
         log_to_db(
             p,
             json.dumps(
@@ -190,3 +204,39 @@ def explain_redundancy(request: ExplainRedundancyRequest):
             json.dumps({"analysis_type": "explain_redundancy", "error": str(e)}),
         )
         raise HTTPException(status_code=500, detail=f"Error running code: {str(e)}")
+
+
+@app.get("/smt/next/", response_model=None)
+def get_next_model_from_cache(specId: str, p: str):
+    try:
+        cache_info = get_cache_info(specId)
+        if cache_info is None:
+            raise HTTPException(
+                status_code=404, detail=f"Cache not found or expired: {specId}"
+            )
+        next_model = get_next_model(specId)
+
+        if next_model is None:
+            raise HTTPException(
+                status_code=404, detail="No more models or cache exhausted"
+            )
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "tool": "SMTExec-Next",
+                    "specId": specId,
+                }
+            ),
+        )
+        return {
+            "specId": specId,
+            "next_model": next_model,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_to_db(p, json.dumps({"error": str(e)}))
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving next witness: {str(e)}"
+        )
