@@ -33,8 +33,15 @@ export const lineToHighlightAtom = atom<number[]>([]);
 export const greenHighlightAtom = atom<number[]>([]); // For greenish highlighting (explain redundancy)
 export const cursorLineAtom = atom<number>(1); // Current cursor line number (1-based)
 export const selectedTextAtom = atom<string>(''); // Currently selected text in editor
-export const targetAssertionRangeAtom = atom<{ startLine: number; startColumn: number; endLine: number; endColumn: number } | null>(null);
-export const minimalSetRangesAtom = atom<Array<{ startLine: number; startColumn: number; endLine: number; endColumn: number }>>([]);
+export const targetAssertionRangeAtom = atom<{
+    startLine: number;
+    startColumn: number;
+    endLine: number;
+    endColumn: number;
+} | null>(null);
+export const minimalSetRangesAtom = atom<
+    Array<{ startLine: number; startColumn: number; endLine: number; endColumn: number }>
+>([]);
 export const outputAtom = atom<string>('');
 export const isFullScreenAtom = atom(false);
 export const enableLspAtom = atom(true);

@@ -24,7 +24,6 @@ import {
 import axios from 'axios';
 import { Permalink } from '@/types';
 
-
 let __redundantLinesToRemove: any[] | null = null;
 
 // Helper to parse line data and return a set of line numbers
@@ -33,9 +32,7 @@ const parseLinesToSet = (linesData: any[], maxLines: number): Set<number> => {
     const addRange = (start: number, end?: number) => {
         if (!Number.isFinite(start)) return;
         const s = Math.max(1, Math.min(Math.trunc(start), maxLines));
-        const e = Number.isFinite(end as number)
-            ? Math.max(1, Math.min(Math.trunc(end as number), maxLines))
-            : s;
+        const e = Number.isFinite(end as number) ? Math.max(1, Math.min(Math.trunc(end as number), maxLines)) : s;
         const from = Math.min(s, e);
         const to = Math.max(s, e);
         for (let i = from; i <= to; i++) lineSet.add(i);
@@ -50,15 +47,9 @@ const parseLinesToSet = (linesData: any[], maxLines: number): Set<number> => {
             } else if (item && typeof item === 'object') {
                 if (typeof (item as any).line === 'number') {
                     addRange((item as any).line);
-                } else if (
-                    typeof (item as any).start === 'number' &&
-                    typeof (item as any).end === 'number'
-                ) {
+                } else if (typeof (item as any).start === 'number' && typeof (item as any).end === 'number') {
                     addRange((item as any).start, (item as any).end);
-                } else if (
-                    (item as any).startLine !== undefined &&
-                    (item as any).endLine !== undefined
-                ) {
+                } else if ((item as any).startLine !== undefined && (item as any).endLine !== undefined) {
                     addRange(Number((item as any).startLine), Number((item as any).endLine));
                 }
             }
@@ -223,18 +214,12 @@ async function executeExplainRedundancy() {
             );
         } else {
             // Fall back to using cursor line
-            result = await explainRedundancy(
-                response?.data.check,
-                response?.data.permalink,
-                cursorLine
-            );
+            result = await explainRedundancy(response?.data.check, response?.data.permalink, cursorLine);
         }
 
         // Parse line ranges and set range-based highlighting
         const minimalRanges = parseRangesToMonaco(result.lineRanges);
-        const targetRange = result.targetAssertionRange
-            ? parseRangesToMonaco([result.targetAssertionRange])[0]
-            : null;
+        const targetRange = result.targetAssertionRange ? parseRangesToMonaco([result.targetAssertionRange])[0] : null;
 
         // Set the range atoms for precise highlighting
         jotaiStore.set(minimalSetRangesAtom, minimalRanges);
@@ -250,14 +235,18 @@ async function executeExplainRedundancy() {
         if (result.lineRanges.length === 0) {
             outputMsg = `; No redundant assertion found.\n; Perhaps you selected a wrong or stronger assertion.`;
         } else {
-            outputMsg = `; The green highlighted assertions make the yellow highlighted assertion redundant.` +
+            outputMsg =
+                `; The green highlighted assertions make the yellow highlighted assertion redundant.` +
                 `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
                 `<button onclick="__removeRedundantAssertions()">Remove</button>`;
         }
 
         jotaiStore.set(outputAtom, outputMsg);
     } catch (error: any) {
-        jotaiStore.set(outputAtom, `; ${error.message}\n; If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
+        jotaiStore.set(
+            outputAtom,
+            `; ${error.message}\n; If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
         jotaiStore.set(greenHighlightAtom, []);
         jotaiStore.set(lineToHighlightAtom, []);
         jotaiStore.set(minimalSetRangesAtom, []);
@@ -324,7 +313,10 @@ async function executeCheckRedundancy() {
         jotaiStore.set(greenHighlightAtom, []);
         jotaiStore.set(lineToHighlightAtom, []);
     } catch (error: any) {
-        jotaiStore.set(outputAtom, `; Error: ${error.message}\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
+        jotaiStore.set(
+            outputAtom,
+            `; Error: ${error.message}\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
         jotaiStore.set(greenHighlightAtom, []);
         jotaiStore.set(isExecutingAtom, false);
         return;
@@ -332,8 +324,7 @@ async function executeCheckRedundancy() {
     jotaiStore.set(isExecutingAtom, false);
 }
 
-
-//Execute Z3 normally 
+//Execute Z3 normally
 async function executeZ3() {
     const editorValue = jotaiStore.get(editorValueAtom);
     const language = jotaiStore.get(languageAtom);
@@ -356,13 +347,13 @@ async function executeZ3() {
 
     try {
         const res = await fetchZ3Result(response?.data);
-        
+
         // Handle new response format from backend
         // Backend returns: { specId: string, result: string, redundant_lines: array }
         const result = res.result || res[0];
         const redundantLines = res.redundant_lines || res[1];
         const specId = res.specId;
-        
+
         if (result.includes('(error')) {
             jotaiStore.set(outputAtom, result);
             jotaiStore.set(smtModelAtom, { result: result, error: true });
@@ -388,10 +379,14 @@ async function executeZ3() {
         jotaiStore.set(outputAtom, result);
         jotaiStore.set(smtModelAtom, { result: result, specId: specId });
     } catch (error) {
-        jotaiStore.set(outputAtom, (error as any).message + `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`);
+        jotaiStore.set(
+            outputAtom,
+            (error as any).message +
+                `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
         jotaiStore.set(smtModelAtom, { error: (error as any).message });
         jotaiStore.set(isExecutingAtom, false);
         return;
     }
     jotaiStore.set(isExecutingAtom, false);
-};
+}

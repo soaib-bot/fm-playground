@@ -98,7 +98,11 @@ const SmtDiffOutput = () => {
             setCurrentWitnessIndex(prevIndex);
             setSmtDiffWitness(witnesses[prevIndex]);
             setIsLastWitness(false);
-            logToDb(permalink.permalink || '', { tool: 'SMTDiff-Previous', witness: witnesses[prevIndex], specId: specId });
+            logToDb(permalink.permalink || '', {
+                tool: 'SMTDiff-Previous',
+                witness: witnesses[prevIndex],
+                specId: specId,
+            });
         }
     };
 
@@ -146,9 +150,7 @@ const SmtDiffOutput = () => {
                             </div>
                         </div>
                     )}
-                    {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#ff0000ff' }}>{witnessMessage}</div>
-                    )}
+                    {witnessMessage && <div style={{ textAlign: 'center', color: '#ff0000ff' }}>{witnessMessage}</div>}
                 </div>
             ) : (
                 <div

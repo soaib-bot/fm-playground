@@ -1,6 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Chip, IconButton, InputBase, ListItem, Stack, Tooltip as MUITooltip } from '@mui/material';
-import { MdEdit as EditIcon, MdSave as SaveIcon, MdClose as CloseIcon, MdLabel as LabelIcon, MdAdd as AddIcon, MdPushPin as PinFilledIcon, MdOutlinePushPin as PinOutlineIcon } from 'react-icons/md';
+import {
+    MdEdit as EditIcon,
+    MdSave as SaveIcon,
+    MdClose as CloseIcon,
+    MdLabel as LabelIcon,
+    MdAdd as AddIcon,
+    MdPushPin as PinFilledIcon,
+    MdOutlinePushPin as PinOutlineIcon,
+} from 'react-icons/md';
 import { HistoryItemDTO } from './types';
 
 function parseTags(raw: HistoryItemDTO['tags']): string[] {
@@ -26,7 +34,17 @@ interface HistoryItemProps {
     isDarkTheme: boolean;
 }
 
-const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, onHover, onTitleChange, onTagsChange, onPinToggle, fullCode, isDarkTheme }) => {
+const HistoryItem: React.FC<HistoryItemProps> = ({
+    item,
+    isSelected,
+    onSelect,
+    onHover,
+    onTitleChange,
+    onTagsChange,
+    onPinToggle,
+    fullCode,
+    isDarkTheme,
+}) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const displayTitle = item.title || item.time || 'Untitled';
     const [titleDraft, setTitleDraft] = useState(displayTitle);
@@ -111,17 +129,26 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                     cursor: 'pointer',
                     alignItems: 'flex-start',
                     padding: '8px 12px',
-                    backgroundColor: isDarkTheme ? (isSelected ? 'rgba(144, 202, 249, 0.16)' : 'transparent') : undefined,
+                    backgroundColor: isDarkTheme
+                        ? isSelected
+                            ? 'rgba(144, 202, 249, 0.16)'
+                            : 'transparent'
+                        : undefined,
                     '&:hover': {
-                        backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : undefined
+                        backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : undefined,
                     },
-                    borderColor: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : undefined
+                    borderColor: isDarkTheme ? 'rgba(255, 255, 255, 0.1)' : undefined,
                 }}
                 onClick={() => !isEditingTitle && onSelect(item)}
             >
-                <Stack direction="column" spacing={0.5} sx={{ width: '100%', alignItems: 'flex-start' }}>
+                <Stack direction='column' spacing={0.5} sx={{ width: '100%', alignItems: 'flex-start' }}>
                     {/* Title row with edit button */}
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ width: '100%' }}>
+                    <Stack
+                        direction='row'
+                        justifyContent='space-between'
+                        alignItems='flex-start'
+                        sx={{ width: '100%' }}
+                    >
                         {isEditingTitle ? (
                             <>
                                 <InputBase
@@ -143,23 +170,29 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                                         color: isDarkTheme ? '#fff' : '#000',
                                         '& input::placeholder': {
                                             color: isDarkTheme ? '#aaa' : '#666',
-                                            opacity: 1
-                                        }
+                                            opacity: 1,
+                                        },
                                     }}
                                 />
-                                <Stack direction="row" spacing={0.5}>
+                                <Stack direction='row' spacing={0.5}>
                                     <IconButton
-                                        size="small"
-                                        onClick={(e) => { e.stopPropagation(); handleSaveTitle(); }}
-                                        aria-label="save title"
+                                        size='small'
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSaveTitle();
+                                        }}
+                                        aria-label='save title'
                                         sx={{ color: isDarkTheme ? '#fff' : undefined }}
                                     >
                                         <SaveIcon size={16} />
                                     </IconButton>
                                     <IconButton
-                                        size="small"
-                                        onClick={(e) => { e.stopPropagation(); setIsEditingTitle(false); }}
-                                        aria-label="cancel"
+                                        size='small'
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsEditingTitle(false);
+                                        }}
+                                        aria-label='cancel'
                                         sx={{ color: isDarkTheme ? '#fff' : undefined }}
                                     >
                                         <CloseIcon size={16} />
@@ -168,20 +201,29 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                             </>
                         ) : (
                             <>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, flex: 1, color: isDarkTheme ? '#fff' : '#000' }}>{displayTitle}</span>
-                                <Stack direction="row" spacing={0.5}>
+                                <span
+                                    style={{
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        flex: 1,
+                                        color: isDarkTheme ? '#fff' : '#000',
+                                    }}
+                                >
+                                    {displayTitle}
+                                </span>
+                                <Stack direction='row' spacing={0.5}>
                                     <IconButton
-                                        size="small"
+                                        size='small'
                                         onClick={handlePinClick}
-                                        aria-label={isPinned ? "unpin item" : "pin item"}
+                                        aria-label={isPinned ? 'unpin item' : 'pin item'}
                                         sx={{ padding: '4px', color: isDarkTheme ? '#fff' : undefined }}
                                     >
                                         {isPinned ? <PinFilledIcon size={16} /> : <PinOutlineIcon size={16} />}
                                     </IconButton>
                                     <IconButton
-                                        size="small"
+                                        size='small'
                                         onClick={handleEditClick}
-                                        aria-label="edit title"
+                                        aria-label='edit title'
                                         sx={{ padding: '4px', color: isDarkTheme ? '#fff' : undefined }}
                                     >
                                         <EditIcon size={16} />
@@ -192,45 +234,63 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                     </Stack>
 
                     {/* Code snippet */}
-                    <code style={{ fontSize: '0.75rem', color: isDarkTheme ? '#aaa' : '#666', display: 'block', textAlign: 'left', width: '100%' }}>
+                    <code
+                        style={{
+                            fontSize: '0.75rem',
+                            color: isDarkTheme ? '#aaa' : '#666',
+                            display: 'block',
+                            textAlign: 'left',
+                            width: '100%',
+                        }}
+                    >
                         {item.code}
                     </code>
 
                     {/* Tool badge and tags */}
-                    <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap" sx={{ justifyContent: 'flex-start', width: '100%' }}>
+                    <Stack
+                        direction='row'
+                        spacing={1}
+                        alignItems='center'
+                        useFlexGap
+                        flexWrap='wrap'
+                        sx={{ justifyContent: 'flex-start', width: '100%' }}
+                    >
                         <MUITooltip title={`Tool: ${item.check}`}>
                             <Chip
-                                size="small"
+                                size='small'
                                 label={item.check}
-                                variant="outlined"
+                                variant='outlined'
                                 sx={{
                                     color: isDarkTheme ? '#fff' : undefined,
-                                    borderColor: isDarkTheme ? 'rgba(255, 255, 255, 0.23)' : undefined
+                                    borderColor: isDarkTheme ? 'rgba(255, 255, 255, 0.23)' : undefined,
                                 }}
                             />
                         </MUITooltip>
                         {localTags.map((t) => (
                             <Chip
                                 key={t}
-                                size="small"
+                                size='small'
                                 label={t}
-                                onDelete={(e) => { e.stopPropagation(); handleRemoveTag(t); }}
+                                onDelete={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTag(t);
+                                }}
                                 sx={{
                                     color: isDarkTheme ? '#fff' : undefined,
                                     backgroundColor: isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : undefined,
                                     '& .MuiChip-deleteIcon': {
                                         color: isDarkTheme ? 'rgba(255, 255, 255, 0.7)' : undefined,
                                         '&:hover': {
-                                            color: isDarkTheme ? 'rgba(255, 255, 255, 0.9)' : undefined
-                                        }
-                                    }
+                                            color: isDarkTheme ? 'rgba(255, 255, 255, 0.9)' : undefined,
+                                        },
+                                    },
                                 }}
                             />
                         ))}
-                        <Stack direction="row" spacing={0.5} alignItems="center">
+                        <Stack direction='row' spacing={0.5} alignItems='center'>
                             <LabelIcon size={14} color={isDarkTheme ? '#aaa' : '#999'} />
                             <InputBase
-                                placeholder="Add tag"
+                                placeholder='Add tag'
                                 value={newTag}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => setNewTag(e.target.value)}
@@ -246,16 +306,19 @@ const HistoryItem: React.FC<HistoryItemProps> = ({ item, isSelected, onSelect, o
                                     color: isDarkTheme ? '#fff' : '#000',
                                     '& input::placeholder': {
                                         color: isDarkTheme ? '#aaa' : '#999',
-                                        opacity: 1
-                                    }
+                                        opacity: 1,
+                                    },
                                 }}
                             />
                             <IconButton
-                                size="small"
-                                onClick={(e) => { e.stopPropagation(); handleAddTag(); }}
-                                aria-label="add tag"
+                                size='small'
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddTag();
+                                }}
+                                aria-label='add tag'
                                 sx={{
-                                    color: isDarkTheme ? '#fff' : undefined
+                                    color: isDarkTheme ? '#fff' : undefined,
                                 }}
                             >
                                 <AddIcon size={16} />

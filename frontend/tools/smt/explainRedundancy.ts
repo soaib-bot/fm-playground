@@ -28,7 +28,9 @@ export async function explainRedundancy(
         };
 
         if (assertionLine === 1) {
-            throw new Error('<span style="color: red">; Assertion line is selected as 1, which might not be correct.<br>Select place cursor on the actual assertion line or select the complete assertion text.</span>');
+            throw new Error(
+                '<span style="color: red">; Assertion line is selected as 1, which might not be correct.<br>Select place cursor on the actual assertion line or select the complete assertion text.</span>'
+            );
         }
 
         if (assertion_text) {
@@ -36,7 +38,9 @@ export async function explainRedundancy(
         } else if (assertionLine !== undefined) {
             requestBody.assertion_line = assertionLine;
         } else {
-            throw new Error('<span style="color: red ">; Either assertionLine or assertion_text must be provided</span>');
+            throw new Error(
+                '<span style="color: red ">; Either assertionLine or assertion_text must be provided</span>'
+            );
         }
 
         const response = await axios.post(url, requestBody);
@@ -52,7 +56,9 @@ export async function explainRedundancy(
         throw new Error('<span style="color: red">; Invalid response format from explain-redundancy API</span>');
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            throw new Error(`${error.response?.data?.detail || error.message}\n; Check you have selected a valid assertion line.`);
+            throw new Error(
+                `${error.response?.data?.detail || error.message}\n; Check you have selected a valid assertion line.`
+            );
         }
         throw error;
     }

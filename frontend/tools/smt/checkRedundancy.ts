@@ -11,10 +11,7 @@ export interface CheckRedundancyResponse {
  * @param permalink - The permalink identifier
  * @returns Promise containing the API response with output and redundant lines
  */
-export async function checkRedundancy(
-    check: string,
-    permalink: string
-): Promise<CheckRedundancyResponse> {
+export async function checkRedundancy(check: string, permalink: string): Promise<CheckRedundancyResponse> {
     try {
         const url = `/smt/smt/check-redundancy/?check=${check}&p=${permalink}`;
         const response = await axios.get(url);

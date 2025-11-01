@@ -1,7 +1,7 @@
 /**
  * Validates if a given text represents a complete SMT-LIB assertion.
  * Uses regex pattern matching and parenthesis counting similar to the backend.
- * 
+ *
  * @param text - The selected text to validate
  * @returns Object with isValid flag and optional error message
  */
@@ -13,7 +13,7 @@ export function validateAssertion(text: string): {
     if (!text || text.trim().length === 0) {
         return {
             isValid: false,
-            error: 'No text selected. Select a complete assertion or place cursor on an assertion line.'
+            error: 'No text selected. Select a complete assertion or place cursor on an assertion line.',
         };
     }
 
@@ -36,7 +36,7 @@ export function validateAssertion(text: string): {
         } else {
             return {
                 isValid: false,
-                error: 'Selected text is not a valid assertion. Select a complete assertion or place cursor on an assertion line.'
+                error: 'Selected text is not a valid assertion. Select a complete assertion or place cursor on an assertion line.',
             };
         }
     }
@@ -47,7 +47,7 @@ export function validateAssertion(text: string): {
     if (parenCount !== 0) {
         return {
             isValid: false,
-            error: 'Incomplete assertion selected. Parentheses are not balanced. Select a complete assertion or place cursor on an assertion line.'
+            error: 'Incomplete assertion selected. Parentheses are not balanced. Select a complete assertion or place cursor on an assertion line.',
         };
     }
 
@@ -58,14 +58,14 @@ export function validateAssertion(text: string): {
         if (match && match.index !== 0) {
             return {
                 isValid: false,
-                error: 'Assertion must start with "(assert". Select a complete assertion or place cursor on an assertion line.'
+                error: 'Assertion must start with "(assert". Select a complete assertion or place cursor on an assertion line.',
             };
         }
     }
 
     return {
         isValid: true,
-        normalizedText: trimmedText
+        normalizedText: trimmedText,
     };
 }
 

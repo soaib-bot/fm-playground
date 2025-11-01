@@ -10,7 +10,7 @@ import {
     smtDiffOptionsAtom,
     diffComparisonHistoryIdAtom,
     smtDiffWitnessAtom,
-    smtDiffFilterAtom
+    smtDiffFilterAtom,
 } from '@/atoms';
 import { Permalink } from '@/types';
 import axios from 'axios';

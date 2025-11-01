@@ -98,7 +98,11 @@ const LimbooleDiffOutput = () => {
             setCurrentWitnessIndex(prevIndex);
             setLimbooleDiffWitness(witnesses[prevIndex]);
             setIsLastWitness(false);
-            logToDb(permalink.permalink || '', { tool: 'SATSemDiff-Previous', witness: witnesses[prevIndex], specId: specId });
+            logToDb(permalink.permalink || '', {
+                tool: 'SATSemDiff-Previous',
+                witness: witnesses[prevIndex],
+                specId: specId,
+            });
         }
     };
 
@@ -152,9 +156,7 @@ const LimbooleDiffOutput = () => {
                             </div>
                         </div>
                     )}
-                    {witnessMessage && (
-                        <div style={{ textAlign: 'center', color: '#ff0000ff' }}>{witnessMessage}</div>
-                    )}
+                    {witnessMessage && <div style={{ textAlign: 'center', color: '#ff0000ff' }}>{witnessMessage}</div>}
                 </div>
             ) : (
                 <div

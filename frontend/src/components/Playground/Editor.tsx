@@ -2,16 +2,16 @@ import { useState, useRef, useEffect } from 'react';
 import * as monacoEditor from 'monaco-editor';
 import Editor from '@monaco-editor/react';
 import { useAtom } from 'jotai';
-import { 
-    editorValueAtom, 
-    languageAtom, 
-    lineToHighlightAtom, 
-    greenHighlightAtom, 
-    cursorLineAtom, 
+import {
+    editorValueAtom,
+    languageAtom,
+    lineToHighlightAtom,
+    greenHighlightAtom,
+    cursorLineAtom,
     selectedTextAtom,
     targetAssertionRangeAtom,
     minimalSetRangesAtom,
-    jotaiStore
+    jotaiStore,
 } from '@/atoms';
 import { fmpConfig, languageConfigMap } from '@/ToolMaps';
 import '@/assets/style/Playground.css';
@@ -153,7 +153,7 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
             const lineNumber = e.position.lineNumber;
             setCursorLine(lineNumber);
         });
-        
+
         // Track selection changes
         editor.onDidChangeCursorSelection((e) => {
             const model = editor.getModel();
@@ -163,7 +163,7 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
                 setSelectedText(selectedText);
             }
         });
-        
+
         // Initialize cursor position
         const currentPosition = editor.getPosition();
         if (currentPosition) {

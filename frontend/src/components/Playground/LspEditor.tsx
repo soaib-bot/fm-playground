@@ -9,13 +9,13 @@ import type { LanguageProps } from './Tools';
 import { fmpConfig } from '@/ToolMaps';
 import * as monaco from 'monaco-editor';
 import { useAtom } from 'jotai';
-import { 
-    cursorLineAtom, 
-    greenHighlightAtom, 
-    selectedTextAtom, 
-    targetAssertionRangeAtom, 
+import {
+    cursorLineAtom,
+    greenHighlightAtom,
+    selectedTextAtom,
+    targetAssertionRangeAtom,
     minimalSetRangesAtom,
-    jotaiStore
+    jotaiStore,
 } from '@/atoms';
 
 type LspEditorProps = {
@@ -309,12 +309,7 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
             if (minimalSetRanges && minimalSetRanges.length > 0) {
                 minimalSetRanges.forEach((range) => {
                     decorations.push({
-                        range: new monaco.Range(
-                            range.startLine,
-                            range.startColumn,
-                            range.endLine,
-                            range.endColumn
-                        ),
+                        range: new monaco.Range(range.startLine, range.startColumn, range.endLine, range.endColumn),
                         options: {
                             inlineClassName: 'inlineHighlightGreen',
                             className: 'rangeHighlightGreen',

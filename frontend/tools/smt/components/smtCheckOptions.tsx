@@ -61,12 +61,12 @@ const SmtCheckOptions = () => {
                                     ? '#0d6efd'
                                     : base.backgroundColor
                                 : state.isFocused
-                                    ? isDarkTheme
-                                        ? '#2d2d30'
-                                        : base.backgroundColor
-                                    : isDarkTheme
-                                        ? '#1e1e1e'
-                                        : base.backgroundColor,
+                                  ? isDarkTheme
+                                      ? '#2d2d30'
+                                      : base.backgroundColor
+                                  : isDarkTheme
+                                    ? '#1e1e1e'
+                                    : base.backgroundColor,
                             color: isDarkTheme ? '#d4d4d4' : base.color,
                             '&:hover': {
                                 backgroundColor: isDarkTheme ? '#2d2d30' : base.backgroundColor,

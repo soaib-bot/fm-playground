@@ -31,16 +31,17 @@ const SmtOutput = () => {
                 setModels([smtModel]);
                 setCurrentModelIndex(0);
                 setIsLastModel(false); // Reset the last model flag for new execution
-                
+
                 // Check if the initial result is SAT (only on first execution)
                 const initialResult = smtModel.result || '';
-                const isSat = initialResult.toLowerCase().includes('sat') && !initialResult.toLowerCase().includes('unsat');
+                const isSat =
+                    initialResult.toLowerCase().includes('sat') && !initialResult.toLowerCase().includes('unsat');
                 setIsSatScenario(isSat);
             }
 
             // Check if we have any displayable content (result or next_model)
             const hasContent = smtModel.result || smtModel.next_model;
-            
+
             if (smtModel.specId && hasContent) {
                 setSpecId(smtModel.specId);
                 setHasModel(true);
@@ -96,7 +97,7 @@ const SmtOutput = () => {
                 const normalizedData = {
                     specId: data.specId || specId, // Preserve specId
                     result: data.next_model || data.result,
-                    next_model: data.next_model
+                    next_model: data.next_model,
                 };
 
                 // Add new model to the array
@@ -106,7 +107,7 @@ const SmtOutput = () => {
                 setCurrentModelIndex(newIndex);
                 setSmtModel(normalizedData);
                 setIsNextModelExecuting(false);
-                
+
                 // Log the next model event
                 logToDb(permalink.permalink || '', { tool: 'SMT-Next', model: normalizedData, specId: specId });
             })
@@ -138,7 +139,7 @@ const SmtOutput = () => {
 
     // Check if the current model contains HTML
     const containsHTML = (text: string) => /<[^>]*>/.test(text);
-    
+
     // Get the text to display - prefer smtModel output, fallback to outputAtom
     const getDisplayText = () => {
         if (hasModel) {
@@ -146,7 +147,7 @@ const SmtOutput = () => {
         }
         return modelMessage || output;
     };
-    
+
     const displayText = getDisplayText();
     const hasHTML = containsHTML(displayText);
 
@@ -168,7 +169,9 @@ const SmtOutput = () => {
                             whiteSpace: 'pre-wrap',
                             marginBottom: '10px',
                         }}
-                        {...(hasHTML ? { dangerouslySetInnerHTML: { __html: displayText } } : { children: displayText })}
+                        {...(hasHTML
+                            ? { dangerouslySetInnerHTML: { __html: displayText } }
+                            : { children: displayText })}
                     />
 
                     {shouldShowButtons() && (

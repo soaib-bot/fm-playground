@@ -304,10 +304,10 @@ const DiffViewArea: React.FC<DiffViewAreaProps> = ({ editorTheme, onBackToEditin
                             style={
                                 editorTheme === 'vs-dark'
                                     ? {
-                                        backgroundColor: '#1e1e1e',
-                                        color: '#d4d4d4',
-                                        borderColor: '#464647',
-                                    }
+                                          backgroundColor: '#1e1e1e',
+                                          color: '#d4d4d4',
+                                          borderColor: '#464647',
+                                      }
                                     : {}
                             }
                             {...(editorTheme === 'vs-dark' && {

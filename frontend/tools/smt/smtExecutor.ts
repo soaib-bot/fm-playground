@@ -12,10 +12,7 @@ export interface NextSmtModelResponse {
  * @param permalink - The permalink identifier
  * @returns Promise containing the next model
  */
-export async function getNextSmtModel(
-    specId: string,
-    permalink: string
-): Promise<NextSmtModelResponse> {
+export async function getNextSmtModel(specId: string, permalink: string): Promise<NextSmtModelResponse> {
     try {
         const url = `/smt/smt/next/?specId=${specId}&p=${permalink}`;
         const response = await axios.get(url);
