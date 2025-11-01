@@ -22,8 +22,8 @@ from db.db_query import (  # noqa: E402
     insert_result_log,
     search_by_query,
     search_by_query_and_session,
-    update_user_history_by_id,
     update_metadata_by_permalink,
+    update_user_history_by_id,
 )
 from db.models import Code, Data, DataDetails, db  # noqa: E402
 from flask import Blueprint, jsonify, make_response, request, session  # noqa: E402
@@ -189,9 +189,7 @@ def get_pinned_items():
 
     if user_id is None:
         if user_session_id:
-            data = get_pinned_history_by_session(
-                user_session_id, check_type=check_type
-            )
+            data = get_pinned_history_by_session(user_session_id, check_type=check_type)
             data = [d for d in data if not d.get("check", "").endswith("Diff")]
             return jsonify({"history": data})
         return jsonify({"result": "fail", "message": ERROR_LOGGEDIN_MESSAGE}, 401)

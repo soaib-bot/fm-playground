@@ -56,12 +56,11 @@ class DataDetails(db.Model):
     # Optional: relationship back to Data if needed later
     data = db.relationship("Data", backref=db.backref("details", uselist=False))
 
+
 class ResultLogs(db.Model):
     __tablename__ = "result"
     id = db.Column(db.Integer, primary_key=True)
-    data_id = db.Column(
-        db.Integer, db.ForeignKey("data.id"), nullable=False
-    )
+    data_id = db.Column(db.Integer, db.ForeignKey("data.id"), nullable=False)
     timestamp = db.Column(db.DateTime(), server_default=func.now())
     result = db.Column(db.String(), nullable=False)
 

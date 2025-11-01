@@ -12,7 +12,8 @@ if str(backend_dir) not in sys.path:
 @pytest.fixture(scope="function")
 def app():
     """Create and configure a test Flask application instance."""
-    from config import app as flask_app, db
+    from config import app as flask_app
+    from config import db
 
     # Configure the app for testing
     flask_app.config["TESTING"] = True
