@@ -1,11 +1,13 @@
 import sexpdata
 from z3 import *
 from typing import Any, Dict, List, Optional
+import multiprocessing
 
 from smt_diff.smt_cache_manager import cache_manager
 from smt_diff.logics_filter import common_logic
 
 TTL_SECONDS = 3600  # Default cache TTL in seconds
+DEFAULT_TIMEOUT = 60  # Default timeout in seconds for witness computation
 
 
 def all_smt(s: Solver, vars: list):
@@ -158,6 +160,120 @@ def prettify_warning(warning_msg: str):
     return f"<span style='color: orange;'>{warning_msg.strip()}</span>"
 
 
+def _witness_worker(
+    queue, witness_func, assertions1, assertions2, logic1, logic2, filter_str
+):
+    """Worker function that runs in a separate process to compute witnesses with timeout."""
+    try:
+        result = witness_func(assertions1, assertions2, logic1, logic2, filter_str)
+        queue.put(("success", result))
+    except Exception as e:
+        error_msg = prettify_error(f"Error computing witness: {str(e)}")
+        queue.put(("error", error_msg))
+
+
+def _semantic_relation_worker(queue, s1, s2):
+    """Worker function that runs in a separate process to compute semantic relation with timeout."""
+    try:
+        spec_1 = parse_smt2_string(s1)
+        spec_2 = parse_smt2_string(s2)
+        logic1 = get_logic_from_smt2(s1)
+        logic2 = get_logic_from_smt2(s2)
+
+        cm_logic = common_logic(logic1, logic2)
+        s1_not_s2_solver = SolverFor(cm_logic) if cm_logic else Solver()
+        s1_not_s2_solver.add(spec_1)
+        s1_not_s2_solver.add(Not(And(spec_2)))
+        res_s1_not_s2 = s1_not_s2_solver.check()
+
+        s2_not_s1_solver = SolverFor(cm_logic) if cm_logic else Solver()
+        s2_not_s1_solver.add(spec_2)
+        s2_not_s1_solver.add(Not(And(spec_1)))
+        res_s2_not_s1 = s2_not_s1_solver.check()
+
+        if res_s1_not_s2 == unsat and res_s2_not_s1 == unsat:
+            result = "Current ≡ Previous\nAll models that satisfy the current script also satisfy the previous script, and vice versa."
+        elif res_s1_not_s2 == sat and res_s2_not_s1 == sat:
+            result = "Scripts are incomparable\nThere exist models that satisfy the current script but not the previous script, and vice versa."
+        elif res_s1_not_s2 == unsat and res_s2_not_s1 == sat:
+            result = "Current ⊨ Previous \nAll models that satisfy the current script also satisfy the previous script. Some models that satisfy the previous script do not satisfy the current script."
+        elif res_s1_not_s2 == sat and res_s2_not_s1 == unsat:
+            result = "Previous ⊨ Current\nAll models that satisfy the previous script also satisfy the current script. Some models that satisfy the current script do not satisfy the previous script."
+        else:
+            result = "unknown"
+
+        queue.put(("success", result))
+    except Exception as e:
+        error_msg = prettify_error(f"Error computing semantic relation: {str(e)}")
+        queue.put(("error", error_msg))
+
+
+def _run_witness_with_timeout(
+    witness_func,
+    assertions1,
+    assertions2,
+    logic1,
+    logic2,
+    filter_str,
+    timeout=DEFAULT_TIMEOUT,
+):
+    """Run a witness computation function with a timeout using multiprocessing."""
+    result_queue = multiprocessing.Queue()
+    process = multiprocessing.Process(
+        target=_witness_worker,
+        args=(
+            result_queue,
+            witness_func,
+            assertions1,
+            assertions2,
+            logic1,
+            logic2,
+            filter_str,
+        ),
+    )
+
+    process.start()
+    process.join(timeout)
+
+    if process.is_alive():
+        # Process is still running after timeout
+        process.terminate()
+        process.join()
+        return prettify_error(f"Witness computation timed out after {timeout} seconds")
+
+    if not result_queue.empty():
+        status, result = result_queue.get()
+        return result
+    else:
+        return prettify_error("No result returned from witness computation")
+
+
+def _run_semantic_relation_with_timeout(s1, s2, timeout=DEFAULT_TIMEOUT):
+    """Run semantic relation computation with a timeout using multiprocessing."""
+    result_queue = multiprocessing.Queue()
+    process = multiprocessing.Process(
+        target=_semantic_relation_worker,
+        args=(result_queue, s1, s2),
+    )
+
+    process.start()
+    process.join(timeout)
+
+    if process.is_alive():
+        # Process is still running after timeout
+        process.terminate()
+        process.join()
+        return prettify_error(
+            f"Semantic relation computation timed out after {timeout} seconds"
+        )
+
+    if not result_queue.empty():
+        status, result = result_queue.get()
+        return result
+    else:
+        return prettify_error("No result returned from semantic relation computation")
+
+
 def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str = ""):
     logic = common_logic(logic1, logic2)
     solver_s1_not_s2 = SolverFor(logic) if logic else Solver()
@@ -213,40 +329,19 @@ def common_witness(
     return generator
 
 
-def get_semantic_relation(s1: str, s2: str) -> Optional[str]:
+def get_semantic_relation(
+    s1: str, s2: str, timeout: int = DEFAULT_TIMEOUT
+) -> Optional[str]:
     """
+    Compute the semantic relation between two SMT-LIB2 specifications.
     s1: current spec
     s2: previous spec
     """
-    spec_1 = parse_smt2_string(s1)
-    spec_2 = parse_smt2_string(s2)
-    logic1 = get_logic_from_smt2(s1)
-    logic2 = get_logic_from_smt2(s2)
-
-    cm_logic = common_logic(logic1, logic2)
-    s1_not_s2_solver = SolverFor(cm_logic) if cm_logic else Solver()
-    s1_not_s2_solver.add(spec_1)
-    s1_not_s2_solver.add(Not(And(spec_2)))
-    res_s1_not_s2 = s1_not_s2_solver.check()
-
-    s2_not_s1_solver = SolverFor(cm_logic) if cm_logic else Solver()
-    s2_not_s1_solver.add(spec_2)
-    s2_not_s1_solver.add(Not(And(spec_1)))
-    res_s2_not_s1 = s2_not_s1_solver.check()
-
-    if res_s1_not_s2 == unsat and res_s2_not_s1 == unsat:
-        return "Current ≡ Previous\nAll models that satisfy the current script also satisfy the previous script, and vice versa."
-    elif res_s1_not_s2 == sat and res_s2_not_s1 == sat:
-        return "Scripts are incomparable\nThere exist models that satisfy the current script but not the previous script, and vice versa."
-    elif res_s1_not_s2 == unsat and res_s2_not_s1 == sat:
-        return "Current ⊨ Previous \nAll models that satisfy the current script also satisfy the previous script. Some models that satisfy the previous script do not satisfy the current script."
-    elif res_s1_not_s2 == sat and res_s2_not_s1 == unsat:
-        return "Previous ⊨ Current\nAll models that satisfy the previous script also satisfy the current script. Some models that satisfy the current script do not satisfy the previous script."
-    else:
-        return "unknown"
+    return _run_semantic_relation_with_timeout(s1, s2, timeout)
 
 
 def get_next_witness(specId: str) -> Optional[str]:
+    """Get the next witness for a given specification ID."""
     model = cache_manager.get_next(specId)
     logic = (
         cache_manager.caches[specId].logic if specId in cache_manager.caches else None
@@ -262,10 +357,13 @@ def get_next_witness(specId: str) -> Optional[str]:
     return logic + "\n" + res
 
 
-def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
+def store_witness(
+    s1: str, s2: str, analysis: str, filter: str = "", timeout: int = DEFAULT_TIMEOUT
+):
     """
     s1: previous spec
     s2: current spec
+    timeout: timeout in seconds (default: DEFAULT_TIMEOUT)
     """
     error_msg = None
     try:
@@ -294,12 +392,22 @@ def store_witness(s1: str, s2: str, analysis: str, filter: str = ""):
 
     logic1 = get_logic_from_smt2(s1)
     logic2 = get_logic_from_smt2(s2)
+
+    # Use timeout wrapper to compute witnesses
     if analysis == "not-previous-but-current":
-        witness = diff_witness(assertions2, assertions1, logic2, logic1, filter)
+        witness = _run_witness_with_timeout(
+            diff_witness, assertions2, assertions1, logic2, logic1, filter, timeout
+        )
     elif analysis == "not-current-but-previous":
-        witness = diff_witness(assertions1, assertions2, logic1, logic2, filter)
+        witness = _run_witness_with_timeout(
+            diff_witness, assertions1, assertions2, logic1, logic2, filter, timeout
+        )
     elif analysis == "common-witness":
-        witness = common_witness(assertions1, assertions2, logic1, logic2, filter)
+        witness = _run_witness_with_timeout(
+            common_witness, assertions1, assertions2, logic1, logic2, filter, timeout
+        )
+    else:
+        witness = prettify_error(f"Unknown analysis type: {analysis}")
 
     if logic1 is None and logic2 is None:
         logic = prettify_warning("; No logic specified; using default solver settings.")
