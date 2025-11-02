@@ -219,15 +219,6 @@ def get_next_model_from_cache(specId: str, p: str):
             raise HTTPException(
                 status_code=404, detail="No more models or cache exhausted"
             )
-        log_to_db(
-            p,
-            json.dumps(
-                {
-                    "tool": "SMTExec-Next",
-                    "specId": specId,
-                }
-            ),
-        )
         return {
             "specId": specId,
             "next_model": next_model,

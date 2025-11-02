@@ -23,8 +23,11 @@ import {
 } from '@/atoms';
 import axios from 'axios';
 import { Permalink } from '@/types';
+import { logToDb } from '@/api/playgroundApi';
 
+// let permalink = jotaiStore.get(permalinkAtom);
 let __redundantLinesToRemove: any[] | null = null;
+let __currentCheckOption: string = 'execute-z3'; // Track current check option for logging
 
 // Helper to parse line data and return a set of line numbers
 const parseLinesToSet = (linesData: any[], maxLines: number): Set<number> => {
@@ -92,8 +95,21 @@ if (typeof window !== 'undefined') {
             jotaiStore.set(editorValueAtom, updated);
             jotaiStore.set(lineToHighlightAtom, []);
             jotaiStore.set(outputAtom, '; Commented out redundant assertions');
+            
+            // Log the action
+            const permalink = jotaiStore.get(permalinkAtom);
+            logToDb(permalink.permalink || '', { 
+                action: 'comment-redundant-assertions',
+                checkOption: __currentCheckOption,
+                linesCount: sorted.length
+            });
         } catch (err) {
             jotaiStore.set(outputAtom, '; Failed to comment out lines');
+            const permalink = jotaiStore.get(permalinkAtom);
+            logToDb(permalink.permalink || '', { 
+                action: 'comment-redundant-assertions-failed',
+                checkOption: __currentCheckOption,
+            });
         }
     };
 
@@ -122,8 +138,21 @@ if (typeof window !== 'undefined') {
             jotaiStore.set(editorValueAtom, updated);
             jotaiStore.set(lineToHighlightAtom, []);
             jotaiStore.set(outputAtom, '; Removed redundant assertions');
+            
+            // Log the action
+            const permalink = jotaiStore.get(permalinkAtom);
+            logToDb(permalink.permalink || '', { 
+                action: 'remove-redundant-assertions',
+                checkOption: __currentCheckOption,
+                linesCount: sorted.length
+            });
         } catch (err) {
             jotaiStore.set(outputAtom, '; Failed to remove lines');
+            const permalink = jotaiStore.get(permalinkAtom);
+            logToDb(permalink.permalink || '', { 
+                action: 'remove-redundant-assertions-failed',
+                checkOption: __currentCheckOption,
+            });
         }
     };
 }
@@ -170,6 +199,9 @@ async function executeExplainRedundancy() {
     const cursorLine = jotaiStore.get(cursorLineAtom);
     const selectedText = jotaiStore.get(selectedTextAtom);
     const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
+
+    // Set current check option for logging
+    __currentCheckOption = smtCmdOption.value || 'explain-redundancy';
 
     let response: any = null;
     const metadata = { ls: enableLsp, command: smtCmdOption.value };
@@ -263,6 +295,10 @@ async function executeCheckRedundancy() {
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
     const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
+    
+    // Set current check option for logging
+    __currentCheckOption = smtCmdOption.value || 'check-redundancy';
+    
     let response: any = null;
     const metadata = { ls: enableLsp, command: smtCmdOption.value };
     try {
@@ -308,7 +344,7 @@ async function executeCheckRedundancy() {
         }
 
         // No redundant lines found
-        const outputMsg = result.output + '\n; No redundant assertions found.';
+        const outputMsg = result.output + '; No redundant assertions found.';
         jotaiStore.set(outputAtom, outputMsg);
         jotaiStore.set(greenHighlightAtom, []);
         jotaiStore.set(lineToHighlightAtom, []);
@@ -331,6 +367,10 @@ async function executeZ3() {
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
     const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
+    
+    // Set current check option for logging
+    __currentCheckOption = smtCmdOption.value || 'execute-z3';
+    
     let response: any = null;
     const metadata = { ls: enableLsp, command: smtCmdOption.value };
     try {

@@ -99,7 +99,7 @@ const SmtDiffOutput = () => {
             setSmtDiffWitness(witnesses[prevIndex]);
             setIsLastWitness(false);
             logToDb(permalink.permalink || '', {
-                tool: 'SMTDiff-Previous',
+                tool: 'SMTSemDiff-Previous',
                 witness: witnesses[prevIndex],
                 specId: specId,
             });
