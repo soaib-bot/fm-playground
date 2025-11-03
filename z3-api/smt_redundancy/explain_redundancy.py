@@ -1,8 +1,13 @@
 import re
 import time
+from bisect import bisect_right
 from typing import List, Tuple
 
-from utils.helper import get_all_vars, get_logic_from_smt2, prettify_error
+from utils.helper import (
+    get_decls_and_sorts,
+    get_logic_from_smt2,
+    prettify_error,
+)
 from z3 import *
 
 from .minimizer import quick_explain
@@ -15,96 +20,95 @@ UNRESOLVED = "UNRESOLVED"
 def find_assertion_line_ranges(
     smtlib_script: str,
 ) -> List[Tuple[int, int, int, int, ExprRef]]:
-    """Find the line ranges (start_line, end_line, start_col, end_col, ast_ref) for each (assert ...) statement."""
-    # Matches: (assert, ( assert, (  assert  , etc.
-    assert_pattern = re.compile(r"\(\s*assert\s+", re.IGNORECASE)
+    """Find (start_line, end_line, start_col, end_col, ast_ref) for every (assert ...)."""
+
+    assert_pattern = re.compile(r"\(\s*assert\b", re.IGNORECASE)
 
     lines = smtlib_script.split("\n")
-    assertion_texts_with_ranges = (
-        []
-    )  # To store (start_line, end_line, start_col, end_col, assertion_text)
+    line_offsets = [0]
+    for line in lines:
+        line_offsets.append(line_offsets[-1] + len(line) + 1)
 
-    # Track position in the entire script
-    char_position = 0
+    def pos_to_line_col(pos: int) -> Tuple[int, int]:
+        idx = bisect_right(line_offsets, pos) - 1
+        if idx < 0:
+            idx = 0
+        column = pos - line_offsets[idx]
+        return idx + 1, column
 
-    for line_idx, line in enumerate(lines):
-        line_start_pos = char_position
+    assertion_texts_with_ranges: list[Tuple[int, int, int, int, str]] = []
 
-        # Find all assert statements in this line
-        for match in assert_pattern.finditer(line):
-            match_start_in_line = match.start()
-            match_start_pos = line_start_pos + match_start_in_line
+    i = 0
+    script_len = len(smtlib_script)
 
-            # Start from the opening parenthesis of (assert
-            start_line = line_idx + 1  # 1-indexed
-            start_col = match_start_in_line + 1  # 1-indexed column
+    while i < script_len:
+        ch = smtlib_script[i]
 
-            # Count parentheses to find where the assertion ends
+        if ch == ";":
+            newline_pos = smtlib_script.find("\n", i)
+            if newline_pos == -1:
+                break
+            i = newline_pos + 1
+            continue
+
+        if ch.isspace():
+            i += 1
+            continue
+
+        match = assert_pattern.match(smtlib_script, i)
+        if match:
+            start_pos = i
             paren_count = 0
-            end_line = None
-            end_col = None
-            end_char_pos = None
+            cursor = i
+            end_pos = None
 
-            # Search through the script starting from this position
-            for search_line_idx in range(line_idx, len(lines)):
-                search_line = lines[search_line_idx]
+            while cursor < script_len:
+                current_char = smtlib_script[cursor]
 
-                # Determine where to start searching in this line
-                if search_line_idx == line_idx:
-                    start_col = match_start_in_line
-                else:
-                    start_col = 0
+                if current_char == ";":
+                    newline_pos = smtlib_script.find("\n", cursor)
+                    if newline_pos == -1:
+                        cursor = script_len
+                        break
+                    cursor = newline_pos + 1
+                    continue
 
-                for col_idx in range(start_col, len(search_line)):
-                    char = search_line[col_idx]
+                if current_char == "(":
+                    paren_count += 1
+                elif current_char == ")":
+                    paren_count -= 1
+                    if paren_count == 0:
+                        end_pos = cursor + 1
+                        break
 
-                    if char == "(":
-                        paren_count += 1
-                    elif char == ")":
-                        paren_count -= 1
+                cursor += 1
 
-                        if paren_count == 0:
-                            # Found the end of this assertion
-                            end_line = search_line_idx + 1  # 1-indexed
-                            end_col = (
-                                col_idx + 2
-                            )  # 1-indexed, +2 to include the closing paren
-                            # Calculate absolute character position
-                            if search_line_idx == line_idx:
-                                end_char_pos = line_start_pos + col_idx + 1
-                            else:
-                                end_char_pos = (
-                                    sum(
-                                        len(lines[i]) + 1
-                                        for i in range(search_line_idx)
-                                    )
-                                    + col_idx
-                                    + 1
-                                )
-                            break
-
-                if paren_count == 0:
-                    break
-
-            if paren_count != 0:
-                # Malformed assertion - couldn't find matching closing paren
+            if paren_count != 0 or end_pos is None:
                 raise ValueError(
-                    f"Malformed assertion starting at line {start_line}: unmatched parentheses"
+                    f"Malformed assertion starting at position {start_pos}: unmatched parentheses"
                 )
 
-            # Extract the assertion text
-            assertion_text = smtlib_script[match_start_pos:end_char_pos]
+            assertion_text = smtlib_script[start_pos:end_pos]
+            start_line, start_col = pos_to_line_col(start_pos)
+            end_line, end_col_inclusive = pos_to_line_col(end_pos - 1)
+            end_col = end_col_inclusive + 2
+
             assertion_texts_with_ranges.append(
                 (start_line, end_line, start_col, end_col, assertion_text)
             )
 
-        char_position += len(line) + 1  # Move to next line
+            i = end_pos
+            continue
+
+        i += 1
 
     # Get all assertions from the given script
     script_logic = get_logic_from_smt2(smtlib_script)
     solver = SolverFor(script_logic) if script_logic else Solver()
     solver.from_string(smtlib_script)
     all_assertions = list(solver.assertions())
+
+    sorts_env, decls_env = get_decls_and_sorts(all_assertions)
 
     # Match syntactically found assertions with semantically parsed ones
     # Parse each assertion (in SMT-LIB formal) individually by creating a temporary script
@@ -119,42 +123,19 @@ def find_assertion_line_ranges(
     ) in assertion_texts_with_ranges:
         # Parse the assertion individually
         try:
-            # Get all variables from all_assertions to build proper declarations
-            all_vars = get_all_vars(all_assertions)
+            parsed = parse_smt2_string(
+                assertion_text,
+                sorts=sorts_env,
+                decls=decls_env,
+                ctx=solver.ctx,
+            )
 
-            # Build SMT-LIB declarations for each variable
-            declarations = []
-            for var in all_vars:
-                if is_const(var):
-                    # It's a constant - generate a declare-const statement
-                    var_name = var.decl().name()
-                    var_sort = var.sort()
-                    declarations.append(f"(declare-const {var_name} {var_sort})")
-                elif hasattr(var, "name") and hasattr(var, "arity"):
-                    # It's a function declaration - generate a declare-fun statement
-                    func_name = var.name()
-                    arity = var.arity()
-                    domain_sorts = [var.domain(i) for i in range(arity)]
-                    range_sort = var.range()
-                    domain_str = " ".join(str(s) for s in domain_sorts)
-                    declarations.append(
-                        f"(declare-fun {func_name} ({domain_str}) {range_sort})"
-                    )
-
-            # Create a temporary script with declarations + this assertion
-            temp_script = "\n".join(declarations) + "\n" + assertion_text
-
-            temp_solver = SolverFor(script_logic) if script_logic else Solver()
-            temp_solver.from_string(temp_script)
-            temp_assertions = list(temp_solver.assertions())
-
-            if len(temp_assertions) >= 1:
-                # Use the last assertion (the one we just added)
-                ast_ref = temp_assertions[-1]
+            if len(parsed) >= 1:
+                ast_ref = parsed[-1]
                 assertion_ranges.append(
                     (start_line, end_line, start_col, end_col, ast_ref)
                 )
-        except Exception as e:
+        except Exception:
             # If we can't parse this assertion, skip it
             pass
 
@@ -420,37 +401,21 @@ def explain_redundancy_from_smtlib_by_assertion(
     normalized_assertion_text = assertion_text.strip()
 
     # Parse the assertion text to get its AST
-    all_vars = get_all_vars(all_assertions)
+    sorts_env, decls_env = get_decls_and_sorts(all_assertions)
     try:
-        declarations = []
-        for var in all_vars:
-            if is_const(var):
-                # It's a constant - generate a declare-const statement
-                var_name = var.decl().name()
-                var_sort = var.sort()
-                declarations.append(f"(declare-const {var_name} {var_sort})")
-            elif hasattr(var, "name") and hasattr(var, "arity"):
-                # It's a function declaration
-                func_name = var.name()
-                arity = var.arity()
-                domain_sorts = [var.domain(i) for i in range(arity)]
-                range_sort = var.range()
-                domain_str = " ".join(str(s) for s in domain_sorts)
-                declarations.append(
-                    f"(declare-fun {func_name} ({domain_str}) {range_sort})"
-                )
+        parsed = parse_smt2_string(
+            normalized_assertion_text,
+            sorts=sorts_env,
+            decls=decls_env,
+            ctx=solver.ctx,
+        )
 
-        temp_script = "\n".join(declarations) + "\n" + normalized_assertion_text
-        temp_solver = SolverFor(smt_logic) if smt_logic else Solver()
-        temp_solver.from_string(temp_script)
-        temp_assertions = list(temp_solver.assertions())
-
-        if len(temp_assertions) == 0:
+        if len(parsed) == 0:
             raise ValueError(
                 prettify_error(f"Could not parse assertion from: {assertion_text}")
             )
 
-        target_ast = temp_assertions[-1]
+        target_ast = parsed[-1]
     except Exception as e:
         raise ValueError(
             prettify_error(f"Error parsing assertion '{assertion_text}': {str(e)}")
