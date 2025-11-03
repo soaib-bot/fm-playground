@@ -29,3 +29,17 @@ def test_redundant_lines():
     assert {8}.issubset(redundant_lines)
     assert {11, 12, 13}.issubset(redundant_lines)
     assert not {7}.issubset(redundant_lines)
+
+def test_redundant_fun():
+    spec="""
+    (declare-datatypes () ((Nat zero (succ (pred Nat)))))
+(declare-fun p (Nat) Bool)
+(assert (p zero))
+(assert (p zero))
+(assert (forall ((x Nat)) (implies (p (pred x)) (p x))))
+(assert (not (forall ((x Nat)) (p x))))
+(check-sat)"""
+    solver = Solver()
+    solver.from_string(spec)
+    redundant_lines = unsat_core(solver, solver.assertions(), smt2_file=spec)
+    assert {4}.issubset(redundant_lines)

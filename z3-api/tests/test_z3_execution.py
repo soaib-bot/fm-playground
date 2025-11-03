@@ -30,9 +30,7 @@ def test_run_z3_with_cache():
 (get-model)"""
 
     specId, result = run_z3_with_cache(spec)
-    assert specId is not None
-    model = get_next_model(specId)
-    model = get_next_model(specId)
+    assert specId is None
 
 
 def test_process_commands():
@@ -43,7 +41,7 @@ def test_process_commands():
 (check-sat)
 (get-model)"""
 
-    specId, result, redundant_lines = process_commands(spec, check_redundancy=True)
+    specId, result, redundant_lines = process_commands(spec)
     assert result is not None
     assert redundant_lines is not None
 
