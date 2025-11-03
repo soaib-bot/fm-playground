@@ -118,6 +118,3 @@ def common_logic(logic1, logic2, contains=z3_contains):
         )
 
     return [l for l in common if is_most_specific(l)][0]
-
-
-# print(common_logic(None, "QF_UFNIA", logics_contains))  # should print QF_UFLIA
