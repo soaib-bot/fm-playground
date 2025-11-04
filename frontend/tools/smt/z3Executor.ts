@@ -105,7 +105,7 @@ if (typeof window !== 'undefined') {
             logToDb(permalink.permalink || '', {
                 action: 'comment-redundant-assertions',
                 checkOption: __currentCheckOption,
-                linesCount: sorted.length
+                linesCount: sorted.length,
             });
         } catch (err) {
             jotaiStore.set(outputAtom, '; Failed to comment out lines');
@@ -148,7 +148,7 @@ if (typeof window !== 'undefined') {
             logToDb(permalink.permalink || '', {
                 action: 'remove-redundant-assertions',
                 checkOption: __currentCheckOption,
-                linesCount: sorted.length
+                linesCount: sorted.length,
             });
         } catch (err) {
             jotaiStore.set(outputAtom, '; Failed to remove lines');
@@ -244,11 +244,7 @@ async function executeExplainRedundancy() {
             );
         } else {
             // No selection - extract assertion at cursor position
-            assertionText = extractAssertion(
-                editorValue,
-                cursorLine,
-                cursorColumn
-            );
+            assertionText = extractAssertion(editorValue, cursorLine, cursorColumn);
         }
 
         // If we found an assertion, validate and use it
@@ -449,7 +445,7 @@ async function executeZ3() {
         jotaiStore.set(
             outputAtom,
             (error as any).message +
-            `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+                `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
         );
         jotaiStore.set(smtModelAtom, { error: (error as any).message });
         jotaiStore.set(isExecutingAtom, false);
@@ -493,14 +489,14 @@ async function executeIterateModels() {
         jotaiStore.set(smtModelAtom, {
             specId: modelData.specId,
             result: modelData.result,
-            next_model: modelData.result
+            next_model: modelData.result,
         });
         jotaiStore.set(outputAtom, modelData.result);
 
         // Log the initial model iteration
         logToDb(response?.data.permalink || '', {
             analysis: 'SMT-ModelIteration-Init',
-            specId: modelData.specId
+            specId: modelData.specId,
         });
     } catch (error: any) {
         jotaiStore.set(

@@ -25,18 +25,16 @@ export function validateAssertion(text: string): {
 
     // If it doesn't start with (assert, check if it's just an expression
     let textToValidate = trimmedText;
-    let isExpression = false;
 
     if (!hasAssert) {
         // Check if it looks like an expression (starts with '(')
         if (trimmedText.startsWith('(')) {
             // It might be just the expression without (assert ...)
-            isExpression = true;
             textToValidate = trimmedText;
         } else {
             return {
                 isValid: false,
-                error: 'Selected text is not a valid assertion. Select a complete assertion or place cursor on an assertion line.',
+                error: 'Selected text is not a valid assertion. Select an assertion or place cursor on an assertion line.',
             };
         }
     }

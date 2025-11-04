@@ -21,13 +21,15 @@ const SmtCheckOptions = () => {
     return (
         <div style={{ marginTop: '15px' }}>
             {smtCheckOption?.value === 'explain-redundancy' && (
-                <div style={{
-                    marginBottom: '5px',
-                    fontSize: '0.85em',
-                    color: isDarkTheme ? '#fefefeff' : '#808080ff',
-                    fontStyle: 'italic',
-                    textAlign: 'center'
-                }}>
+                <div
+                    style={{
+                        marginBottom: '5px',
+                        fontSize: '0.85em',
+                        color: isDarkTheme ? '#fefefeff' : '#808080ff',
+                        fontStyle: 'italic',
+                        textAlign: 'center',
+                    }}
+                >
                     💡 Place your cursor on an assertion line or select an assertion to explain why it's redundant
                 </div>
             )}
@@ -74,12 +76,12 @@ const SmtCheckOptions = () => {
                                         ? '#0d6efd'
                                         : base.backgroundColor
                                     : state.isFocused
-                                        ? isDarkTheme
-                                            ? '#2d2d30'
-                                            : base.backgroundColor
-                                        : isDarkTheme
-                                            ? '#1e1e1e'
-                                            : base.backgroundColor,
+                                      ? isDarkTheme
+                                          ? '#2d2d30'
+                                          : base.backgroundColor
+                                      : isDarkTheme
+                                        ? '#1e1e1e'
+                                        : base.backgroundColor,
                                 color: isDarkTheme ? '#d4d4d4' : base.color,
                                 '&:hover': {
                                     backgroundColor: isDarkTheme ? '#2d2d30' : base.backgroundColor,

@@ -23,7 +23,7 @@ const SmtOutput = () => {
     const [smtCheckOption] = useAtom(smtCliOptionsAtom);
     const [isDarkTheme] = useAtom(isDarkThemeAtom);
 
-    //Update the model in the state when the API response is received    
+    //Update the model in the state when the API response is received
     useEffect(() => {
         if (smtModel) {
             // Reset models array when we get a completely new model (e.g., new execution)
@@ -108,7 +108,11 @@ const SmtOutput = () => {
                 setIsNextModelExecuting(false);
 
                 // Log the next model event
-                logToDb(permalink.permalink || '', { analysis: 'SMT-ModelIteration-Next', model: normalizedData, specId: specId });
+                logToDb(permalink.permalink || '', {
+                    analysis: 'SMT-ModelIteration-Next',
+                    model: normalizedData,
+                    specId: specId,
+                });
             })
             .catch((error: any) => {
                 console.error('Error fetching next model:', error);
@@ -125,7 +129,11 @@ const SmtOutput = () => {
             setCurrentModelIndex(prevIndex);
             setSmtModel(models[prevIndex]);
             setIsLastModel(false);
-            logToDb(permalink.permalink || '', { analysis: 'SMT-ModelIteration-Previous', model: models[prevIndex], specId: specId });
+            logToDb(permalink.permalink || '', {
+                analysis: 'SMT-ModelIteration-Previous',
+                model: models[prevIndex],
+                specId: specId,
+            });
         }
     };
 
@@ -194,13 +202,15 @@ const SmtOutput = () => {
                             </div>
                             <div>
                                 {smtCheckOption?.value === 'iterate-models' && (
-                                    <div style={{
-                                        marginBottom: '5px',
-                                        fontSize: '0.85em',
-                                        color: isDarkTheme ? '#ffffffff' : '#3b3b3bff',
-                                        fontStyle: 'italic',
-                                        textAlign: 'center'
-                                    }}>
+                                    <div
+                                        style={{
+                                            marginBottom: '5px',
+                                            fontSize: '0.85em',
+                                            color: isDarkTheme ? '#ffffffff' : '#3b3b3bff',
+                                            fontStyle: 'italic',
+                                            textAlign: 'center',
+                                        }}
+                                    >
                                         ⚠️ Based on the last solver state.
                                     </div>
                                 )}

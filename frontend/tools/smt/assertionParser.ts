@@ -20,8 +20,7 @@ export function extractAssertion(
         selectionStartColumn !== undefined &&
         selectionEndLine !== undefined &&
         selectionEndColumn !== undefined &&
-        (selectionStartLine !== selectionEndLine ||
-            selectionStartColumn !== selectionEndColumn)
+        (selectionStartLine !== selectionEndLine || selectionStartColumn !== selectionEndColumn)
     ) {
         // Use the start of the selection as the reference point
         return findAssertionAtPosition(lines, selectionStartLine, selectionStartColumn);

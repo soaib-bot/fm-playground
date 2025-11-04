@@ -12,7 +12,6 @@ export interface NextSmtModelResponse {
     error?: string;
 }
 
-
 export async function initiateModelIteration(check: string, permalink: string): Promise<SmtModelIterationResponse> {
     try {
         const url = `/smt/smt/model-iteration/?check=${check}&p=${permalink}`;
@@ -30,7 +29,6 @@ export async function initiateModelIteration(check: string, permalink: string): 
         throw error;
     }
 }
-
 
 export async function getNextSmtModel(specId: string, permalink: string): Promise<NextSmtModelResponse> {
     try {

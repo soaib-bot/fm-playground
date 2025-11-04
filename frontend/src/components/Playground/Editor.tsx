@@ -167,7 +167,7 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
                 const selection = e.selection;
                 const selectedText = model.getValueInRange(selection);
                 setSelectedText(selectedText);
-                
+
                 // Store the selection range
                 setSelectionRange({
                     startLine: selection.startLineNumber,
