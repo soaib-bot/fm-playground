@@ -1,7 +1,6 @@
 from z3_exec.z3 import (
     check_redundancy_only,
-    get_next_model,
-    process_commands,
+    execution_queue,
     run_z3,
     run_z3_with_cache,
 )
@@ -41,7 +40,7 @@ def test_process_commands():
 (check-sat)
 (get-model)"""
 
-    specId, result, redundant_lines = process_commands(spec)
+    specId, result, redundant_lines = execution_queue(spec)
     assert result is not None
     assert redundant_lines is not None
 

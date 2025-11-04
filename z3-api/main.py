@@ -15,9 +15,13 @@ from smt_redundancy.explain_redundancy import (
 )
 from z3_exec.z3 import (
     check_redundancy_only,
+    execution_queue,
+)
+
+from z3_exec.model_iteration import (
     get_cache_info,
     get_next_model,
-    process_commands,
+    iterate_models,
 )
 
 load_dotenv()
@@ -79,7 +83,7 @@ def run_z3(code: str, check_redundancy: bool = False) -> str:
 
         @cache.cache()
         def cached_run_z3(code: str, check_redundancy: bool) -> str:
-            return process_commands(code, check_redundancy=check_redundancy)
+            return execution_queue(code, check_redundancy=check_redundancy)
 
         try:
             return cached_run_z3(code, check_redundancy=check_redundancy)
@@ -87,7 +91,7 @@ def run_z3(code: str, check_redundancy: bool = False) -> str:
             raise HTTPException(status_code=500, detail="Error running z3")
     else:
         try:
-            return process_commands(code, check_redundancy=check_redundancy)
+            return execution_queue(code, check_redundancy=check_redundancy)
         except Exception:
             raise HTTPException(status_code=500, detail="Error running z3")
 
@@ -96,24 +100,22 @@ def run_z3(code: str, check_redundancy: bool = False) -> str:
 def execute_z3(check: str, p: str):
     code = get_code_by_permalink(check, p)
     try:
-        specId, result, redundant_lines = process_commands(code)
+        result, redundant_lines = execution_queue(code)
         log_to_db(
             p,
             json.dumps(
                 {
-                    "specId": specId,
-                    "analysis_type": "run_z3",
+                    "analysis": "run_z3",
                     "redundant_lines": list(redundant_lines),
                 }
             ),
         )
         return {
-            "specId": specId,
             "result": result,
             "redundant_lines": list(redundant_lines),
         }
     except Exception as e:
-        log_to_db(p, json.dumps({"analysis_type": "run_z3", "error": str(e)}))
+        log_to_db(p, json.dumps({"analysis": "run_z3", "error": str(e)}))
 
         raise HTTPException(status_code=500, detail="Error running code")
 
@@ -127,14 +129,14 @@ def check_redundancy(check: str, p: str):
             p,
             json.dumps(
                 {
-                    "analysis_type": "check_redundancy",
+                    "analysis": "check_redundancy",
                     "redundant_lines": list(redundant_lines),
                 }
             ),
         )
         return {"result": result, "redundant_lines": redundant_lines}
     except Exception as e:
-        log_to_db(p, json.dumps({"analysis_type": "check_redundancy", "error": str(e)}))
+        log_to_db(p, json.dumps({"analysis": "check_redundancy", "error": str(e)}))
         raise HTTPException(status_code=500, detail="Error running code")
 
 
@@ -174,7 +176,7 @@ def explain_redundancy(request: ExplainRedundancyRequest):
             request.p,
             json.dumps(
                 {
-                    "analysis_type": "explain_redundancy",
+                    "analysis": "explain_redundancy",
                     "time_taken": time_taken,
                     "minimal_set": [
                         str(expr) for expr in minimal_set
@@ -194,15 +196,41 @@ def explain_redundancy(request: ExplainRedundancyRequest):
     except ValueError as e:
         log_to_db(
             request.p,
-            json.dumps({"analysis_type": "explain_redundancy", "error": str(e)}),
+            json.dumps({"analysis": "explain_redundancy", "error": str(e)}),
         )
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         log_to_db(
             request.p,
-            json.dumps({"analysis_type": "explain_redundancy", "error": str(e)}),
+            json.dumps({"analysis": "explain_redundancy", "error": str(e)}),
         )
         raise HTTPException(status_code=500, detail=f"Error running code: {str(e)}")
+
+
+@app.get("/smt/model-iteration/", response_model=None)
+def model_iteration(check: str, p: str):
+    code = get_code_by_permalink(check, p)
+    try:
+        specId = iterate_models(code)
+        if specId is None:
+            raise HTTPException(status_code=500, detail="Error running code")
+        result = get_next_model(specId)
+        log_to_db(
+            p,
+            json.dumps(
+                {
+                    "specId": specId,
+                    "analysis": "model_iteration",
+                }
+            ),
+        )
+        return {
+            "specId": specId,
+            "result": result,
+        }
+    except Exception as e:
+        log_to_db(p, json.dumps({"analysis": "model_iteration", "error": str(e)}))
+        raise HTTPException(status_code=500, detail="Error running code")
 
 
 @app.get("/smt/next/", response_model=None)
