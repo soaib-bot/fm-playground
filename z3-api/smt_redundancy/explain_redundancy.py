@@ -3,11 +3,7 @@ import time
 from bisect import bisect_right
 from typing import List, Tuple
 
-from utils.helper import (
-    get_decls_and_sorts,
-    get_logic_from_smt2,
-    prettify_error,
-)
+from utils.helper import get_decls_and_sorts, get_logic_from_smt2, prettify_error
 from z3 import *
 
 from .minimizer import quick_explain

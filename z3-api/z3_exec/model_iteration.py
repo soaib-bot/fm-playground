@@ -1,8 +1,6 @@
-from z3 import *
-from typing import Any, Dict, List, Optional
 import multiprocessing
+from typing import Any, Dict, List, Optional
 
-from utils.z3_cache_manager import cache_manager
 from utils.helper import (
     get_all_vars,
     get_logic_from_smt2,
@@ -10,6 +8,8 @@ from utils.helper import (
     prettify_warning,
 )
 from utils.logics_filter import Z3_SUPPORTED_LOGICS
+from utils.z3_cache_manager import cache_manager
+from z3 import *
 
 TIMEOUT = 10  # seconds
 

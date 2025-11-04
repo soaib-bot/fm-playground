@@ -30,8 +30,9 @@ def test_redundant_lines():
     assert {11, 12, 13}.issubset(redundant_lines)
     assert not {7}.issubset(redundant_lines)
 
+
 def test_redundant_fun():
-    spec="""
+    spec = """
     (declare-datatypes () ((Nat zero (succ (pred Nat)))))
 (declare-fun p (Nat) Bool)
 (assert (p zero))

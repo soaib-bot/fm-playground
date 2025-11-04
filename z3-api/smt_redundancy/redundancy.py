@@ -1,8 +1,7 @@
 import re
 
-from z3 import *
-
 from utils.helper import get_decls_and_sorts
+from z3 import *
 
 from .minimizer import ddmin, quick_explain
 

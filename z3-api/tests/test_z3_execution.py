@@ -1,9 +1,4 @@
-from z3_exec.z3 import (
-    check_redundancy_only,
-    execution_queue,
-    run_z3,
-    run_z3_with_cache,
-)
+from z3_exec.z3 import check_redundancy_only, execution_queue, run_z3
 
 valid_spec = """(declare-const a Int)
 (declare-const b Int)
@@ -20,18 +15,6 @@ def test_train_success():
     assert " model is not available" in result
 
 
-def test_run_z3_with_cache():
-    spec = """(declare-const a Int)
-(declare-const b Int)
-(assert (> a 1))
-(assert (< a 1))
-(check-sat)
-(get-model)"""
-
-    specId, result = run_z3_with_cache(spec)
-    assert specId is None
-
-
 def test_process_commands():
     spec = """(declare-const a Int)
 (declare-const b Int)
@@ -40,7 +23,7 @@ def test_process_commands():
 (check-sat)
 (get-model)"""
 
-    specId, result, redundant_lines = execution_queue(spec)
+    result, redundant_lines = execution_queue(spec)
     assert result is not None
     assert redundant_lines is not None
 

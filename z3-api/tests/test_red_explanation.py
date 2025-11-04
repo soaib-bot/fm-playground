@@ -40,7 +40,6 @@ def test_line_comment_in_assert():
     assert explanation is not None
 
 
-
 def test_multiple_asserts_single_line():
     spec = """(
     declare-const x Int)

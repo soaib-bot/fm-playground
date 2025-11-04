@@ -1,7 +1,4 @@
-from z3_exec.model_iteration import (
-    iterate_models,
-    get_next_model,
-)
+from z3_exec.model_iteration import get_next_model, iterate_models
 
 valid_spec = """(declare-const a Int)
 (declare-const b Int)

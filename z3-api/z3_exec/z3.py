@@ -2,21 +2,14 @@ import concurrent.futures
 import multiprocessing
 import os
 import queue
-import re
 import subprocess
 import tempfile
-from typing import Any, Dict, List
-from z3 import *
-from utils.logics_filter import Z3_SUPPORTED_LOGICS
-from utils.helper import (
-    prettify_error,
-    get_logic_from_smt2,
-    prettify_warning,
-    get_all_vars,
-)
-from utils.z3_cache_manager import cache_manager
 
 from smt_redundancy.redundancy import unsat_core
+from utils.helper import get_logic_from_smt2
+from utils.logics_filter import Z3_SUPPORTED_LOGICS
+from utils.z3_cache_manager import cache_manager
+from z3 import *
 
 MAX_CONCURRENT_REQUESTS = 10
 TIMEOUT = 30  # seconds

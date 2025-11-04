@@ -13,16 +13,8 @@ from smt_redundancy.explain_redundancy import (
     explain_redundancy_from_smtlib,
     explain_redundancy_from_smtlib_by_assertion,
 )
-from z3_exec.z3 import (
-    check_redundancy_only,
-    execution_queue,
-)
-
-from z3_exec.model_iteration import (
-    get_cache_info,
-    get_next_model,
-    iterate_models,
-)
+from z3_exec.model_iteration import get_cache_info, get_next_model, iterate_models
+from z3_exec.z3 import check_redundancy_only, execution_queue
 
 load_dotenv()
 
