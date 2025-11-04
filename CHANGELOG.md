@@ -1,5 +1,13 @@
 # Change Log
 
+## v2.8.0 [2025-11-04]
+
+- ✨ Added SMT Redundancy Checking
+- ✨ Added SMT Redundancy Explanation
+- ✨ Added Model Iteration for SMT (based on last solver state)
+- ✨ Added a new table to the database for storing analysis metadata
+- ⚡️ Fixed pinned history not showing and scrolling correctly
+
 ## v2.7.9 [2025-10-29]
 
 - ✨ Added SMT Redundancy Checking
@@ -8,7 +16,6 @@
 - ⚡️ Added api for history
 - ⚡️ Updated api to update metadata
 - 📌 Upgrade z3 wasm to 4.15.1
-
 
 ## v2.7.9 [2025-10-24]
 
