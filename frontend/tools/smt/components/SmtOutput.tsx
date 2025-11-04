@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { MDBBtn } from 'mdb-react-ui-kit';
 import { smtModelAtom, outputPreviewHeightAtom, outputAtom } from '@/atoms';
-import { getNextSmtModel } from '../smtExecutor';
+import { getNextSmtModel } from '../smtIterateModels';
 import { jotaiStore, permalinkAtom } from '@/atoms';
 import { logToDb } from '@/api/playgroundApi';
+import { smtCliOptionsAtom, isDarkThemeAtom } from '@/atoms';
 
 const SmtOutput = () => {
     const [smtModel, setSmtModel] = useAtom(smtModelAtom);
@@ -18,11 +19,11 @@ const SmtOutput = () => {
     const [isLastModel, setIsLastModel] = useState(false);
     const [modelMessage, setModelMessage] = useState('');
     const [hasModel, setHasModel] = useState(false);
-    const [isSatScenario, setIsSatScenario] = useState(false); // Track if this is a SAT scenario
+    const [isModelIterationMode, setIsModelIterationMode] = useState(false); // Track if this is model iteration mode
+    const [smtCheckOption] = useAtom(smtCliOptionsAtom);
+    const [isDarkTheme] = useAtom(isDarkThemeAtom);
 
-    /**
-     * Update the model in the state when the API response is received
-     */
+    //Update the model in the state when the API response is received    
     useEffect(() => {
         if (smtModel) {
             // Reset models array when we get a completely new model (e.g., new execution)
@@ -32,11 +33,9 @@ const SmtOutput = () => {
                 setCurrentModelIndex(0);
                 setIsLastModel(false); // Reset the last model flag for new execution
 
-                // Check if the initial result is SAT (only on first execution)
-                const initialResult = smtModel.result || '';
-                const isSat =
-                    initialResult.toLowerCase().includes('sat') && !initialResult.toLowerCase().includes('unsat');
-                setIsSatScenario(isSat);
+                // Check if this is model iteration mode (has specId and result/next_model)
+                const isIterationMode = smtModel.specId && (smtModel.result || smtModel.next_model);
+                setIsModelIterationMode(isIterationMode);
             }
 
             // Check if we have any displayable content (result or next_model)
@@ -49,7 +48,7 @@ const SmtOutput = () => {
             } else if (smtModel.error) {
                 setHasModel(false);
                 setModelMessage(smtModel.result || smtModel.error || output);
-                setIsSatScenario(false);
+                setIsModelIterationMode(false);
             } else if (hasContent) {
                 // If there's a result/next_model but no specId, just display it
                 setHasModel(true);
@@ -64,7 +63,7 @@ const SmtOutput = () => {
             setIsLastModel(false);
             setModelMessage('');
             setHasModel(false);
-            setIsSatScenario(false);
+            setIsModelIterationMode(false);
         }
     }, [smtModel, output]);
 
@@ -109,7 +108,7 @@ const SmtOutput = () => {
                 setIsNextModelExecuting(false);
 
                 // Log the next model event
-                logToDb(permalink.permalink || '', { tool: 'SMT-Next', model: normalizedData, specId: specId });
+                logToDb(permalink.permalink || '', { analysis: 'SMT-ModelIteration-Next', model: normalizedData, specId: specId });
             })
             .catch((error: any) => {
                 console.error('Error fetching next model:', error);
@@ -126,7 +125,7 @@ const SmtOutput = () => {
             setCurrentModelIndex(prevIndex);
             setSmtModel(models[prevIndex]);
             setIsLastModel(false);
-            logToDb(permalink.permalink || '', { tool: 'SMT-Previous', model: models[prevIndex], specId: specId });
+            logToDb(permalink.permalink || '', { analysis: 'SMT-ModelIteration-Previous', model: models[prevIndex], specId: specId });
         }
     };
 
@@ -151,9 +150,9 @@ const SmtOutput = () => {
     const displayText = getDisplayText();
     const hasHTML = containsHTML(displayText);
 
-    // Show buttons if we have a specId and this is a SAT scenario (determined from initial result)
+    // Show buttons only if we have a specId and this is model iteration mode
     const shouldShowButtons = () => {
-        return isSatScenario && specId !== null;
+        return isModelIterationMode && specId !== null;
     };
 
     return (
@@ -192,6 +191,19 @@ const SmtOutput = () => {
                                 >
                                     {isNextModelExecuting ? 'Computing...' : 'Next'}
                                 </MDBBtn>
+                            </div>
+                            <div>
+                                {smtCheckOption?.value === 'iterate-models' && (
+                                    <div style={{
+                                        marginBottom: '5px',
+                                        fontSize: '0.85em',
+                                        color: isDarkTheme ? '#ffffffff' : '#3b3b3bff',
+                                        fontStyle: 'italic',
+                                        textAlign: 'center'
+                                    }}>
+                                        ⚠️ Based on the last solver state.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

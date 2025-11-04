@@ -5,6 +5,7 @@ import { checkRedundancy } from '@/../tools/smt/checkRedundancy';
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
 import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
 import { fmpConfig } from '@/ToolMaps';
+import { initiateModelIteration } from '@/../tools/smt/smtIterateModels';
 import {
     editorValueAtom,
     jotaiStore,
@@ -98,10 +99,10 @@ if (typeof window !== 'undefined') {
             jotaiStore.set(editorValueAtom, updated);
             jotaiStore.set(lineToHighlightAtom, []);
             jotaiStore.set(outputAtom, '; Commented out redundant assertions');
-            
+
             // Log the action
             const permalink = jotaiStore.get(permalinkAtom);
-            logToDb(permalink.permalink || '', { 
+            logToDb(permalink.permalink || '', {
                 action: 'comment-redundant-assertions',
                 checkOption: __currentCheckOption,
                 linesCount: sorted.length
@@ -109,7 +110,7 @@ if (typeof window !== 'undefined') {
         } catch (err) {
             jotaiStore.set(outputAtom, '; Failed to comment out lines');
             const permalink = jotaiStore.get(permalinkAtom);
-            logToDb(permalink.permalink || '', { 
+            logToDb(permalink.permalink || '', {
                 action: 'comment-redundant-assertions-failed',
                 checkOption: __currentCheckOption,
             });
@@ -141,10 +142,10 @@ if (typeof window !== 'undefined') {
             jotaiStore.set(editorValueAtom, updated);
             jotaiStore.set(lineToHighlightAtom, []);
             jotaiStore.set(outputAtom, '; Removed redundant assertions');
-            
+
             // Log the action
             const permalink = jotaiStore.get(permalinkAtom);
-            logToDb(permalink.permalink || '', { 
+            logToDb(permalink.permalink || '', {
                 action: 'remove-redundant-assertions',
                 checkOption: __currentCheckOption,
                 linesCount: sorted.length
@@ -152,7 +153,7 @@ if (typeof window !== 'undefined') {
         } catch (err) {
             jotaiStore.set(outputAtom, '; Failed to remove lines');
             const permalink = jotaiStore.get(permalinkAtom);
-            logToDb(permalink.permalink || '', { 
+            logToDb(permalink.permalink || '', {
                 action: 'remove-redundant-assertions-failed',
                 checkOption: __currentCheckOption,
             });
@@ -185,15 +186,14 @@ export const executeZ3WithOptionOnServer = async () => {
         await executeExplainRedundancy();
     } else if (smtCliOption?.value === 'check-redundancy') {
         await executeCheckRedundancy();
-    } else {
-        // Default: execute-z3
+    } else if (smtCliOption?.value === 'iterate-models') {
+        await executeIterateModels();
+    } else if (smtCliOption?.value === 'execute-z3') {
         await executeZ3();
     }
 };
 
-/**
- * Execute Z3 to explain redundancy at the current cursor line.
- */
+// Execute Z3 to explain redundancy at the current cursor line.
 async function executeExplainRedundancy() {
     const editorValue = jotaiStore.get(editorValueAtom);
     const language = jotaiStore.get(languageAtom);
@@ -323,10 +323,10 @@ async function executeCheckRedundancy() {
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
     const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
-    
+
     // Set current check option for logging
     __currentCheckOption = smtCmdOption.value || 'check-redundancy';
-    
+
     let response: any = null;
     const metadata = { ls: enableLsp, command: smtCmdOption.value };
     try {
@@ -395,10 +395,10 @@ async function executeZ3() {
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
     const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
-    
+
     // Set current check option for logging
     __currentCheckOption = smtCmdOption.value || 'execute-z3';
-    
+
     let response: any = null;
     const metadata = { ls: enableLsp, command: smtCmdOption.value };
     try {
@@ -417,10 +417,9 @@ async function executeZ3() {
         const res = await fetchZ3Result(response?.data);
 
         // Handle new response format from backend
-        // Backend returns: { specId: string, result: string, redundant_lines: array }
+        // Backend returns: { result: string, redundant_lines: array }
         const result = res.result || res[0];
         const redundantLines = res.redundant_lines || res[1];
-        const specId = res.specId;
 
         if (result.includes('(error')) {
             jotaiStore.set(outputAtom, result);
@@ -439,20 +438,76 @@ async function executeZ3() {
                 `\n<button onclick="__commentRedundantAssertions()">Comment out</button> ` +
                 `<button onclick="__removeRedundantAssertions()">Remove</button>`;
             jotaiStore.set(outputAtom, msg);
-            jotaiStore.set(smtModelAtom, { result: msg, specId: specId });
+            jotaiStore.set(smtModelAtom, { result: msg });
             jotaiStore.set(isExecutingAtom, false);
             return;
         }
 
         jotaiStore.set(outputAtom, result);
-        jotaiStore.set(smtModelAtom, { result: result, specId: specId });
+        jotaiStore.set(smtModelAtom, { result: result });
     } catch (error) {
         jotaiStore.set(
             outputAtom,
             (error as any).message +
-                `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+            `\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
         );
         jotaiStore.set(smtModelAtom, { error: (error as any).message });
+        jotaiStore.set(isExecutingAtom, false);
+        return;
+    }
+    jotaiStore.set(isExecutingAtom, false);
+}
+
+// Iterate through SMT models
+async function executeIterateModels() {
+    const editorValue = jotaiStore.get(editorValueAtom);
+    const language = jotaiStore.get(languageAtom);
+    const permalink = jotaiStore.get(permalinkAtom);
+    const enableLsp = jotaiStore.get(enableLspAtom);
+    const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
+
+    // Set current check option for logging
+    __currentCheckOption = smtCmdOption.value || 'iterate-models';
+
+    let response: any = null;
+    const metadata = { ls: enableLsp, command: smtCmdOption.value };
+    try {
+        response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
+        if (response) {
+            jotaiStore.set(permalinkAtom, response.data);
+        }
+    } catch (error: any) {
+        jotaiStore.set(
+            outputAtom,
+            `Something went wrong. If the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
+        jotaiStore.set(isExecutingAtom, false);
+        return;
+    }
+
+    try {
+        // Use the initiateModelIteration function from smtIterateModels.ts
+        const modelData = await initiateModelIteration(response?.data.check, response?.data.permalink);
+
+        // Set the model with specId for next/previous navigation
+        jotaiStore.set(smtModelAtom, {
+            specId: modelData.specId,
+            result: modelData.result,
+            next_model: modelData.result
+        });
+        jotaiStore.set(outputAtom, modelData.result);
+
+        // Log the initial model iteration
+        logToDb(response?.data.permalink || '', {
+            analysis: 'SMT-ModelIteration-Init',
+            specId: modelData.specId
+        });
+    } catch (error: any) {
+        jotaiStore.set(
+            outputAtom,
+            `; Error: ${error.message}\nIf the problem persists, open an <a href="${fmpConfig.issues}" target="_blank">issue</a>`
+        );
+        jotaiStore.set(smtModelAtom, { error: error.message });
         jotaiStore.set(isExecutingAtom, false);
         return;
     }

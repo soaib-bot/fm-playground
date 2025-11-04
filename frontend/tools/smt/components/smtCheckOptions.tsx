@@ -7,6 +7,7 @@ const SmtCheckOptions = () => {
         { value: 'execute-z3', label: 'Execute SMT' },
         { value: 'check-redundancy', label: 'Check Redundancy' },
         { value: 'explain-redundancy', label: 'Explain Redundancy' },
+        { value: 'iterate-models', label: 'Iterate Models' },
     ];
     const [smtCheckOption, setSmtCheckOption] = useAtom(smtCliOptionsAtom);
     const [isDarkTheme] = useAtom(isDarkThemeAtom);
