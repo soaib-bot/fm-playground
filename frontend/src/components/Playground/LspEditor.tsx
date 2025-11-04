@@ -11,8 +11,10 @@ import * as monaco from 'monaco-editor';
 import { useAtom } from 'jotai';
 import {
     cursorLineAtom,
+    cursorColumnAtom,
     greenHighlightAtom,
     selectedTextAtom,
+    selectionRangeAtom,
     targetAssertionRangeAtom,
     minimalSetRangesAtom,
     jotaiStore,
@@ -42,7 +44,9 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
     const [rangeDecorationIds, setRangeDecorationIds] = useState<string[]>([]);
     const [greenHighlight, setGreenHighlight] = useAtom(greenHighlightAtom);
     const [, setCursorLine] = useAtom(cursorLineAtom);
+    const [, setCursorColumn] = useAtom(cursorColumnAtom);
     const [, setSelectedText] = useAtom(selectedTextAtom);
+    const [, setSelectionRange] = useAtom(selectionRangeAtom);
     const [targetAssertionRange] = useAtom(targetAssertionRangeAtom);
     const [minimalSetRanges] = useAtom(minimalSetRangesAtom);
 
@@ -108,7 +112,9 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     // Track cursor position changes
                     cursorListenerRef.current = editorRef.current.onDidChangeCursorPosition((e: any) => {
                         const lineNumber = e.position.lineNumber;
+                        const column = e.position.column;
                         setCursorLine(lineNumber);
+                        setCursorColumn(column);
                     });
 
                     // Track selection changes
@@ -118,6 +124,14 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                             const selection = e.selection;
                             const selectedText = model.getValueInRange(selection);
                             setSelectedText(selectedText);
+                            
+                            // Store the selection range
+                            setSelectionRange({
+                                startLine: selection.startLineNumber,
+                                startColumn: selection.startColumn,
+                                endLine: selection.endLineNumber,
+                                endColumn: selection.endColumn,
+                            });
                         }
                     });
 
@@ -204,7 +218,9 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
             // Track cursor position changes
             cursorListenerRef.current = editorRef.current.onDidChangeCursorPosition((e: any) => {
                 const lineNumber = e.position.lineNumber;
+                const column = e.position.column;
                 setCursorLine(lineNumber);
+                setCursorColumn(column);
             });
 
             // Track selection changes
@@ -214,6 +230,14 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     const selection = e.selection;
                     const selectedText = model.getValueInRange(selection);
                     setSelectedText(selectedText);
+                    
+                    // Store the selection range
+                    setSelectionRange({
+                        startLine: selection.startLineNumber,
+                        startColumn: selection.startColumn,
+                        endLine: selection.endLineNumber,
+                        endColumn: selection.endColumn,
+                    });
                 }
             });
 

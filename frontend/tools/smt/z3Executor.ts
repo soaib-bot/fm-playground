@@ -1,5 +1,6 @@
 import { explainRedundancy, parseLineRanges, parseRangesToMonaco } from '@/../tools/smt/explainRedundancy';
 import { validateAssertion } from '@/../tools/smt/assertionValidator';
+import { extractAssertion } from '@/../tools/smt/assertionParser';
 import { checkRedundancy } from '@/../tools/smt/checkRedundancy';
 import { getLineToHighlight } from '@/../tools/common/lineHighlightingUtil';
 import { saveCodeAndRefreshHistory } from '@/utils/codeExecutionUtils';
@@ -13,7 +14,9 @@ import {
     lineToHighlightAtom,
     greenHighlightAtom,
     cursorLineAtom,
+    cursorColumnAtom,
     selectedTextAtom,
+    selectionRangeAtom,
     targetAssertionRangeAtom,
     minimalSetRangesAtom,
     outputAtom,
@@ -197,7 +200,9 @@ async function executeExplainRedundancy() {
     const permalink = jotaiStore.get(permalinkAtom);
     const enableLsp = jotaiStore.get(enableLspAtom);
     const cursorLine = jotaiStore.get(cursorLineAtom);
+    const cursorColumn = jotaiStore.get(cursorColumnAtom);
     const selectedText = jotaiStore.get(selectedTextAtom);
+    const selectionRange = jotaiStore.get(selectionRangeAtom);
     const smtCmdOption = jotaiStore.get(smtCliOptionsAtom);
 
     // Set current check option for logging
@@ -222,11 +227,34 @@ async function executeExplainRedundancy() {
 
     try {
         let result;
+        let assertionText: string | null = null;
 
-        // Check if user has selected text
+        // Try to extract the assertion from the editor
+        // This handles both partial selection and multiple assertions on same line
         if (selectedText && selectedText.trim().length > 0) {
-            // Validate the selected assertion
-            const validation = validateAssertion(selectedText);
+            // User has selected some text - extract the full assertion containing the selection
+            assertionText = extractAssertion(
+                editorValue,
+                cursorLine,
+                cursorColumn,
+                selectionRange?.startLine,
+                selectionRange?.startColumn,
+                selectionRange?.endLine,
+                selectionRange?.endColumn
+            );
+        } else {
+            // No selection - extract assertion at cursor position
+            assertionText = extractAssertion(
+                editorValue,
+                cursorLine,
+                cursorColumn
+            );
+        }
+
+        // If we found an assertion, validate and use it
+        if (assertionText && assertionText.trim().length > 0) {
+            // Validate the extracted assertion
+            const validation = validateAssertion(assertionText);
 
             if (!validation.isValid) {
                 // Show error message if validation fails
@@ -237,7 +265,7 @@ async function executeExplainRedundancy() {
                 return;
             }
 
-            // Use the normalized text from validation
+            // Use the validated assertion text
             result = await explainRedundancy(
                 response?.data.check,
                 response?.data.permalink,
@@ -245,7 +273,7 @@ async function executeExplainRedundancy() {
                 validation.normalizedText
             );
         } else {
-            // Fall back to using cursor line
+            // Fall back to using cursor line if no assertion found at cursor
             result = await explainRedundancy(response?.data.check, response?.data.permalink, cursorLine);
         }
 

@@ -32,7 +32,14 @@ export const isExecutingAtom = atom(false);
 export const lineToHighlightAtom = atom<number[]>([]);
 export const greenHighlightAtom = atom<number[]>([]); // For greenish highlighting (explain redundancy)
 export const cursorLineAtom = atom<number>(1); // Current cursor line number (1-based)
+export const cursorColumnAtom = atom<number>(1); // Current cursor column number (1-based)
 export const selectedTextAtom = atom<string>(''); // Currently selected text in editor
+export const selectionRangeAtom = atom<{
+    startLine: number;
+    startColumn: number;
+    endLine: number;
+    endColumn: number;
+} | null>(null); // Current selection range in editor
 export const targetAssertionRangeAtom = atom<{
     startLine: number;
     startColumn: number;
@@ -76,7 +83,9 @@ jotaiStore.sub(languageAtom, () => {});
 jotaiStore.sub(lineToHighlightAtom, () => {});
 jotaiStore.sub(greenHighlightAtom, () => {});
 jotaiStore.sub(cursorLineAtom, () => {});
+jotaiStore.sub(cursorColumnAtom, () => {});
 jotaiStore.sub(selectedTextAtom, () => {});
+jotaiStore.sub(selectionRangeAtom, () => {});
 jotaiStore.sub(targetAssertionRangeAtom, () => {});
 jotaiStore.sub(minimalSetRangesAtom, () => {});
 jotaiStore.sub(enableLspAtom, () => {});

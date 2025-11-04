@@ -8,7 +8,9 @@ import {
     lineToHighlightAtom,
     greenHighlightAtom,
     cursorLineAtom,
+    cursorColumnAtom,
     selectedTextAtom,
+    selectionRangeAtom,
     targetAssertionRangeAtom,
     minimalSetRangesAtom,
     jotaiStore,
@@ -28,7 +30,9 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
     const [lineToHighlight, setLineToHighlight] = useAtom(lineToHighlightAtom);
     const [greenHighlight, setGreenHighlight] = useAtom(greenHighlightAtom);
     const [, setCursorLine] = useAtom(cursorLineAtom);
+    const [, setCursorColumn] = useAtom(cursorColumnAtom);
     const [, setSelectedText] = useAtom(selectedTextAtom);
+    const [, setSelectionRange] = useAtom(selectionRangeAtom);
     const [targetAssertionRange] = useAtom(targetAssertionRangeAtom);
     const [minimalSetRanges] = useAtom(minimalSetRangesAtom);
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
@@ -151,7 +155,9 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
         // Track cursor position changes
         editor.onDidChangeCursorPosition((e) => {
             const lineNumber = e.position.lineNumber;
+            const column = e.position.column;
             setCursorLine(lineNumber);
+            setCursorColumn(column);
         });
 
         // Track selection changes
@@ -161,6 +167,14 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
                 const selection = e.selection;
                 const selectedText = model.getValueInRange(selection);
                 setSelectedText(selectedText);
+                
+                // Store the selection range
+                setSelectionRange({
+                    startLine: selection.startLineNumber,
+                    startColumn: selection.startColumn,
+                    endLine: selection.endLineNumber,
+                    endColumn: selection.endColumn,
+                });
             }
         });
 
@@ -168,6 +182,7 @@ const CodeEditor: React.FC<BasicCodeEditorProps> = (props: BasicCodeEditorProps)
         const currentPosition = editor.getPosition();
         if (currentPosition) {
             setCursorLine(currentPosition.lineNumber);
+            setCursorColumn(currentPosition.column);
         }
 
         const tools: { [key: string]: { name: string; extension: string; shortName: string } } = fmpConfig.tools;
