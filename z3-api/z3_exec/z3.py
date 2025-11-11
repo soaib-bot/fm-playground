@@ -6,9 +6,7 @@ import subprocess
 import tempfile
 
 from smt_redundancy.redundancy import unsat_core
-from utils.helper import get_logic_from_smt2
-from utils.logics_filter import Z3_SUPPORTED_LOGICS
-from utils.z3_cache_manager import cache_manager
+from utils.helper import get_logic_from_smt2, prettify_warning
 from z3 import *
 
 MAX_CONCURRENT_REQUESTS = 10
@@ -51,6 +49,12 @@ def _check_redundancy_worker(result_queue, code: str):
         solver = SolverFor(logic) if logic else Solver()
         solver.from_string(code)
         redundant_lines = list(unsat_core(solver, solver.assertions(), smt2_file=code))
+        if logic is None:
+            warning_msg = prettify_warning(
+                "No logic specified or unsupported logic, using default solver settings."
+            )
+            result_queue.put((f"{warning_msg}\n", redundant_lines))
+            return
         result_queue.put(("", redundant_lines))
     except Exception as e:
         result_queue.put((str(e), []))
@@ -68,6 +72,10 @@ def _run_z3_with_redundancy_worker(result_queue, code: str):
         solver = SolverFor(logic) if logic else Solver()
         solver.from_string(code)
         redundant_lines = list(unsat_core(solver, solver.assertions(), smt2_file=code))
+
+        if logic is None:
+            res = f"{prettify_warning('No logic specified or unsupported logic, using default solver settings.')}\n{res}"
+
         result_queue.put((res, redundant_lines))
     except Exception as e:
         result_queue.put((None, str(e), []))
