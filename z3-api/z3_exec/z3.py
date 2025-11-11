@@ -68,11 +68,12 @@ def _run_z3_with_redundancy_worker(result_queue, code: str):
         if not at_least_one_sat(res):
             result_queue.put((res, []))
             return
-
-        solver = SolverFor(logic) if logic else Solver()
-        solver.from_string(code)
-        redundant_lines = list(unsat_core(solver, solver.assertions(), smt2_file=code))
-
+        try:
+            solver = SolverFor(logic) if logic else Solver()
+            solver.from_string(code)
+            redundant_lines = list(unsat_core(solver, solver.assertions(), smt2_file=code))
+        except Exception:
+            redundant_lines = []
         if logic is None:
             res = f"{prettify_warning('No logic specified or unsupported logic, using default solver settings.')}\n{res}"
 
@@ -82,14 +83,20 @@ def _run_z3_with_redundancy_worker(result_queue, code: str):
 
 
 def run_with_timeout(worker_func, code: str, timeout=TIMEOUT):
-    """Run a worker function with timeout using multiprocessing."""
-    result_queue = multiprocessing.Queue()
-    process = multiprocessing.Process(target=worker_func, args=(result_queue, code))
+    """Run a worker function with timeout using multiprocessing.
+
+    Use the 'spawn' start method to avoid deadlocks on platforms (Linux)
+    where the default 'fork' start method can interact badly with threads.
+    """
+    # use a spawn context for safety (avoids forking threads/locks)
+    ctx = multiprocessing.get_context("spawn")
+    result_queue = ctx.Queue()
+    process = ctx.Process(target=worker_func, args=(result_queue, code))
     process.start()
     process.join(timeout)
 
     if process.is_alive():
-        # Process timed out
+        # Process timed out - terminate and return timeout marker
         process.terminate()
         process.join()
         return f"Process timed out after {timeout} seconds", []
