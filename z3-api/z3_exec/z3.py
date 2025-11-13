@@ -20,14 +20,14 @@ def run_z3(code: str) -> str:
     tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".smt2")
     tmp_file.write(code.strip())
     tmp_file.close()
-    command = ["z3", "-smt2", tmp_file.name]
+    command = ["/usr/bin/z3", "-smt2", tmp_file.name]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+        result = subprocess.run(command, capture_output=True, text=True, timeout=20)
         os.remove(tmp_file.name)
         return result.stdout
     except subprocess.TimeoutExpired:
         os.remove(tmp_file.name)
-        return "Process timed out after {} seconds".format(10)
+        return "Process timed out after {} seconds".format(20)
 
 
 def at_least_one_sat(model: str) -> bool:
