@@ -2,7 +2,7 @@ import { WrapperConfig } from 'monaco-editor-wrapper';
 import { createLangiumLimbooleConfig as createLimbooleConfig } from '../limboole/langium/config/wrapperLimbooleConfig';
 import { createLangiumSmtConfig as createSmtConfig } from '../smt/langium/config/wrapperSmtConfig';
 import { createLangiumSpectraConfig as createSpectraConfig } from '../spectra/langium/config/wrapperSpectraConfig';
-// import { createLangiumAlloyConfig as createAlloyConfig } from '../alloy/config/wrapperAlloyConfig';
+import { createLangiumAlloyConfig as createAlloyConfig } from '../alloy/langium/config/wrapperAlloyConfig';
 // import { createLangiumNuxmvConfig as createNuxmvConfig } from '../nuxmv/config/wrapperXmvConfig';
 
 // Type for language configuration
@@ -26,7 +26,10 @@ const languageConfigMap: Record<string, LanguageConfig | null> = {
         languageId: 'spectra',
     },
     XMV: null, // XMV is not supported
-    ALS: null, // ALS is not supported
+    ALS: {
+        configCreator: createAlloyConfig,
+        languageId: 'alloy',
+    }
 };
 
 export const createDynamicLspConfig = async (languageShort: string): Promise<WrapperConfig | null> => {

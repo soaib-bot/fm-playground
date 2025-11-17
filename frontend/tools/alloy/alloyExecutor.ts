@@ -10,6 +10,7 @@ import {
     alloySelectedCmdAtom,
     alloyInstanceAtom,
     outputAtom,
+    enableLspAtom
 } from '@/atoms';
 import { Permalink } from '@/types';
 
@@ -28,8 +29,9 @@ export const executeAlloyTool = async () => {
     const language = jotaiStore.get(languageAtom);
     const permalink = jotaiStore.get(permalinkAtom);
     const alloySelectedCmd = jotaiStore.get(alloySelectedCmdAtom);
+    const enableLsp = jotaiStore.get(enableLspAtom);
 
-    const metadata = { cmd: alloySelectedCmd + 1 };
+    const metadata = { ls: enableLsp, cmd: alloySelectedCmd + 1 };
     const response = await saveCodeAndRefreshHistory(
         editorValue,
         language.short,

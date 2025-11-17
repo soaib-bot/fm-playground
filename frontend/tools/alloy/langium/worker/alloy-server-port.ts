@@ -1,0 +1,16 @@
+/// <reference lib="WebWorker" />
+
+import { start } from './alloy-server-start.js';
+
+declare const self: DedicatedWorkerGlobalScope;
+
+self.onmessage = async (event: MessageEvent) => {
+    const data = event.data;
+    if (data.port !== undefined) {
+        start(data.port, 'alloy-server-port');
+
+        setTimeout(() => {
+            self.postMessage('started');
+        }, 1000);
+    }
+};

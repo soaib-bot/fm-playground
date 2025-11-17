@@ -96,7 +96,7 @@ export const lspSupportMap: Record<string, boolean> = {
     SAT: true,
     SMT: true,
     XMV: false,
-    ALS: false,
+    ALS: true,
     SPECTRA: true,
 };
 
