@@ -1,5 +1,15 @@
 # Change Log
 
+## v2.9.0 [2025-11-18]
+
+- ✨ Added Alloy Language Support (LSP)
+
+## v2.8.1-3 [2025-11-13]
+
+- 🐛 Fixed smt output error handling without any check-sat
+- ⚡️ Added the warning message also for smt execution
+- ⚡️ Release strictness on optional SMT redundancy checking
+
 ## v2.8.0 [2025-11-04]
 
 - ✨ Added SMT Redundancy Checking
