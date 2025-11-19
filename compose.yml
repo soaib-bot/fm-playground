@@ -133,7 +133,7 @@ services:
     build:
       context: ./smt-diff-api
       dockerfile: Dockerfile
-    container_name: fmp-smt-diff-api
+    container_name: fmp-diff-smt-api
     environment:
       API_URL: http://fmp-backend:8000/
       REDIS_URL: redis://redis:6379/0
