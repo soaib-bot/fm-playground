@@ -51,3 +51,27 @@ def test_store_witness():
     witness1 = next(generator).sexpr()
     witness2 = next(generator).sexpr()
     assert witness1 != witness2
+
+def test_sort_diff():
+    s1 = """
+    (declare-sort User)
+    (declare-fun is_admin (User) Bool)
+    (declare-const Alice User)
+    (assert (is_admin Alice))
+    """
+
+    s2 = """
+    (declare-sort User)
+    (declare-fun is_admin (User) Bool)
+    (declare-const Alice User)
+    (assert (not (is_admin Alice)))
+    """
+
+    generator = diff_witness(parse_smt2_string(s2), parse_smt2_string(s1))
+
+    User = DeclareSort('User')
+    is_admin = Function('is_admin', User, BoolSort())
+    Alice = Const('Alice', User)
+
+    witness = next(generator).eval(is_admin(Alice))
+    assert witness == False

@@ -160,18 +160,6 @@ def prettify_warning(warning_msg: str):
     return f"<span style='color: orange;'>{warning_msg.strip()}</span>"
 
 
-def _witness_worker(
-    queue, witness_func, assertions1, assertions2, logic1, logic2, filter_str
-):
-    """Worker function that runs in a separate process to compute witnesses with timeout."""
-    try:
-        result = witness_func(assertions1, assertions2, logic1, logic2, filter_str)
-        queue.put(("success", result))
-    except Exception as e:
-        error_msg = prettify_error(f"Error computing witness: {str(e)}")
-        queue.put(("error", error_msg))
-
-
 def _semantic_relation_worker(queue, s1, s2):
     """Worker function that runs in a separate process to compute semantic relation with timeout."""
     try:
@@ -208,46 +196,6 @@ def _semantic_relation_worker(queue, s1, s2):
         queue.put(("error", error_msg))
 
 
-def _run_witness_with_timeout(
-    witness_func,
-    assertions1,
-    assertions2,
-    logic1,
-    logic2,
-    filter_str,
-    timeout=DEFAULT_TIMEOUT,
-):
-    """Run a witness computation function with a timeout using multiprocessing."""
-    result_queue = multiprocessing.Queue()
-    process = multiprocessing.Process(
-        target=_witness_worker,
-        args=(
-            result_queue,
-            witness_func,
-            assertions1,
-            assertions2,
-            logic1,
-            logic2,
-            filter_str,
-        ),
-    )
-
-    process.start()
-    process.join(timeout)
-
-    if process.is_alive():
-        # Process is still running after timeout
-        process.terminate()
-        process.join()
-        return prettify_error(f"Witness computation timed out after {timeout} seconds")
-
-    if not result_queue.empty():
-        status, result = result_queue.get()
-        return result
-    else:
-        return prettify_error("No result returned from witness computation")
-
-
 def _run_semantic_relation_with_timeout(s1, s2, timeout=DEFAULT_TIMEOUT):
     """Run semantic relation computation with a timeout using multiprocessing."""
     result_queue = multiprocessing.Queue()
@@ -274,9 +222,19 @@ def _run_semantic_relation_with_timeout(s1, s2, timeout=DEFAULT_TIMEOUT):
         return prettify_error("No result returned from semantic relation computation")
 
 
-def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str = ""):
+def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str = "", timeout_ms: int = None):
+    """
+    Compute diff witnesses between two specifications.
+    
+    timeout_ms: Timeout in milliseconds for Z3 solver operations. If None, no timeout is set.
+    """
     logic = common_logic(logic1, logic2)
     solver_s1_not_s2 = SolverFor(logic) if logic else Solver()
+    
+    # Set timeout on the solver itself (in milliseconds)
+    if timeout_ms is not None:
+        solver_s1_not_s2.set("timeout", timeout_ms)
+    
     solver_s1_not_s2.add(And(assertions1), And(Not(And(assertions2))))
     if filter:
         combined_assertions = list(assertions1) + list(assertions2)
@@ -287,8 +245,13 @@ def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str
             solver_s1_not_s2.add(filter_assertions)
         except Exception as e:
             return prettify_error(f"Error parsing filter: {e.args[0].decode()}")
-    if solver_s1_not_s2.check() != sat:
+    
+    check_result = solver_s1_not_s2.check()
+    if check_result == unknown:
+        return prettify_error("Solver returned unknown (possibly timed out)")
+    if check_result != sat:
         return "No diff witnesses found (unsat/unknown)."
+    
     vars_s1 = get_all_vars(assertions1)
     vars_s2 = get_all_vars(assertions2)
     vars_for_enum = list(vars_s1.intersection(vars_s2))
@@ -302,10 +265,20 @@ def diff_witness(assertions1, assertions2, logic1=None, logic2=None, filter: str
 
 
 def common_witness(
-    assertions1, assertions2, logic1=None, logic2=None, filter: str = ""
+    assertions1, assertions2, logic1=None, logic2=None, filter: str = "", timeout_ms: int = None
 ):
+    """
+    Compute common witnesses between two specifications.
+    
+    timeout_ms: Timeout in milliseconds for Z3 solver operations. If None, no timeout is set.
+    """
     logic = common_logic(logic1, logic2)
     combined_solver = SolverFor(logic) if logic else Solver()
+    
+    # Set timeout on the solver itself (in milliseconds)
+    if timeout_ms is not None:
+        combined_solver.set("timeout", timeout_ms)
+    
     combined_solver.add(assertions1)
     combined_solver.add(assertions2)
     if filter:
@@ -317,8 +290,13 @@ def common_witness(
             combined_solver.add(filter_assertions)
         except Exception as e:
             return prettify_error(f"Error parsing filter: {e.args[0].decode()}")
-    if combined_solver.check() != sat:
+    
+    check_result = combined_solver.check()
+    if check_result == unknown:
+        return prettify_error("Solver returned unknown (possibly timed out)")
+    if check_result != sat:
         return "No diff witnesses found (unsat/unknown)."
+    
     s1_vars = get_all_vars(assertions1)
     s2_vars = get_all_vars(assertions2)
     all_vars = list(s1_vars.intersection(s2_vars))
@@ -363,7 +341,7 @@ def store_witness(
     """
     s1: previous spec
     s2: current spec
-    timeout: timeout in seconds (default: DEFAULT_TIMEOUT)
+    timeout: timeout in seconds for Z3 solver operations (converted to milliseconds internally)
     """
     error_msg = None
     try:
@@ -393,21 +371,43 @@ def store_witness(
     logic1 = get_logic_from_smt2(s1)
     logic2 = get_logic_from_smt2(s2)
 
-    # Use timeout wrapper to compute witnesses
-    if analysis == "not-previous-but-current":
-        witness = _run_witness_with_timeout(
-            diff_witness, assertions2, assertions1, logic2, logic1, filter, timeout
-        )
-    elif analysis == "not-current-but-previous":
-        witness = _run_witness_with_timeout(
-            diff_witness, assertions1, assertions2, logic1, logic2, filter, timeout
-        )
-    elif analysis == "common-witness":
-        witness = _run_witness_with_timeout(
-            common_witness, assertions1, assertions2, logic1, logic2, filter, timeout
+    # Convert timeout from seconds to milliseconds for Z3
+    timeout_ms = timeout * 1000 if timeout > 0 else None
+
+    # Create generator with timeout set on the solver
+    try:
+        if analysis == "not-previous-but-current":
+            witness = diff_witness(assertions2, assertions1, logic2, logic1, filter, timeout_ms)
+        elif analysis == "not-current-but-previous":
+            witness = diff_witness(assertions1, assertions2, logic1, logic2, filter, timeout_ms)
+        elif analysis == "common-witness":
+            witness = common_witness(assertions1, assertions2, logic1, logic2, filter, timeout_ms)
+        else:
+            witness = prettify_error(f"Unknown analysis type: {analysis}")
+    except Exception as e:
+        witness = prettify_error(f"Error computing witness: {str(e)}")
+
+    if logic1 is None and logic2 is None:
+        logic = prettify_warning("; No logic specified; using default solver settings.")
+    elif logic1 != logic2:
+        c_logic = common_logic(logic1, logic2)
+        logic = prettify_warning(
+            f"; Different logics specified ({logic1} vs {logic2}); using super set logic: {c_logic}."
         )
     else:
-        witness = prettify_error(f"Unknown analysis type: {analysis}")
+        logic = logic1
+
+    if witness:
+        specId = cache_manager.create_cache(
+            cached_value=witness,
+            previous=assertions1,
+            current=assertions2,
+            logic=logic,
+            ttl_seconds=TTL_SECONDS,
+        )
+        if specId:
+            return specId
+    return None
 
     if logic1 is None and logic2 is None:
         logic = prettify_warning("; No logic specified; using default solver settings.")
