@@ -1,0 +1,16 @@
+-- Simple nuXmv example
+-- A counter that counts from 0 to 2
+
+MODULE main
+VAR
+  counter : 0..2;
+  
+ASSIGN
+  init(counter) := 0;
+  next(counter) := case
+    counter < 2 : counter + 1;
+    TRUE : 0;
+  esac;
+
+-- Property: counter never exceeds 2
+LTLSPEC G (counter <= 2)

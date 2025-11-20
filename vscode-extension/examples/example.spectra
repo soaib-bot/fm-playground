@@ -1,0 +1,18 @@
+// Simple Spectra example
+// A basic specification for a toggle system
+
+module Toggle
+
+env boolean press;
+sys boolean light;
+
+guarantee
+  // Initially light is off
+  initially light = false;
+  
+// Press to toggle
+asm
+  G (press -> next(!press));
+
+guarantee
+  G (press -> next(light = !light));

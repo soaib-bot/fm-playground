@@ -1,0 +1,4 @@
+// Simple Limboole example
+// This checks if (a AND b) OR c is satisfiable
+
+(a & b) | c
