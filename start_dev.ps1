@@ -1,12 +1,11 @@
-# FM Playground - Service Manager (PowerShell)
+﻿# FM Playground - Service Manager (PowerShell)
 # Requires PowerShell 5.1 or higher
-
-# Enable strict mode
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
 
 # Project root directory
 $ProjectRoot = $PSScriptRoot
+
+# Error handling
+$ErrorActionPreference = "Stop"
 
 # Arrays to store job information
 $Global:Jobs = @()
@@ -18,8 +17,9 @@ function Stop-AllServices {
     foreach ($job in $Global:Jobs) {
         if ($job -and (Get-Job -Id $job.Id -ErrorAction SilentlyContinue)) {
             Write-Host "Stopping $($job.Name)..." -ForegroundColor Yellow
-            Stop-Job -Id $job.Id -ErrorAction SilentlyContinue
-            Remove-Job -Id $job.Id -ErrorAction SilentlyContinue
+            Stop-Job -Id $job.Id -PassThru -ErrorAction SilentlyContinue | Out-Null
+            Wait-Job -Id $job.Id -Timeout 3 -ErrorAction SilentlyContinue | Out-Null
+            Remove-Job -Id $job.Id -Force -ErrorAction SilentlyContinue
         }
     }
     Write-Host "All services stopped." -ForegroundColor Green
@@ -28,40 +28,36 @@ function Stop-AllServices {
 # Register cleanup on exit
 Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Stop-AllServices } | Out-Null
 
-# Trap Ctrl+C
-[Console]::TreatControlCAsInput = $false
-$null = [Console]::CancelKeyPress.GetInvocationList() | ForEach-Object { $_.Method.DeclaringType.Name }
+# Trap Ctrl+C using a simpler approach
 try {
-    [Console]::add_CancelKeyPress({
-        param($sender, $e)
-        $e.Cancel = $true
+    $null = Register-EngineEvent -SourceIdentifier ConsoleControl.CancelKeyPress -Action {
         Stop-AllServices
         exit 0
-    })
+    } -ErrorAction SilentlyContinue
 } catch {
-    # Fallback for environments where CancelKeyPress is not available
+    # Fallback - Ctrl+C will be handled by the finally block
 }
 
 # Helper functions
-function Write-ErrorMsg {
+function Global:Show-ErrorMsg {
     param([string]$Message)
     Write-Host "ERROR: $Message" -ForegroundColor Red
     exit 1
 }
 
-function Write-Success {
+function Global:Show-Success {
     param([string]$Message)
-    Write-Host "✓ $Message" -ForegroundColor Green
+    Write-Host "[OK] $Message" -ForegroundColor Green
 }
 
-function Write-Info {
+function Global:Show-Info {
     param([string]$Message)
-    Write-Host "ℹ $Message" -ForegroundColor Cyan
+    Write-Host "[INFO] $Message" -ForegroundColor Cyan
 }
 
-function Write-Warning {
+function Global:Show-WarningMsg {
     param([string]$Message)
-    Write-Host "⚠ $Message" -ForegroundColor Yellow
+    Write-Host "[WARN] $Message" -ForegroundColor Yellow
 }
 
 # Function to check if a port is in use
@@ -74,7 +70,7 @@ function Test-Port {
     $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     
     if ($connection) {
-        Write-ErrorMsg "Port $Port is already in use (required for $ServiceName). Please stop the service using this port first."
+        Write-Host "ERROR: `Port $Port is already in use (required for $ServiceName). Please stop the service using this port first." -ForegroundColor Red; exit 1
     }
 }
 
@@ -83,7 +79,7 @@ function Test-Java {
     try {
         $javaVersionOutput = & java -version 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-ErrorMsg "Java is not installed. Please install Java 17 or higher."
+            Write-Host "ERROR: `Java is not installed. Please install Java 17 or higher." -ForegroundColor Red; exit 1
         }
         
         # Parse Java version
@@ -91,17 +87,17 @@ function Test-Java {
         if ($versionLine -match 'version "(\d+)') {
             $javaVersion = [int]$matches[1]
         } else {
-            Write-ErrorMsg "Unable to determine Java version."
+            Write-Host "ERROR: `Unable to determine Java version." -ForegroundColor Red; exit 1
         }
         
         if ($javaVersion -lt 17) {
-            Write-ErrorMsg "Java version $javaVersion is installed, but version 17 or higher is required."
+            Write-Host "ERROR: `Java version $javaVersion is installed, but version 17 or higher is required." -ForegroundColor Red; exit 1
         }
         
-        Write-Success "Java version $javaVersion detected"
+        Write-Host "[OK] Java version $javaVersion detected" -ForegroundColor Green
         return $javaVersion
     } catch {
-        Write-ErrorMsg "Java is not installed. Please install Java 17 or higher."
+        Write-Host "ERROR: `Java is not installed. Please install Java 17 or higher." -ForegroundColor Red; exit 1
     }
 }
 
@@ -115,7 +111,7 @@ function Update-BuildGradle {
         $content = Get-Content $buildFile -Raw
         $content = $content -replace 'languageVersion = JavaLanguageVersion\.of\(\d+\)', "languageVersion = JavaLanguageVersion.of($JavaVersion)"
         Set-Content -Path $buildFile -Value $content -NoNewline
-        Write-Success "Updated build.gradle to use Java $JavaVersion"
+        Write-Host "[OK] Updated build.gradle to use Java $JavaVersion" -ForegroundColor Green
     }
 }
 
@@ -124,11 +120,11 @@ function Test-Poetry {
     try {
         $null = & poetry --version 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-ErrorMsg "Poetry is not installed. Please install Poetry: https://python-poetry.org/docs/#installation"
+            Write-Host "ERROR: `Poetry is not installed. Please install Poetry: https://python-poetry.org/docs/#installation" -ForegroundColor Red; exit 1
         }
-        Write-Success "Poetry is installed"
+        Write-Host "[OK] Poetry is installed" -ForegroundColor Green
     } catch {
-        Write-ErrorMsg "Poetry is not installed. Please install Poetry: https://python-poetry.org/docs/#installation"
+        Write-Host "ERROR: `Poetry is not installed. Please install Poetry: https://python-poetry.org/docs/#installation" -ForegroundColor Red; exit 1
     }
 }
 
@@ -137,11 +133,11 @@ function Test-Npm {
     try {
         $null = & npm --version 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-ErrorMsg "npm is not installed. Please install Node.js and npm."
+            Write-Host "ERROR: `npm is not installed. Please install Node.js and npm." -ForegroundColor Red; exit 1
         }
-        Write-Success "npm is installed"
+        Write-Host "[OK] npm is installed" -ForegroundColor Green
     } catch {
-        Write-ErrorMsg "npm is not installed. Please install Node.js and npm."
+        Write-Host "ERROR: `npm is not installed. Please install Node.js and npm." -ForegroundColor Red; exit 1
     }
 }
 
@@ -152,15 +148,15 @@ function Test-NodeVersion {
         if ($nodeVersionOutput -match 'v(\d+)\.') {
             $nodeVersion = [int]$matches[1]
         } else {
-            Write-ErrorMsg "Unable to determine Node.js version."
+            Write-Host "ERROR: `Unable to determine Node.js version." -ForegroundColor Red; exit 1
         }
         
         if ($nodeVersion -lt 20) {
-            Write-ErrorMsg "Node version $nodeVersion is installed, but version 20 or higher is required."
+            Write-Host "ERROR: `Node version $nodeVersion is installed, but version 20 or higher is required." -ForegroundColor Red; exit 1
         }
-        Write-Success "Node version $nodeVersion detected"
+        Write-Host "[OK] Node version $nodeVersion detected" -ForegroundColor Green
     } catch {
-        Write-ErrorMsg "Unable to determine Node.js version."
+        Write-Host "ERROR: `Unable to determine Node.js version." -ForegroundColor Red; exit 1
     }
 }
 
@@ -184,17 +180,17 @@ function Initialize-EnvFile {
             Set-Content -Path $envFile -Value $content -NoNewline
         }
         
-        Write-Success "Created .env file for $(Split-Path $ServiceDir -Leaf)"
+        Write-Host "[OK] Created .env file for $(Split-Path $ServiceDir -Leaf)" -ForegroundColor Green
     }
 }
 
 # Service functions
 function Start-AlloyApi {
-    Write-Info "Starting alloy-api..."
+    Write-Host "[INFO] Starting alloy-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "alloy-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find alloy-api directory"
+        Write-Host "ERROR: `Cannot find alloy-api directory" -ForegroundColor Red; exit 1
     }
     
     $javaVersion = Test-Java
@@ -203,7 +199,7 @@ function Start-AlloyApi {
         Update-BuildGradle -JavaVersion $javaVersion
     }
     
-    Write-Info "Building and starting alloy-api on port 8080..."
+    Write-Host "[INFO] Building and starting alloy-api on port 8080..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "alloy-api" -ScriptBlock {
         param($dir)
@@ -212,21 +208,21 @@ function Start-AlloyApi {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "alloy-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] alloy-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-Backend {
-    Write-Info "Starting backend..."
+    Write-Host "[INFO] Starting backend..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "backend"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find backend directory"
+        Write-Host "ERROR: `Cannot find backend directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir
     Test-Poetry
     
-    Write-Info "Installing dependencies and starting backend on port 8000..."
+    Write-Host "[INFO] Installing dependencies and starting backend on port 8000..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "backend" -ScriptBlock {
         param($dir)
@@ -236,27 +232,27 @@ function Start-Backend {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "backend started (Job ID: $($job.Id))"
+    Write-Host "[OK] backend started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-Frontend {
-    Write-Info "Starting frontend..."
+    Write-Host "[INFO] Starting frontend..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "frontend"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find frontend directory"
+        Write-Host "ERROR: `Cannot find frontend directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir
     Test-Npm
     Test-NodeVersion
     
-    Write-Info "Installing dependencies..."
+    Write-Host "[INFO] Installing dependencies..." -ForegroundColor Cyan
     Push-Location $serviceDir
     & npm install | Out-Null
     Pop-Location
     
-    Write-Info "Starting frontend on port 5173..."
+    Write-Host "[INFO] Starting frontend on port 5173..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "frontend" -ScriptBlock {
         param($dir)
@@ -265,20 +261,20 @@ function Start-Frontend {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "frontend started (Job ID: $($job.Id))"
+    Write-Host "[OK] frontend started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-LimbooleApi {
-    Write-Info "Starting limboole-api..."
+    Write-Host "[INFO] Starting limboole-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "limboole-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find limboole-api directory"
+        Write-Host "ERROR: `Cannot find limboole-api directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir -ApiUrl "http://localhost:8000"
     
-    Write-Info "Installing dependencies and starting limboole-api on port 8084..."
+    Write-Host "[INFO] Installing dependencies and starting limboole-api on port 8084..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "limboole-api" -ScriptBlock {
         param($dir)
@@ -288,20 +284,20 @@ function Start-LimbooleApi {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "limboole-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] limboole-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-LimbooleDiffApi {
-    Write-Info "Starting limboole-diff-api..."
+    Write-Host "[INFO] Starting limboole-diff-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "limboole-diff-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find limboole-diff-api directory"
+        Write-Host "ERROR: `Cannot find limboole-diff-api directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir -ApiUrl "http://localhost:8000"
     
-    Write-Info "Installing dependencies and starting limboole-diff-api on port 8051..."
+    Write-Host "[INFO] Installing dependencies and starting limboole-diff-api on port 8051..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "limboole-diff-api" -ScriptBlock {
         param($dir)
@@ -311,20 +307,20 @@ function Start-LimbooleDiffApi {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "limboole-diff-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] limboole-diff-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-NuxmvApi {
-    Write-Info "Starting nuxmv-api..."
+    Write-Host "[INFO] Starting nuxmv-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "nuxmv-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find nuxmv-api directory"
+        Write-Host "ERROR: `Cannot find nuxmv-api directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir -ApiUrl "http://localhost:8000"
     
-    Write-Info "Installing dependencies and starting nuxmv-api on port 8081..."
+    Write-Host "[INFO] Installing dependencies and starting nuxmv-api on port 8081..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "nuxmv-api" -ScriptBlock {
         param($dir)
@@ -334,20 +330,20 @@ function Start-NuxmvApi {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "nuxmv-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] nuxmv-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-SmtDiffApi {
-    Write-Info "Starting smt-diff-api..."
+    Write-Host "[INFO] Starting smt-diff-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "smt-diff-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find smt-diff-api directory"
+        Write-Host "ERROR: `Cannot find smt-diff-api directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir -ApiUrl "http://localhost:8000"
     
-    Write-Info "Installing dependencies and starting smt-diff-api on port 8052..."
+    Write-Host "[INFO] Installing dependencies and starting smt-diff-api on port 8052..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "smt-diff-api" -ScriptBlock {
         param($dir)
@@ -357,20 +353,20 @@ function Start-SmtDiffApi {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "smt-diff-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] smt-diff-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-SpectraApi {
-    Write-Info "Starting spectra-api..."
+    Write-Host "[INFO] Starting spectra-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "spectra-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find spectra-api directory"
+        Write-Host "ERROR: `Cannot find spectra-api directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir -ApiUrl "http://localhost:8000"
     
-    Write-Info "Installing dependencies and starting spectra-api on port 8083..."
+    Write-Host "[INFO] Installing dependencies and starting spectra-api on port 8083..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "spectra-api" -ScriptBlock {
         param($dir)
@@ -380,20 +376,20 @@ function Start-SpectraApi {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "spectra-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] spectra-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 function Start-Z3Api {
-    Write-Info "Starting z3-api..."
+    Write-Host "[INFO] Starting z3-api..." -ForegroundColor Cyan
     $serviceDir = Join-Path $ProjectRoot "z3-api"
     
     if (!(Test-Path $serviceDir)) {
-        Write-ErrorMsg "Cannot find z3-api directory"
+        Write-Host "ERROR: `Cannot find z3-api directory" -ForegroundColor Red; exit 1
     }
     
     Initialize-EnvFile -ServiceDir $serviceDir -ApiUrl "http://localhost:8000"
     
-    Write-Info "Installing dependencies and starting z3-api on port 8082..."
+    Write-Host "[INFO] Installing dependencies and starting z3-api on port 8082..." -ForegroundColor Cyan
     
     $job = Start-Job -Name "z3-api" -ScriptBlock {
         param($dir)
@@ -403,27 +399,27 @@ function Start-Z3Api {
     } -ArgumentList $serviceDir
     
     $Global:Jobs += $job
-    Write-Success "z3-api started (Job ID: $($job.Id))"
+    Write-Host "[OK] z3-api started (Job ID: $($job.Id))" -ForegroundColor Green
 }
 
 # Main menu
 function Show-Menu {
     Write-Host "`n==========================================" -ForegroundColor Cyan
-    Write-Host "  FM Playground - Service Manager" -ForegroundColor Cyan
+    Write-Host "[OK]  FM Playground - Service Manager" -ForegroundColor Cyan
     Write-Host "==========================================" -ForegroundColor Cyan
     Write-Host "`nSelect services to start (comma-separated numbers or 'all'):`n"
-    Write-Host "  1) backend           (Port 8000) [Required for API services]"
-    Write-Host "  2) frontend          (Port 5173)"
-    Write-Host "  3) alloy-api         (Port 8080)"
-    Write-Host "  4) limboole-api      (Port 8084)"
-    Write-Host "  5) limboole-diff-api (Port 8051)"
-    Write-Host "  6) z3-api            (Port 8082)"
-    Write-Host "  7) smt-diff-api      (Port 8052)"
-    Write-Host "  8) nuxmv-api         (Port 8081)"
-    Write-Host "  9) spectra-api       (Port 8083)"
+    Write-Host "[OK]  1) backend           (Port 8000) [Required for API services]"
+    Write-Host "[OK]  2) frontend          (Port 5173)"
+    Write-Host "[OK]  3) alloy-api         (Port 8080)"
+    Write-Host "[OK]  4) limboole-api      (Port 8084)"
+    Write-Host "[OK]  5) limboole-diff-api (Port 8051)"
+    Write-Host "[OK]  6) z3-api            (Port 8082)"
+    Write-Host "[OK]  7) smt-diff-api      (Port 8052)"
+    Write-Host "[OK]  8) nuxmv-api         (Port 8081)"
+    Write-Host "[OK]  9) spectra-api       (Port 8083)"
     Write-Host ""
-    Write-Host "  all) Start all services"
-    Write-Host "  q) Quit"
+    Write-Host "[OK]  all) Start all services"
+    Write-Host "[OK]  q) Quit"
     Write-Host ""
 }
 
@@ -463,7 +459,7 @@ if ($choice -eq "all" -or $choice -eq "ALL") {
             "7" { $servicesToStart += "smt-diff-api" }
             "8" { $servicesToStart += "nuxmv-api" }
             "9" { $servicesToStart += "spectra-api" }
-            default { Write-Warning "Invalid selection: $selection" }
+            default { Write-Host "[WARN] Invalid selection: $selection" -ForegroundColor Yellow }
         }
     }
 }
@@ -480,7 +476,7 @@ foreach ($service in $servicesToStart) {
 }
 
 if ($needsBackend -and "backend" -notin $servicesToStart) {
-    Write-Warning "API services require backend. Adding backend to startup sequence..."
+    Write-Host "[WARN] API services require backend. Adding backend to startup sequence..." -ForegroundColor Yellow
     $servicesToStart = @("backend") + $servicesToStart
 }
 
@@ -493,18 +489,18 @@ foreach ($service in $servicesToStart) {
 }
 
 if ($uniqueServices.Count -eq 0) {
-    Write-ErrorMsg "No valid services selected"
+    Write-Host "ERROR: `No valid services selected" -ForegroundColor Red; exit 1
 }
 
 # Display selected services
 Write-Host "`nStarting the following services:" -ForegroundColor Green
 foreach ($service in $uniqueServices) {
-    Write-Host "  • $service" -ForegroundColor Green
+    Write-Host "  * $service" -ForegroundColor Green
 }
 Write-Host ""
 
 # Check if required ports are available
-Write-Info "Checking port availability..."
+Write-Host "[INFO] Checking port availability..." -ForegroundColor Cyan
 foreach ($service in $uniqueServices) {
     switch ($service) {
         "alloy-api" { Test-Port -Port 8080 -ServiceName "alloy-api" }
@@ -518,7 +514,7 @@ foreach ($service in $uniqueServices) {
         "z3-api" { Test-Port -Port 8082 -ServiceName "z3-api" }
     }
 }
-Write-Success "All required ports are available"
+Write-Host "[OK] All required ports are available" -ForegroundColor Green
 Write-Host ""
 
 # Start services
@@ -545,7 +541,7 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host "`nLogs directory: $logsDir" -ForegroundColor Cyan
 Write-Host "`nRunning services:"
 foreach ($job in $Global:Jobs) {
-    Write-Host "  • $($job.Name) (Job ID: $($job.Id))" -ForegroundColor Green
+    Write-Host "  * $($job.Name) (Job ID: $($job.Id))" -ForegroundColor Green
 }
 Write-Host "`nPress Ctrl+C to stop all services" -ForegroundColor Yellow
 Write-Host "Or use 'Get-Job' and 'Stop-Job' to manage services individually`n"
