@@ -87,25 +87,25 @@ export default defineConfig({
         allowedHosts: true,
         proxy: {
             '/diff-limboole': {
-                target: 'http://localhost:8055',
+                target: 'http://localhost:8051',
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/diff-limboole/, ''),
             },
             '/nuxmv': {
-                target: 'http://localhost:8080',
+                target: 'http://localhost:8081',
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/nuxmv/, ''),
             },
             '/smt': {
-                target: 'http://localhost:8080',
+                target: 'http://localhost:8082',
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/smt/, ''),
             },
             '/diff-smt': {
-                target: 'http://localhost:8055',
+                target: 'http://localhost:8052',
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/diff-smt/, ''),
@@ -117,7 +117,7 @@ export default defineConfig({
                 rewrite: (path) => path.replace(/^\/alloy/, ''),
             },
             '/spectra': {
-                target: 'http://localhost:8080',
+                target: 'http://localhost:8083',
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/spectra/, ''),
