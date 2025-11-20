@@ -1,12 +1,3 @@
-"""
-Test cases for the caching bug fix.
-
-Bug: Multiprocessing timeout wrapper couldn't transfer generators through Queue (not picklable).
-Fix: Set timeout directly on Z3 solver before creating generator. Generators created in main process.
-     Solver checks for timeout and returns 'unknown' status, which is caught and reported as error.
-     No double computation, no process management issues, proper timeout enforcement.
-"""
-
 from smt_diff.smt_diff import store_witness, get_next_witness, get_cache_info
 
 

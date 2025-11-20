@@ -326,6 +326,8 @@ def get_next_witness(specId: str) -> Optional[str]:
     )
     if isinstance(model, str):
         return model
+    if model is None:
+        return None
     model = model.sexpr()
     previous = cache_manager.caches[specId].previous
     current = cache_manager.caches[specId].current
