@@ -36,6 +36,16 @@ For more updates, examples, and tutorials, please visit the [formal-methods.net]
 
 - [TODO]
 
+### Development Server
+
+For local development, you can use the following script to start the development server:
+
+- Unix-based systems (Linux, macOS): `./start_dev.sh`
+- Windows: `start_dev.ps1`
+  It will ask you which services you want to start (frontend, backend, tools). You can select multiple services by separating them with commas.
+
+NOTE: In windows, you might experience issues with the script execution policy.
+
 ### Docker
 
 - [TODO]
