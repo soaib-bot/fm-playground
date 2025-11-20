@@ -4,14 +4,16 @@ import os
 import queue
 import subprocess
 import tempfile
-
 from smt_redundancy.redundancy import unsat_core
 from utils.helper import get_logic_from_smt2, prettify_warning
 from z3 import *
+from dotenv import load_dotenv
+load_dotenv()
 
 MAX_CONCURRENT_REQUESTS = 10
 TIMEOUT = 30  # seconds
 
+DEV_ENV = os.getenv("DEV_ENV", "False")
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_REQUESTS)
 code_queue = queue.Queue()
 
@@ -20,7 +22,10 @@ def run_z3(code: str) -> str:
     tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".smt2")
     tmp_file.write(code.strip())
     tmp_file.close()
-    command = ["/usr/bin/z3", "-smt2", tmp_file.name]
+    if DEV_ENV.lower() == "true":
+        command = ["z3", "-smt2", tmp_file.name]
+    else:
+        command = ["/usr/bin/z3", "-smt2", tmp_file.name]
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=20)
         os.remove(tmp_file.name)
