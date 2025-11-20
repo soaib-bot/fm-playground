@@ -1,0 +1,140 @@
+{
+  "name": "fm-playground-vscode",
+  "displayName": "FM Playground",
+  "description": "Formal Methods Playground for limboole, z3, nuXmv, Alloy, and Spectra",
+  "version": "2.7.10",
+  "publisher": "fm4se",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:limboole",
+    "onLanguage:smt",
+    "onLanguage:spectra",
+    "onLanguage:nuxmv",
+    "onLanguage:alloy",
+    "onCommand:fm-playground.openPlayground"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fm-playground.openPlayground",
+        "title": "FM Playground: Open Playground"
+      },
+      {
+        "command": "fm-playground.runLimboole",
+        "title": "FM Playground: Run Limboole"
+      },
+      {
+        "command": "fm-playground.runZ3",
+        "title": "FM Playground: Run Z3"
+      },
+      {
+        "command": "fm-playground.runNuXmv",
+        "title": "FM Playground: Run nuXmv"
+      },
+      {
+        "command": "fm-playground.runSpectra",
+        "title": "FM Playground: Run Spectra"
+      }
+    ],
+    "languages": [
+      {
+        "id": "limboole",
+        "aliases": ["Limboole", "limboole"],
+        "extensions": [".limboole"],
+        "configuration": "./language-configurations/limboole-language-configuration.json"
+      },
+      {
+        "id": "smt",
+        "aliases": ["SMT-LIB", "SMT", "smt"],
+        "extensions": [".smt2", ".smt"],
+        "configuration": "./language-configurations/smt-language-configuration.json"
+      },
+      {
+        "id": "spectra",
+        "aliases": ["Spectra", "spectra"],
+        "extensions": [".spectra"],
+        "configuration": "./language-configurations/spectra-language-configuration.json"
+      },
+      {
+        "id": "nuxmv",
+        "aliases": ["NuXmv", "nuxmv"],
+        "extensions": [".smv"],
+        "configuration": "./language-configurations/nuxmv-language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "limboole",
+        "scopeName": "source.limboole",
+        "path": "./syntaxes/limboole.tmLanguage.json"
+      },
+      {
+        "language": "smt",
+        "scopeName": "source.smt",
+        "path": "./syntaxes/smt.tmLanguage.json"
+      },
+      {
+        "language": "spectra",
+        "scopeName": "source.spectra",
+        "path": "./syntaxes/spectra.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "FM Playground",
+      "properties": {
+        "fm-playground.limboole.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8055",
+          "description": "URL of the Limboole API server"
+        },
+        "fm-playground.z3.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "URL of the Z3 API server"
+        },
+        "fm-playground.nuxmv.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "URL of the nuXmv API server"
+        },
+        "fm-playground.spectra.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "URL of the Spectra API server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --watch --mode development",
+    "package": "vsce package",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.93.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
+    "eslint": "^8.53.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.2",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "@vscode/vsce": "^3.2.1"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "langium": "~3.2.0",
+    "vscode-languageclient": "~9.0.1",
+    "vscode-languageserver": "~9.0.1"
+  }
+}
