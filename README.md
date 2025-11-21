@@ -8,7 +8,7 @@
   <hr>
 </div>
 
-A Formal Method playground for limboole, z3, nuXmv, Alloy, and Spectra. This project is a part of the Formal Methods course at the Bauhaus-Universität Weimar. It is a web application that allows users to run formal methods tools in the browser.
+A web-based platform for formal methods tools, providing an easy-to-use interface for model checking, formal verification, and synthesis. Currently, Limboole, Z3, nuXmv, Alloy, and Spectra are integrated into the platform. Due to the modular architecture, more tools can be added easily. 
 
 ## Overview and Examples
 
