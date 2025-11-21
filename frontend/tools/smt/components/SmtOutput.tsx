@@ -116,9 +116,20 @@ const SmtOutput = () => {
             })
             .catch((error: any) => {
                 console.error('Error fetching next model:', error);
-                // 404 means no more models, any other error also means we can't fetch more
-                setIsLastModel(true);
-                setModelMessage('No more models');
+                
+                // Check if it's a timeout error
+                const errorDetail = error?.response?.data?.detail || error?.message || '';
+                const isTimeout = errorDetail.includes('timed out') || errorDetail.includes('timeout');
+                
+                if (isTimeout) {
+                    setIsLastModel(true);
+                    setModelMessage('Computation of the next model timed out');
+                } else {
+                    // 404 or other errors mean no more models
+                    setIsLastModel(true);
+                    setModelMessage('No more models');
+                }
+                
                 setIsNextModelExecuting(false);
             });
     };

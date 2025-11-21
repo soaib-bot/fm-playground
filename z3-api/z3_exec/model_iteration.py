@@ -1,4 +1,6 @@
 import multiprocessing
+import threading
+import queue
 from typing import Any, Dict, List, Optional
 
 from utils.helper import (
@@ -36,19 +38,55 @@ def all_smt(s: Solver, vars: list):
     yield from all_smt_rec(list(vars))
 
 
-def get_next_model(specId: str):
-    model = cache_manager.get_next(specId)
-    if model is None:
-        raise Exception("No model found")
-    logic = (
-        cache_manager.caches[specId].logic if specId in cache_manager.caches else None
-    )
-    if isinstance(model, str):
-        return model
-    model = model.sexpr()
-    if logic:
-        model = logic + "\n" + model
-    return model
+def get_next_model(specId: str, timeout: int = TIMEOUT):
+    """
+    Get next model from cache with thread-based timeout protection.
+    # FIXME: Multiprocessing can't share generators across processes and the thread-based
+    # timeout here is a workaround but not ideal.
+    """
+    result_queue = queue.Queue()
+    exception_queue = queue.Queue()
+    
+    def worker():
+        try:
+            model = cache_manager.get_next(specId)
+            
+            if model is None:
+                exception_queue.put(Exception("No model found"))
+                return
+            
+            logic = (
+                cache_manager.caches[specId].logic if specId in cache_manager.caches else None
+            )
+            
+            if isinstance(model, str):
+                result_queue.put(model)
+            else:
+                model_str = model.sexpr()
+                if logic:
+                    model_str = logic + "\n" + model_str
+                result_queue.put(model_str)
+                
+        except Exception as e:
+            exception_queue.put(e)
+    
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    
+    if thread.is_alive():
+        # Thread is still running - timed out
+        raise Exception(f"Get next model timed out after {timeout} seconds")
+    
+    # Check for exceptions
+    if not exception_queue.empty():
+        raise exception_queue.get()
+    
+    # Get result
+    if result_queue.empty():
+        raise Exception("No result returned from worker thread")
+    
+    return result_queue.get()
 
 
 def _compute_models_worker(queue, spec: str):
@@ -98,8 +136,10 @@ def _compute_models_worker(queue, spec: str):
 
 
 def iterate_models(code: str, timeout: int = TIMEOUT) -> Optional[str]:
-    result_queue = multiprocessing.Queue()
-    process = multiprocessing.Process(
+    """Run model iteration with timeout protection using multiprocessing spawn context"""
+    ctx = multiprocessing.get_context('spawn')
+    result_queue = ctx.Queue()
+    process = ctx.Process(
         target=_compute_models_worker, args=(result_queue, code)
     )
     process.start()

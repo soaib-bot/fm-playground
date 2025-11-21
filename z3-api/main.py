@@ -79,13 +79,13 @@ def run_z3(code: str, check_redundancy: bool = False) -> str:
 
         try:
             return cached_run_z3(code, check_redundancy=check_redundancy)
-        except Exception:
-            raise HTTPException(status_code=500, detail="Error running z3")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Error running z3: " + str(e))
     else:
         try:
             return execution_queue(code, check_redundancy=check_redundancy)
-        except Exception:
-            raise HTTPException(status_code=500, detail="Error running z3")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Error running z3: " + str(e))
 
 
 @app.get("/smt/run/", response_model=None)
@@ -109,7 +109,7 @@ def execute_z3(check: str, p: str):
     except Exception as e:
         log_to_db(p, json.dumps({"analysis": "run_z3", "error": str(e)}))
 
-        raise HTTPException(status_code=500, detail="Error running code")
+        raise HTTPException(status_code=500, detail="Error running code: " + str(e))
 
 
 @app.get("/smt/check-redundancy/", response_model=None)
@@ -222,7 +222,7 @@ def model_iteration(check: str, p: str):
         }
     except Exception as e:
         log_to_db(p, json.dumps({"analysis": "model_iteration", "error": str(e)}))
-        raise HTTPException(status_code=500, detail="Error running code")
+        raise HTTPException(status_code=500, detail="Error running code: " + str(e))
 
 
 @app.get("/smt/next/", response_model=None)
