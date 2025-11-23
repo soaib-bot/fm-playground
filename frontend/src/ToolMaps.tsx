@@ -106,7 +106,7 @@ export const lspSupportMap: Record<string, boolean> = {
     XMV: false,
     ALS: true,
     SPECTRA: true,
-    DFY: false,
+    DFY: true,
 };
 
 export const fmpConfig: FmpConfig = {

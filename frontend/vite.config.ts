@@ -81,6 +81,13 @@ export default defineConfig({
                 secure: false,
                 rewrite: (path) => path.replace(/^\/dafny/, ''),
             },
+            '/lsp-dafny': {
+                target: 'ws://fmp-dafny-lsp:8080',
+                changeOrigin: true,
+                secure: false,
+                ws: true,
+                rewrite: (path) => path.replace(/^\/lsp-dafny/, ''),
+            },
         },
     },
     server: {
@@ -133,6 +140,13 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/dafny/, ''),
+            },
+            '/lsp-dafny': {
+                target: 'ws://localhost:8091',
+                changeOrigin: true,
+                secure: false,
+                ws: true,
+                rewrite: (path) => path.replace(/^\/lsp-dafny/, ''),
             },
         },
     },

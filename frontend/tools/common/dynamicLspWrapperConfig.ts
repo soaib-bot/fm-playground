@@ -3,6 +3,7 @@ import { createLangiumLimbooleConfig as createLimbooleConfig } from '../limboole
 import { createLangiumSmtConfig as createSmtConfig } from '../smt/langium/config/wrapperSmtConfig';
 import { createLangiumSpectraConfig as createSpectraConfig } from '../spectra/langium/config/wrapperSpectraConfig';
 import { createLangiumAlloyConfig as createAlloyConfig } from '../alloy/langium/config/wrapperAlloyConfig';
+import { createDafnyLspConfig as createDafnyConfig } from '../dafny/lsp/lspWrapperConfig';
 // import { createLangiumNuxmvConfig as createNuxmvConfig } from '../nuxmv/config/wrapperXmvConfig';
 
 // Type for language configuration
@@ -29,6 +30,10 @@ const languageConfigMap: Record<string, LanguageConfig | null> = {
     ALS: {
         configCreator: createAlloyConfig,
         languageId: 'alloy',
+    },
+    DFY: {
+        configCreator: createDafnyConfig,
+        languageId: 'dafny',
     }
 };
 
