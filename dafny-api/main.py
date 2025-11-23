@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dafny_exec.dafny import run_dafny
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -23,6 +24,8 @@ app.add_middleware(
 )
 
 
+class CodeRequest(BaseModel):
+    code: str
 
 
 def get_code_by_permalink(check: str, p: str) -> Union[str, None]:
@@ -38,8 +41,9 @@ def get_code_by_permalink(check: str, p: str) -> Union[str, None]:
 
 
 def run(code: str) -> str:
+    """Run Dafny code and return the output."""
     try:
-        return run_dafny(code)
+        return run_dafny(code, operation="verify")
     except Exception:
         raise HTTPException(status_code=500, detail="Error running dafny")
 
@@ -50,6 +54,36 @@ def code(check: str, p: str):
         raise HTTPException(status_code=400, detail="Invalid query parameters")
     code = get_code_by_permalink(check, p)
     try:
-        return run(code)
+        return run(code, operation="run")
     except Exception:
         raise HTTPException(status_code=500, detail="Error running code")
+
+
+@app.get("/dfy/verify/", response_model=None)
+def code_verify(check: str, p: str):
+    if not check or not p:
+        raise HTTPException(status_code=400, detail="Invalid query parameters")
+    code = get_code_by_permalink(check, p)
+    try:
+        return run_dafny(code, operation="verify")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error verifying code")
+
+
+# ------------- Debugging Endpoints -------------
+@app.post("/verify")
+def verify_code(request: CodeRequest):
+    """Verify Dafny code (check for errors without executing)"""
+    try:
+        return run_dafny(request.code, operation="verify")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error verifying dafny code")
+
+
+@app.post("/run")
+def run_code(request: CodeRequest):
+    """Run Dafny code (compile and execute)"""
+    try:
+        return run_dafny(request.code, operation="run")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error running dafny code")
