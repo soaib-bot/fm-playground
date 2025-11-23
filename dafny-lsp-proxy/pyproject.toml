@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "dafny-lsp-proxy"
+version = "2.9.0"
+description = "Dafny LSP Proxy for FM Playground"
+authors = ["Soaibuzzaman <soaibuzzaman@uni-weimar.de>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = {extras = ["standard"], version = "^0.120.1"}
+uvicorn = "^0.30.5"
+websockets = "^15.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
