@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     libicu-dev \
+    genisoimage \
+    e2fsprogs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install .NET 8.0 SDK (Required by Dafny 4.x)
@@ -23,6 +25,23 @@ RUN wget "https://github.com/dafny-lang/dafny/releases/download/v${DAFNY_VERSION
     && chmod +x /opt/dafny-sdk/dafny
 
 ENV PATH=$PATH:/opt/dafny-sdk
+
+# Install Firecracker
+RUN ARCH="$(uname -m)" && \
+    FC_VERSION="v1.7.0" && \
+    echo "Downloading Firecracker ${FC_VERSION} for ${ARCH}..." && \
+    wget "https://github.com/firecracker-microvm/firecracker/releases/download/${FC_VERSION}/firecracker-${FC_VERSION}-${ARCH}.tgz" && \
+    tar -xzf "firecracker-${FC_VERSION}-${ARCH}.tgz" && \
+    mv "release-${FC_VERSION}-${ARCH}/firecracker-${FC_VERSION}-${ARCH}" /usr/local/bin/firecracker && \
+    chmod +x /usr/local/bin/firecracker && \
+    rm -rf "firecracker-${FC_VERSION}-${ARCH}.tgz" "release-${FC_VERSION}-${ARCH}"
+
+# Create directory for VM resources
+RUN mkdir -p /opt/vm-resources
+
+# Copy VM resources (Must be built beforehand using firecracker/build_resources.sh)
+COPY firecracker/vmlinux /opt/vm-resources/
+COPY firecracker/rootfs.ext4 /opt/vm-resources/
 
 ENV POETRY_HOME="/opt/poetry"
 ENV PATH="$POETRY_HOME/bin:$PATH"

@@ -5,12 +5,13 @@ services:
       dockerfile: Dockerfile
     container_name: dafny-api
     ports:
-      - "8080:8080"
+      - "8089:8080"
     environment:
-      API_URL: https://play.formal-methods.net/
-      REDIS_URL: redis://redis:6379/0
+      API_URL: http://localhost:8080/
+      USE_MICROVM: "true"
+      USE_VM_POOL: "true"  # Enable VM resource pooling for faster execution
+    devices:
+      - /dev/kvm:/dev/kvm
+    privileged: true
 
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
+
