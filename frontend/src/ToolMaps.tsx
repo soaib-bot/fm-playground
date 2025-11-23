@@ -6,6 +6,7 @@ import { executeAlloyTool } from '@/../tools/alloy/alloyExecutor';
 import { executeSpectraTool } from '@/../tools/spectra/spectraExecutor';
 import { executeSmtDiffTool } from '@/../tools/smt-diff/smtDiffExecutor';
 import { executeLimbooleDiffTool } from '@/../tools/limboole-diff/limbooleDiffExecutor';
+import { executeDafnyTool } from '@/../tools/dafny/dafnyExecutor';
 
 // Tool output components
 import TextualOutput from '@/components/Playground/TextualOutput';
@@ -18,6 +19,7 @@ import { smt2Conf, smt2Lang } from '@/../tools/smt/smt2TextMateGrammar';
 import { nuxmvConf, nuxmvLang } from '@/../tools/nuxmv/nuxmvTextMateGrammar';
 import { alloyConf, alloyLang } from '@/../tools/alloy/alloyTextMateGrammar';
 import { spectraConf, spectraLang } from '@/../tools/spectra/spectraTextMateGrammar';
+import { dafnyConf, dafnyLang } from '@/../tools/dafny/dafnyTextMateGrammar';
 
 // Additional input area components for the different tools
 import LimbooleCheckOptions from '@/../tools/limboole/components/limbooleCheckOptions';
@@ -43,6 +45,7 @@ export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
     SMT: SmtCheckOptions,
     SPECTRA: SpectraCliOptions,
     ALS: AlloyCmdOptions,
+    DFY: () => null,
 };
 
 export const additonalOutputAreaUiMap: Record<string, React.FC<any>> = {
@@ -57,6 +60,7 @@ export const toolExecutionMap: Record<string, () => void> = {
     SPECTRA: executeSpectraTool,
     SMTDiff: executeSmtDiffTool,
     SATDiff: executeLimbooleDiffTool,
+    DFY: executeDafnyTool,
 };
 
 export const toolOutputMap: Record<string, React.FC<any>> = {
@@ -65,6 +69,7 @@ export const toolOutputMap: Record<string, React.FC<any>> = {
     XMV: TextualOutput,
     ALS: AlloyOutput,
     SPECTRA: TextualOutput,
+    DFY: TextualOutput,
 };
 
 export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
@@ -73,6 +78,7 @@ export const diffToolInputUIMap: Record<string, React.FC<any> | null> = {
     XMV: null,
     ALS: null,
     SPECTRA: null,
+    DFY: null,
 };
 
 export const diffToolOutputUIMap: Record<string, React.FC<any> | null> = {
@@ -81,6 +87,7 @@ export const diffToolOutputUIMap: Record<string, React.FC<any> | null> = {
     XMV: null,
     ALS: null,
     SPECTRA: null,
+    DFY: null,
 };
 
 export const languageConfigMap: Record<string, { tokenProvider: any; configuration: any }> = {
@@ -89,6 +96,7 @@ export const languageConfigMap: Record<string, { tokenProvider: any; configurati
     xmv: { tokenProvider: nuxmvLang, configuration: nuxmvConf },
     als: { tokenProvider: alloyLang, configuration: alloyConf },
     spectra: { tokenProvider: spectraLang, configuration: spectraConf },
+    dfy: { tokenProvider: dafnyLang, configuration: dafnyConf },
 };
 
 // Configuration for LSP (Language Server Protocol) support by tool
@@ -98,6 +106,7 @@ export const lspSupportMap: Record<string, boolean> = {
     XMV: false,
     ALS: true,
     SPECTRA: true,
+    DFY: false,
 };
 
 export const fmpConfig: FmpConfig = {
@@ -110,5 +119,6 @@ export const fmpConfig: FmpConfig = {
         xmv: { name: 'nuXmv', extension: 'xmv', shortName: 'XMV' },
         als: { name: 'Alloy', extension: 'als', shortName: 'ALS' },
         spectra: { name: 'Spectra', extension: 'spectra', shortName: 'SPECTRA' },
+        dfy: { name: 'Dafny', extension: 'dfy', shortName: 'DFY' },
     },
 };

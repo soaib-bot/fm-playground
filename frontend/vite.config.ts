@@ -75,6 +75,12 @@ export default defineConfig({
                 secure: false,
                 rewrite: (path) => path.replace(/^\/spectra/, ''),
             },
+            '/dafny': {
+                target: 'http://fmp-dafny-api:8080',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/dafny/, ''),
+            },
         },
     },
     server: {
@@ -121,6 +127,12 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/spectra/, ''),
+            },
+            '/dafny': {
+                target: 'http://localhost:8085',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/dafny/, ''),
             },
         },
     },
