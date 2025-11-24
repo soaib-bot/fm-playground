@@ -142,6 +142,38 @@ services:
     networks:
       - my_network
 
+  dafny-api:
+    build:
+      context: ./dafny-api
+      dockerfile: Dockerfile
+    container_name: fmp-dafny-api
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      USE_GVISOR: "true"
+      API_URL: ${API_URL:-http://fmp-backend:8000/}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/dafny-exec:/tmp/dafny-exec
+    networks:
+      - my_network
+
+  
+  dafny-lsp:
+    build:
+      context: ./dafny-lsp-proxy
+      dockerfile: Dockerfile
+    container_name: fmp-dafny-lsp
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      USE_GVISOR: "true"
+      API_URL: ${API_URL:-http://fmp-backend:8000/}
+    networks:
+      - my_network
+      
   redis:
     image: redis:alpine
     container_name: fmp-redis
