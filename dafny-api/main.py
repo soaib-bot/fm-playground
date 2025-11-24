@@ -5,7 +5,7 @@ import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from dafny_exec.dafny import run_dafny
+from dafny_exec.dafny import run_dafny, verify_dafny, run_in_gvisor
 from pydantic import BaseModel
 
 load_dotenv()
@@ -40,21 +40,13 @@ def get_code_by_permalink(check: str, p: str) -> Union[str, None]:
         raise HTTPException(status_code=404, detail="Permalink not found")
 
 
-def run(code: str) -> str:
-    """Run Dafny code and return the output."""
-    try:
-        return run_dafny(code, operation="verify")
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error running dafny")
-
-
 @app.get("/dfy/run/", response_model=None)
 def code(check: str, p: str):
     if not check or not p:
         raise HTTPException(status_code=400, detail="Invalid query parameters")
     code = get_code_by_permalink(check, p)
     try:
-        return run(code, operation="run")
+        return run_dafny(code)
     except Exception:
         raise HTTPException(status_code=500, detail="Error running code")
 
@@ -65,25 +57,29 @@ def code_verify(check: str, p: str):
         raise HTTPException(status_code=400, detail="Invalid query parameters")
     code = get_code_by_permalink(check, p)
     try:
-        return run_dafny(code, operation="verify")
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error verifying code")
+        return verify_dafny(code)
+    except Exception as e:
+        import traceback
+
+        error_detail = f"Error verifying dafny code: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=error_detail)
+
+
+
+
+
 
 
 # ------------- Debugging Endpoints -------------
-@app.post("/verify")
-def verify_code(request: CodeRequest):
-    """Verify Dafny code (check for errors without executing)"""
-    try:
-        return run_dafny(request.code, operation="verify")
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error verifying dafny code")
-
-
 @app.post("/run")
 def run_code(request: CodeRequest):
     """Run Dafny code (compile and execute)"""
     try:
-        return run_dafny(request.code, operation="run")
-    except Exception:
-        raise HTTPException(status_code=500, detail="Error running dafny code")
+        return run_in_gvisor(request.code)
+    except Exception as e:
+        import traceback
+
+        error_detail = f"Error running dafny code: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=error_detail)
