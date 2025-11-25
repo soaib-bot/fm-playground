@@ -18,7 +18,7 @@ const DafnyCliOptions = () => {
 
     const handleOptionChange = (selectedOption: { value: string; label: string } | null) => {
         if (selectedOption) {
-            setDafnyCliOption(selectedOption.value);
+            setDafnyCliOption(selectedOption);
         }
     };
 
