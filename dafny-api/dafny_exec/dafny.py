@@ -1,14 +1,13 @@
 import os
 import subprocess
 import tempfile
-import json
 import shutil
 import zipfile
 
 
 def run_in_gvisor(code: str) -> str:
     """Run Dafny code in a sandboxed Docker container (with gVisor if available)"""
-    
+
     # Create a temporary directory for this execution
     # Use shared directory that's mounted from host
     shared_tmp = "/tmp/dafny-exec"
@@ -19,13 +18,13 @@ def run_in_gvisor(code: str) -> str:
         code_file = os.path.join(tmpdir, "program.dfy")
         with open(code_file, "w") as f:
             f.write(code)
-        
+
         os.chmod(code_file, 0o644)
         os.chmod(tmpdir, 0o755)
-        
+
         # Prepare the dafny command - copy to /tmp for writable access
         dafny_cmd = f"cp /input/program.dfy /tmp/ && cd /tmp && dafny run program.dfy"
-        
+
         # DEBUG:
         # Check if gVisor runtime is available
         # runtime_check = subprocess.run(
@@ -34,33 +33,27 @@ def run_in_gvisor(code: str) -> str:
         #     text=True
         # )
         # use_gvisor = "runsc" in runtime_check.stdout
-        
+
         docker_args = [
-            "docker", "run",
+            "docker",
+            "run",
             "--rm",
             "--runtime=runsc",  # gVisor runtime for sandboxing
             "--memory=2g",  # Increased memory for C# compilation
             "--memory-swap=2g",  # Prevent swap usage
             "--cpus=1",  # Increased CPU limit
             "--pids-limit=100",  # Increased process limit for compilation
-            "-v", f"{tmpdir}:/input:ro",  # Mount code as read-only
-            "--tmpfs", "/tmp:rw,exec,size=500m",  # Larger tmpfs for compilation artifacts
+            "-v",
+            f"{tmpdir}:/input:ro",  # Mount code as read-only
+            "--tmpfs",
+            "/tmp:rw,exec,size=500m",  # Larger tmpfs for compilation artifacts
         ]
-        
-        # Only restrict network for verify operations
-        docker_args.extend(["--network=none"])
-        
-        docker_args.extend([
-            "dafny-gvisor",  # Image name
-            "sh", "-c", dafny_cmd
-        ])
-        
+
+        docker_args.extend(["dafny-gvisor", "sh", "-c", dafny_cmd])  # Image name
+
         try:
             result = subprocess.run(
-                docker_args,
-                capture_output=True,
-                text=True,
-                timeout=30
+                docker_args, capture_output=True, text=True, timeout=30
             )
             return result.stdout + result.stderr
         except subprocess.TimeoutExpired:
@@ -68,7 +61,6 @@ def run_in_gvisor(code: str) -> str:
         except Exception as e:
             return f"Error: {str(e)}"
     finally:
-        import shutil
         try:
             shutil.rmtree(tmpdir)
         except Exception:
@@ -77,10 +69,10 @@ def run_in_gvisor(code: str) -> str:
 
 def run_dafny(code: str) -> str:
     use_gvisor = os.getenv("USE_GVISOR", "false").lower() == "true"
-    
+
     if use_gvisor:
         return run_in_gvisor(code)
-    
+
     # Fallback to direct execution
     tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".dfy")
     tmp_file.write(code)
@@ -93,7 +85,8 @@ def run_dafny(code: str) -> str:
     except subprocess.TimeoutExpired:
         os.remove(tmp_file.name)
         return "Timeout expired"
-    
+
+
 def verify_dafny(code: str) -> str:
     tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".dfy")
     tmp_file.write(code)
@@ -106,11 +99,12 @@ def verify_dafny(code: str) -> str:
     except subprocess.TimeoutExpired:
         os.remove(tmp_file.name)
         return "Timeout expired"
-    
+
+
 def translate_dafny(code: str, permalink: str, target_language: str) -> str:
     """
     Translate Dafny code to target language and return path to zip file.
-    
+
     Output structure by language:
     - py: directory (fedora-kosher-defuse-kosher-py/)
     - cs: files (fedora-kosher-defuse-kosher.cs, fedora-kosher-defuse-kosher-cs.dtr)
@@ -120,25 +114,25 @@ def translate_dafny(code: str, permalink: str, target_language: str) -> str:
     """
     tmp_dir = tempfile.gettempdir()
     dfy_path = os.path.join(tmp_dir, permalink + ".dfy")
-    
+
     try:
         # Write Dafny code to temporary file
-        with open(dfy_path, 'w', encoding='utf-8') as f:
+        with open(dfy_path, "w", encoding="utf-8") as f:
             f.write(code)
         print(f"Wrote Dafny code to {dfy_path}")
-        
+
         # Run Dafny translate command
         command = ["dafny", "translate", target_language, dfy_path]
         result = subprocess.run(command, capture_output=True, text=True, timeout=30)
-        
+
         if result.returncode != 0:
             raise Exception(f"Dafny translation failed: {result.stderr}")
-        
+
         # Determine what files/directories were created
         zip_path = os.path.join(tmp_dir, f"{permalink}-{target_language}.zip")
-        
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            if target_language in ['py', 'java', 'go']:
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            if target_language in ["py", "java", "go"]:
                 # These create directories
                 output_dir = os.path.join(tmp_dir, f"{permalink}-{target_language}")
                 if os.path.exists(output_dir):
@@ -148,26 +142,28 @@ def translate_dafny(code: str, permalink: str, target_language: str) -> str:
                             arcname = os.path.relpath(file_path, tmp_dir)
                             zipf.write(file_path, arcname)
                 else:
-                    raise Exception(f"Expected output directory not found: {output_dir}")
-            
-            elif target_language in ['cs', 'js']:
+                    raise Exception(
+                        f"Expected output directory not found: {output_dir}"
+                    )
+
+            elif target_language in ["cs", "js"]:
                 # These create individual files
                 base_file = os.path.join(tmp_dir, f"{permalink}.{target_language}")
                 dtr_file = os.path.join(tmp_dir, f"{permalink}-{target_language}.dtr")
-                
+
                 if os.path.exists(base_file):
                     zipf.write(base_file, os.path.basename(base_file))
                 else:
                     raise Exception(f"Expected output file not found: {base_file}")
-                
+
                 if os.path.exists(dtr_file):
                     zipf.write(dtr_file, os.path.basename(dtr_file))
             else:
                 raise Exception(f"Unsupported target language: {target_language}")
-        
+
         print(f"Created zip file: {zip_path}")
         return zip_path
-        
+
     except subprocess.TimeoutExpired:
         raise Exception("Timeout expired during translation")
     except Exception as e:
