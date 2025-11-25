@@ -62,17 +62,34 @@ export class WebSocketToMessagePortAdapter {
 export class DafnyWebSocketWorker {
     private websocket: WebSocket;
     private isConnected = false;
+    private connectionFailed = false;
     private pendingMessages: any[] = [];
     private connectedPort: MessagePort | null = null;
+    private connectionTimeout: NodeJS.Timeout | null = null;
 
     constructor(url: string = 'ws://localhost:5173/lsp-dafny/lsp') {
         this.websocket = new WebSocket(url);
         this.setupWebSocket();
+        
+        // Set connection timeout (5 seconds)
+        this.connectionTimeout = setTimeout(() => {
+            if (!this.isConnected) {
+                console.warn('Dafny LSP WebSocket connection timeout');
+                this.connectionFailed = true;
+                this.websocket.close();
+            }
+        }, 5000);
     }
 
     private setupWebSocket() {
         this.websocket.onopen = () => {
             this.isConnected = true;
+            this.connectionFailed = false;
+            
+            if (this.connectionTimeout) {
+                clearTimeout(this.connectionTimeout);
+                this.connectionTimeout = null;
+            }
 
             // Send any pending messages
             if (this.connectedPort && this.pendingMessages.length > 0) {
@@ -91,17 +108,26 @@ export class DafnyWebSocketWorker {
                     this.connectedPort.postMessage(message);
                 }
             } catch (error) {
-
+                console.error('Error parsing Dafny LSP message:', error);
             }
         };
 
         this.websocket.onerror = (error) => {
             console.error('Dafny LSP WebSocket error:', error);
+            this.connectionFailed = true;
         };
 
         this.websocket.onclose = () => {
             this.isConnected = false;
+            if (this.connectionTimeout) {
+                clearTimeout(this.connectionTimeout);
+                this.connectionTimeout = null;
+            }
         };
+    }
+
+    isConnectionFailed(): boolean {
+        return this.connectionFailed;
     }
 
     postMessage(data: any, transfer?: Transferable[]) {
@@ -125,6 +151,10 @@ export class DafnyWebSocketWorker {
     }
 
     terminate() {
+        if (this.connectionTimeout) {
+            clearTimeout(this.connectionTimeout);
+            this.connectionTimeout = null;
+        }
         if (this.websocket) {
             this.websocket.close();
         }
