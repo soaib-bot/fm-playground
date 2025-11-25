@@ -63,6 +63,7 @@ export const historyRefreshTriggerAtom = atom(0); // Incremented to trigger hist
 export const spectraCliOptionsAtom = atom('check-realizability');
 export const limbooleCliOptionsAtom = atom({ value: '1', label: 'satisfiability' });
 export const smtCliOptionsAtom = atom({ value: 'execute-z3', label: 'Execute SMT' });
+export const dafnyCliOptionsAtom = atom({ value: 'verify', label: 'Verify' });
 
 export const alloySelectedCmdAtom = atom(0);
 export const alloyInstanceAtom = atom<any[]>([]);

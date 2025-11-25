@@ -1,0 +1,97 @@
+{
+    "scopeName": "source.dafny",
+    "patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#types"
+        },
+        {
+            "include": "#operators"
+        }
+    ],
+    "repository": {
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.dafny",
+                    "match": "//.*$"
+                },
+                {
+                    "name": "comment.block.dafny",
+                    "begin": "/\\*",
+                    "end": "\\*/"
+                }
+            ]
+        },
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.dafny",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.dafny",
+                            "match": "\\\\."
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.dafny",
+                    "match": "'[^']'"
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "name": "constant.numeric.float.dafny",
+                    "match": "\\b\\d+\\.\\d+([eE][+-]?\\d+)?\\b"
+                },
+                {
+                    "name": "constant.numeric.hex.dafny",
+                    "match": "\\b0[xX][0-9a-fA-F]+\\b"
+                },
+                {
+                    "name": "constant.numeric.decimal.dafny",
+                    "match": "\\b\\d+\\b"
+                }
+            ]
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.dafny",
+                    "match": "\\b(abstract|allocated|as|assert|assume|break|by|calc|case|class|codatatype|const|constructor|continue|datatype|decreases|downto|else|ensures|exists|expect|export|extends|false|for|forall|fresh|function|ghost|greatest|if|import|in|include|invariant|is|iterator|label|least|lemma|match|method|modify|modifies|module|nameonly|new|newtype|null|old|opaque|opened|predicate|print|provides|reads|refines|requires|return|returns|reveal|reveals|static|then|this|to|trait|true|twostate|type|unchanged|var|while|witness|yield|yields)\\b"
+                }
+            ]
+        },
+        "types": {
+            "patterns": [
+                {
+                    "name": "storage.type.dafny",
+                    "match": "\\b(bool|char|real|multiset|map|imap|nat|int|ORDINAL|object|string|set|iset|seq|array|bv0)\\b"
+                }
+            ]
+        },
+        "operators": {
+            "patterns": [
+                {
+                    "name": "keyword.operator.dafny",
+                    "match": "(==|<=|>=|!=|&&|\\|\\||\\+\\+|--|\\+=|-=|\\*=|/=|&=|\\|=|\\^=|%=|<<=|>>=|>>>=|:=|:\\||<==>|==>|<==|=>|[=><\\!~\\?:&\\|\\+\\-\\*/%\\^])"
+                }
+            ]
+        }
+    }
+}

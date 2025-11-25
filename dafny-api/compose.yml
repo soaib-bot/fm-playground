@@ -1,0 +1,23 @@
+services:
+  dafny-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dafny-api:latest
+    container_name: dafny-api
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      API_URL: ${API_URL:-http://localhost:8000/}
+      USE_GVISOR: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    network_mode: bridge
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
