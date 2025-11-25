@@ -26,6 +26,7 @@ import LimbooleCheckOptions from '@/../tools/limboole/components/limbooleCheckOp
 import SmtCheckOptions from '@/../tools/smt/components/smtCheckOptions';
 import SpectraCliOptions from '@/../tools/spectra/components/SpectraCliOptions';
 import AlloyCmdOptions from '@/../tools/alloy/components/AlloyCmdOptions';
+import DafnyCmdOptions from '@/../tools/dafny/components/DafnyCmdOptions';
 
 // Additional output area components for the different tools
 import NuxmvCopyrightNotice from '@/../tools/nuxmv/components/NuxmvCopyrightNotice';
@@ -45,7 +46,7 @@ export const additionalInputAreaUiMap: Record<string, React.FC<any>> = {
     SMT: SmtCheckOptions,
     SPECTRA: SpectraCliOptions,
     ALS: AlloyCmdOptions,
-    DFY: () => null,
+    DFY: DafnyCmdOptions,
 };
 
 export const additonalOutputAreaUiMap: Record<string, React.FC<any>> = {
