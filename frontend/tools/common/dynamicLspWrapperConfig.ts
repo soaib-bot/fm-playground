@@ -46,9 +46,10 @@ export const createDynamicLspConfig = async (languageShort: string): Promise<Wra
     }
 
     try {
-        return await languageConfig.configCreator();
+        const config = await languageConfig.configCreator();
+        return config;
     } catch (error) {
-        console.error(`Error creating LSP config for ${languageShort}:`, error);
+        console.warn(`LSP connection failed for ${languageShort}, falling back to basic editor:`, error);
         return null;
     }
 };
