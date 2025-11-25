@@ -19,6 +19,7 @@ import {
     minimalSetRangesAtom,
     jotaiStore,
 } from '@/atoms';
+import Editor from './Editor'; // Fallback editor
 
 type LspEditorProps = {
     height: string;
@@ -38,6 +39,7 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
     const editorRef = useRef<any>(null);
     const prevLanguageRef = useRef<LanguageProps | null>(null);
     const isInitializedRef = useRef<boolean>(false);
+    const [lspFailed, setLspFailed] = useState<boolean>(false); // Track LSP initialization failure
     const cursorListenerRef = useRef<any>(null); // Store cursor listener disposable
     const [decorationIds, setDecorationIds] = useState<string[]>([]);
     const [greenDecorationIds, setGreenDecorationIds] = useState<string[]>([]);
@@ -86,7 +88,8 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     const langiumGlobalConfig = await createDynamicLspConfig(props.language.short);
 
                     if (!langiumGlobalConfig) {
-                        console.warn(`No LSP configuration available for language: ${props.language.short}`);
+                        console.warn(`LSP not available for ${props.language.short}, falling back to basic editor`);
+                        setLspFailed(true);
                         return;
                     }
 
@@ -103,6 +106,7 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     });
 
                     editorRef.current = wrapperInstance!.getEditor();
+                    setLspFailed(false); // LSP initialized successfully
 
                     // Dispose old cursor listener if exists
                     if (cursorListenerRef.current) {
@@ -155,7 +159,14 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
                     isInitializedRef.current = true;
                     prevLanguageRef.current = props.language;
                 } catch (error) {
-                    console.error('Error initializing LSP editor:', error);
+                    console.error('Error initializing LSP editor, falling back to basic editor:', error);
+                    setLspFailed(true);
+                    // Clean up failed LSP instance
+                    if (wrapperInstance?.isStarted()) {
+                        await wrapperInstance.dispose();
+                    }
+                    wrapperInstance = null;
+                    isInitializedRef.current = false;
                 }
             }
         };
@@ -359,6 +370,16 @@ const LspEditor: React.FC<LspEditorProps> = (props) => {
             }
         }
     };
+
+    // If LSP failed, fall back to basic editor
+    if (lspFailed) {
+        return (
+            <Editor
+                height={props.height}
+                editorTheme={props.editorTheme || 'vs-dark'}
+            />
+        );
+    }
 
     return (
         <div className='custom-code-editor'>
