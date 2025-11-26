@@ -119,7 +119,6 @@ def translate_dafny(code: str, permalink: str, target_language: str) -> str:
         # Write Dafny code to temporary file
         with open(dfy_path, "w", encoding="utf-8") as f:
             f.write(code)
-        print(f"Wrote Dafny code to {dfy_path}")
 
         # Run Dafny translate command
         command = ["dafny", "translate", target_language, dfy_path]
@@ -161,7 +160,6 @@ def translate_dafny(code: str, permalink: str, target_language: str) -> str:
             else:
                 raise Exception(f"Unsupported target language: {target_language}")
 
-        print(f"Created zip file: {zip_path}")
         return zip_path
 
     except subprocess.TimeoutExpired:
