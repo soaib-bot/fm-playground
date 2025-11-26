@@ -22,7 +22,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ matrix.image_name }}
+          images: ghcr.io/${{ github.repository }}-dfy-gvisor
           tags: |
             type=edge,branch=main
             type=semver,pattern={{version}}
@@ -53,7 +53,7 @@ jobs:
         id: determine-tags
         run: |
           if [ -n "${{ github.event.inputs.tags }}" ]; then
-            echo "TAGS=ghcr.io/${{ github.repository }}:${{ github.event.inputs.tags }}" >> $GITHUB_ENV
+            echo "TAGS=ghcr.io/${{ github.repository }}-dfy-gvisor:${{ github.event.inputs.tags }}" >> $GITHUB_ENV
           else
             echo "TAGS=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ',')" >> $GITHUB_ENV
           fi
