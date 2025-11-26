@@ -8,6 +8,7 @@ import {
     isExecutingAtom,
     outputAtom,
     dafnyCliOptionsAtom,
+    enableLspAtom,
 } from '@/atoms';
 import { Permalink } from '@/types';
 import axios from 'axios';
@@ -76,8 +77,10 @@ export const executeDafnyTool = async () => {
     const language = jotaiStore.get(languageAtom);
     const permalink = jotaiStore.get(permalinkAtom);
     const dafnyCliOption = jotaiStore.get(dafnyCliOptionsAtom);
+    const enableLsp = jotaiStore.get(enableLspAtom);
+    const metadata = {check: dafnyCliOption.value, ls: enableLsp };
     
-    const response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, null);
+    const response = await saveCodeAndRefreshHistory(editorValue, language.short, permalink.permalink || null, metadata);
     if (response) {
         jotaiStore.set(permalinkAtom, response.data);
     } else {
