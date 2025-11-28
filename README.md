@@ -22,6 +22,26 @@ We started a small overview of the features of the FM Playground and how to use 
 
 For more updates, examples, and tutorials, please visit the [formal-methods.net](https://formal-methods.net) website.
 
+## 🚀 VSCode Extension
+
+**New!** You can now use FM Playground directly in Visual Studio Code!
+
+The VSCode extension provides:
+- Syntax highlighting for Limboole, SMT-LIB, Spectra, and nuXmv
+- Direct execution of verification tools from the command palette
+- Integrated output panels for results
+- Configurable API endpoints
+
+**Quick Start:**
+```bash
+cd vscode-extension
+npm install
+npm run package
+# Install the generated .vsix file in VSCode
+```
+
+📖 See [VSCODE_EXTENSION.md](VSCODE_EXTENSION.md) for complete documentation.
+
 ## Development
 
 ### Requirements
